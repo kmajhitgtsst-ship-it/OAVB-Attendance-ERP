@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: oav-badi-erp
+    env: node
+    plan: starter
+    buildCommand: ""
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: OAV_DB_FILE
+        value: /var/data/db.json
+    disk:
+      name: oav-badi-data
+      mountPath: /var/data
+      sizeGB: 1

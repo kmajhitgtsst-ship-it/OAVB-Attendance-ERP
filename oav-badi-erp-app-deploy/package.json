@@ -1,0 +1,14 @@
+{
+  "name": "oav-badi-erp-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "OAV BADI Advanced Attendance ERP MVP with persistent records.",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "smoke": "node smoke-test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

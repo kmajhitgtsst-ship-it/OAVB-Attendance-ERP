@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="cache-control" content="no-store">
+  <meta http-equiv="pragma" content="no-cache">
+  <meta http-equiv="expires" content="0">
+  <title>OAV BADI Attendance ERP</title>
+  <link rel="stylesheet" href="/styles.css?v=20260703-teacher-mobile-2">
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <div class="brand">
+        <strong>OAV BADI</strong>
+        <span>Teacher Mobile Build v2</span>
+      </div>
+      <nav>
+        <button class="nav active" data-page="dashboard">Dashboard</button>
+        <button class="nav" data-page="students">Student Master</button>
+        <button class="nav" data-page="attendance">Student Attendance</button>
+        <button class="nav admin-only" data-page="staff">Staff Attendance</button>
+        <button class="nav" data-page="mdm">MDM</button>
+        <button class="nav admin-only" data-page="settings">Settings</button>
+        <button class="nav" data-page="logs">Logs</button>
+      </nav>
+      <div class="user-box">
+        <label>Use As <select id="activeTeacher"></select></label>
+        <strong id="sessionName">Principal Login</strong>
+        <span id="sessionScope">Full school access. API persistence is active.</span>
+      </div>
+    </aside>
+
+    <main>
+      <section id="dashboard" class="page">
+        <header>
+          <div>
+            <h1>Attendance Command Center</h1>
+            <p class="subtle">Persistent school records for students, staff, attendance, MDM, and messages.</p>
+          </div>
+          <button class="secondary" id="reloadData">Reload</button>
+        </header>
+        <div class="grid stats">
+          <div class="metric"><span>Total Students</span><strong id="metricStudents">0</strong></div>
+          <div class="metric good"><span>Today Present</span><strong id="metricPresent">0</strong></div>
+          <div class="metric bad"><span>Today Absent</span><strong id="metricAbsent">0</strong></div>
+          <div class="metric info"><span>MDM Served</span><strong id="metricMdm">0</strong></div>
+        </div>
+        <div class="grid two">
+          <div class="panel">
+            <h2>Class Snapshot</h2>
+            <table>
+              <thead><tr><th>Class</th><th>Students</th><th>Today Present</th><th>Absent/Leave</th></tr></thead>
+              <tbody id="classSnapshot"></tbody>
+            </table>
+          </div>
+          <div class="panel">
+            <h2>Recent Activity</h2>
+            <ul class="list" id="recentActivity"></ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="students" class="page hidden">
+        <header>
+          <div>
+            <h1>Student Master</h1>
+            <p class="subtle">Add one student or import CSV rows. Special characters are supported; wrap comma-containing values in double quotes.</p>
+          </div>
+        </header>
+        <div class="panel">
+          <div class="toolbar">
+            <label>Class <select id="studentClass"></select></label>
+            <label>Section <select id="studentSection"></select></label>
+            <label>Roll <input id="studentRoll" placeholder="01"></label>
+            <label>Name <input id="studentName" placeholder="Student name"></label>
+            <label>Guardian <input id="studentGuardian" placeholder="Guardian"></label>
+            <label>Phone <input id="studentPhone" placeholder="+91"></label>
+            <button class="primary" id="addStudent">Add Student</button>
+          </div>
+          <textarea id="studentBulk" rows="4" placeholder="01, &quot;Ananya Das - #A*&quot;, &quot;Parent <Name>, Badi&quot;, +91 9000000000, yes, General"></textarea>
+          <div class="actions"><button class="primary" id="importStudents">Import Students</button><span id="studentStatus" class="note"></span></div>
+          <table>
+            <thead><tr><th>Roll</th><th>Name</th><th>Class</th><th>Guardian</th><th>Phone</th><th>Hostel</th><th>Action</th></tr></thead>
+            <tbody id="studentRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="attendance" class="page hidden">
+        <header>
+          <div>
+            <h1>Student Attendance</h1>
+            <p class="subtle">Mark class-wise attendance and save it permanently through the backend.</p>
+          </div>
+          <button class="primary" id="saveAttendance">Submit Attendance</button>
+        </header>
+        <div class="panel">
+          <div class="toolbar">
+            <label>Date <input id="attendanceDate" type="date"></label>
+            <label>Class <select id="attendanceClass"></select></label>
+            <label>Section <select id="attendanceSection"></select></label>
+            <button class="secondary" id="markAllPresent">Mark All Present</button>
+          </div>
+          <div class="toolbar">
+            <label class="wide">Roll Selection <input id="bulkRolls" placeholder="1,2,5-20"></label>
+            <label>Status <select id="bulkStatus"><option>Present</option><option>Absent</option><option>Leave</option><option>Holiday</option><option>Late</option></select></label>
+            <button class="secondary" id="previewBulk">Preview</button>
+            <button class="primary" id="applyBulk">Apply</button>
+          </div>
+          <div id="bulkPreview" class="chips"></div>
+          <p id="attendanceStatus" class="note">Load a class to begin.</p>
+          <table>
+            <thead><tr><th>Roll</th><th>Name</th><th>Status</th><th>Time</th><th>Remarks</th><th>Parent Message</th></tr></thead>
+            <tbody id="attendanceRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="staff" class="page hidden">
+        <header>
+          <div>
+            <h1>Staff Attendance</h1>
+            <p class="subtle">Teacher master import is persistent; status is ready for the staff attendance module.</p>
+          </div>
+        </header>
+        <div class="panel">
+          <textarea id="teacherBulk" rows="4" placeholder="Teacher Name, Role, Phone, Assigned Class"></textarea>
+          <div class="actions"><button class="primary" id="importTeachers">Import Teachers</button><span id="teacherStatus" class="note"></span></div>
+          <table>
+            <thead><tr><th>Name</th><th>Role</th><th>Phone</th><th>Assigned Class</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="teacherRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="mdm" class="page hidden">
+        <header>
+          <div>
+            <h1>MDM</h1>
+            <p class="subtle">Meal counts are calculated from saved or currently selected attendance.</p>
+          </div>
+          <button class="primary" id="saveMdm">Save MDM Entry</button>
+        </header>
+        <div class="grid stats">
+          <div class="metric"><span>Eligible</span><strong id="mdmEligible">0</strong></div>
+          <div class="metric good"><span>Served</span><strong id="mdmServed">0</strong></div>
+          <div class="metric warn"><span>Rice</span><strong id="mdmRiceUsed">0 kg</strong></div>
+          <div class="metric bad"><span>Absent/Leave</span><strong id="mdmAbsent">0</strong></div>
+        </div>
+        <div class="panel">
+          <div class="toolbar">
+            <label>Date <input id="mdmDate" type="date"></label>
+            <label>Class <select id="mdmClass"></select></label>
+            <label>Section <select id="mdmSection"></select></label>
+            <label>Menu <select id="mdmMenu"><option>Rice, Dal, Vegetable</option><option>Rice, Dal, Egg</option><option>Rice, Dal, Fruit</option></select></label>
+            <label>Rice kg <input id="mdmRice" type="number" min="0" step="0.5" value="6"></label>
+            <label>Dal/Veg kg <input id="mdmDal" type="number" min="0" step="0.5" value="3"></label>
+            <label>Egg/Fruit <input id="mdmEgg" type="number" min="0" value="40"></label>
+          </div>
+          <p id="mdmStatus" class="note"></p>
+          <table>
+            <thead><tr><th>Roll</th><th>Name</th><th>Status</th><th>Meal</th></tr></thead>
+            <tbody id="mdmRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="settings" class="page hidden">
+        <header>
+          <div>
+            <h1>Settings</h1>
+            <p class="subtle">Monthly working days and holidays drive attendance percentage calculations.</p>
+          </div>
+        </header>
+        <div class="panel">
+          <div class="toolbar">
+            <label>Month <input id="workingMonth" type="month"></label>
+            <label>Working Days <input id="workingDays" type="number" min="1" max="31"></label>
+            <label class="wide">Holiday Dates <input id="holidayDates" placeholder="2026-07-06, 2026-07-20"></label>
+            <button class="primary" id="saveSettings">Save Settings</button>
+          </div>
+          <p id="settingsStatus" class="note"></p>
+        </div>
+      </section>
+
+      <section id="logs" class="page hidden">
+        <header>
+          <div>
+            <h1>Logs</h1>
+            <p class="subtle">Prepared WhatsApp messages and saved MDM entries.</p>
+          </div>
+        </header>
+        <div class="grid two">
+          <div class="panel"><h2>WhatsApp Message Logs</h2><ul id="messageLog" class="list"></ul></div>
+          <div class="panel"><h2>MDM Save Log</h2><ul id="mdmLog" class="list"></ul></div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="/app.js?v=20260703-teacher-mobile-2"></script>
+</body>
+</html>
