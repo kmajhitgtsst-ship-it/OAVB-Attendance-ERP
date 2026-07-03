@@ -1,0 +1,55 @@
+{
+  "students": [],
+  "teachers": [
+    {
+      "id": "tch-001",
+      "name": "Principal / Admin",
+      "role": "Admin",
+      "phone": "",
+      "assignedClass": "",
+      "status": "Present"
+    }
+  ],
+  "attendance": [],
+  "staffAttendance": [],
+  "mdmEntries": [
+    {
+      "id": "mdm-3a9672ea-2414-4a34-a7de-d7609a8c633a",
+      "date": "2026-07-03",
+      "className": "VI",
+      "section": "A",
+      "group": "Junior (VI-VIII)",
+      "day": "Fri",
+      "menu": "Egg",
+      "eligibleCount": 40,
+      "servedCount": 38,
+      "absentCount": 2,
+      "openingRiceKg": 100,
+      "receivedRiceKg": 0,
+      "riceKg": 5.7,
+      "dalKg": 0,
+      "soyaKg": 0,
+      "eggCount": 38,
+      "ladooCount": 0,
+      "oilKg": 0.285,
+      "fuelAmount": 26.6,
+      "spiceAmount": 19,
+      "vegKg": 3.8,
+      "totalRiceKg": 100,
+      "closingRiceKg": 94.3,
+      "createdAt": "2026-07-03T13:33:03.948Z"
+    }
+  ],
+  "messageLogs": [],
+  "settings": {
+    "schoolName": "Odisha Adarsha Vidyalaya, Badi",
+    "attendanceCutoff": "09:00",
+    "lowAttendanceThreshold": 75,
+    "workingMonths": {
+      "2026-07": {
+        "workingDays": 24,
+        "holidays": []
+      }
+    }
+  }
+}

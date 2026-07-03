@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: oav-badi-attendance-erp
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: OAV_DB_FILE
+        value: /tmp/oav-badi-db.json
