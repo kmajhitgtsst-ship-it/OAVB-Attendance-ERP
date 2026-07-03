@@ -7,14 +7,14 @@
   <meta http-equiv="pragma" content="no-cache">
   <meta http-equiv="expires" content="0">
   <title>OAV BADI Attendance ERP</title>
-  <link rel="stylesheet" href="/styles.css?v=20260703-teacher-mobile-2">
+  <link rel="stylesheet" href="/styles.css?v=20260703-student-edit-import">
 </head>
 <body>
   <div class="app">
     <aside>
       <div class="brand">
         <strong>OAV BADI</strong>
-        <span>Teacher Mobile Build v2</span>
+        <span>Student Edit Import Build</span>
       </div>
       <nav>
         <button class="nav active" data-page="dashboard">Dashboard</button>
@@ -47,26 +47,13 @@
           <div class="metric bad"><span>Today Absent</span><strong id="metricAbsent">0</strong></div>
           <div class="metric info"><span>MDM Served</span><strong id="metricMdm">0</strong></div>
         </div>
-        <div class="grid two">
-          <div class="panel">
-            <h2>Class Snapshot</h2>
-            <table>
-              <thead><tr><th>Class</th><th>Students</th><th>Today Present</th><th>Absent/Leave</th></tr></thead>
-              <tbody id="classSnapshot"></tbody>
-            </table>
-          </div>
-          <div class="panel">
-            <h2>Recent Activity</h2>
-            <ul class="list" id="recentActivity"></ul>
-          </div>
-        </div>
       </section>
 
       <section id="students" class="page hidden">
         <header>
           <div>
             <h1>Student Master</h1>
-            <p class="subtle">Add one student or import CSV rows. Special characters are supported; wrap comma-containing values in double quotes.</p>
+            <p class="subtle">Add one student or import CSV rows. Special characters are supported.</p>
           </div>
         </header>
         <div class="panel">
@@ -78,9 +65,19 @@
             <label>Guardian <input id="studentGuardian" placeholder="Guardian"></label>
             <label>Phone <input id="studentPhone" placeholder="+91"></label>
             <button class="primary" id="addStudent">Add Student</button>
+            <button class="secondary hidden" id="cancelStudentEdit">Cancel Edit</button>
           </div>
-          <textarea id="studentBulk" rows="4" placeholder="01, &quot;Ananya Das - #A*&quot;, &quot;Parent <Name>, Badi&quot;, +91 9000000000, yes, General"></textarea>
+
+          <div class="file-import admin-only">
+            <label class="wide">CSV / Excel CSV File <input id="studentImportFile" type="file" accept=".csv,.txt,.xls,.xlsx"></label>
+            <button class="secondary" id="loadStudentFile">Load File</button>
+            <button class="primary" id="importWholeSchoolStudents">Import Whole School CSV</button>
+          </div>
+
+          <p class="note">Whole school import supports: Roll No, Student Name, Class, Section, Guardian Name, Mobile, Hostel, Category.</p>
+          <textarea id="studentBulk" rows="4" placeholder="01, Student Name, Guardian, Phone, yes/no, Category"></textarea>
           <div class="actions"><button class="primary" id="importStudents">Import Students</button><span id="studentStatus" class="note"></span></div>
+
           <table>
             <thead><tr><th>Roll</th><th>Name</th><th>Class</th><th>Guardian</th><th>Phone</th><th>Hostel</th><th>Action</th></tr></thead>
             <tbody id="studentRows"></tbody>
@@ -119,12 +116,7 @@
       </section>
 
       <section id="staff" class="page hidden">
-        <header>
-          <div>
-            <h1>Staff Attendance</h1>
-            <p class="subtle">Teacher master import is persistent; status is ready for the staff attendance module.</p>
-          </div>
-        </header>
+        <header><div><h1>Staff Attendance</h1></div></header>
         <div class="panel">
           <textarea id="teacherBulk" rows="4" placeholder="Teacher Name, Role, Phone, Assigned Class"></textarea>
           <div class="actions"><button class="primary" id="importTeachers">Import Teachers</button><span id="teacherStatus" class="note"></span></div>
@@ -137,10 +129,7 @@
 
       <section id="mdm" class="page hidden">
         <header>
-          <div>
-            <h1>MDM</h1>
-            <p class="subtle">Meal counts are calculated from saved or currently selected attendance.</p>
-          </div>
+          <div><h1>MDM</h1><p class="subtle">Meal counts are calculated from attendance.</p></div>
           <button class="primary" id="saveMdm">Save MDM Entry</button>
         </header>
         <div class="grid stats">
@@ -168,12 +157,7 @@
       </section>
 
       <section id="settings" class="page hidden">
-        <header>
-          <div>
-            <h1>Settings</h1>
-            <p class="subtle">Monthly working days and holidays drive attendance percentage calculations.</p>
-          </div>
-        </header>
+        <header><div><h1>Settings</h1></div></header>
         <div class="panel">
           <div class="toolbar">
             <label>Month <input id="workingMonth" type="month"></label>
@@ -186,12 +170,7 @@
       </section>
 
       <section id="logs" class="page hidden">
-        <header>
-          <div>
-            <h1>Logs</h1>
-            <p class="subtle">Prepared WhatsApp messages and saved MDM entries.</p>
-          </div>
-        </header>
+        <header><div><h1>Logs</h1></div></header>
         <div class="grid two">
           <div class="panel"><h2>WhatsApp Message Logs</h2><ul id="messageLog" class="list"></ul></div>
           <div class="panel"><h2>MDM Save Log</h2><ul id="mdmLog" class="list"></ul></div>
@@ -199,6 +178,8 @@
       </section>
     </main>
   </div>
-  <script src="/app.js?v=20260703-teacher-mobile-2"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="/app.js?v=20260703-student-edit-import"></script>
 </body>
 </html>
