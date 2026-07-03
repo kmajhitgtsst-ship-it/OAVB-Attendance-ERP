@@ -6,23 +6,34 @@ const crypto = require("crypto");
 const PORT = Number(process.env.PORT || 3050);
 const ROOT = __dirname;
 const PUBLIC_DIR = path.join(ROOT, "public");
-const DB_FILE = process.env.OAV_DB_FILE || path.join(ROOT, "data", "db.json");
+const REQUESTED_DB_FILE = process.env.OAV_DB_FILE || path.join(ROOT, "data", "db.json");
+let activeDbFile = REQUESTED_DB_FILE;
 const SEED_FILE = path.join(ROOT, "data", "db.json");
 
 function ensureDbFile() {
-  const dbDir = path.dirname(DB_FILE);
-  if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
-  if (!fs.existsSync(DB_FILE)) fs.copyFileSync(SEED_FILE, DB_FILE);
+  try {
+    const dbDir = path.dirname(activeDbFile);
+    if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
+    if (!fs.existsSync(activeDbFile)) fs.copyFileSync(SEED_FILE, activeDbFile);
+  } catch (error) {
+    if (activeDbFile === REQUESTED_DB_FILE) {
+      activeDbFile = path.join("/tmp", "oav-badi-db.json");
+      console.warn(`Unable to use ${REQUESTED_DB_FILE}: ${error.message}. Falling back to ${activeDbFile}`);
+      ensureDbFile();
+      return;
+    }
+    throw error;
+  }
 }
 
 function readDb() {
   ensureDbFile();
-  return JSON.parse(fs.readFileSync(DB_FILE, "utf8"));
+  return JSON.parse(fs.readFileSync(activeDbFile, "utf8"));
 }
 
 function writeDb(db) {
   ensureDbFile();
-  fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
+  fs.writeFileSync(activeDbFile, JSON.stringify(db, null, 2));
 }
 
 function id(prefix) {
@@ -278,5 +289,6 @@ const server = http.createServer((req, res) => {
 
 server.listen(PORT, () => {
   console.log(`OAV BADI ERP running at http://localhost:${PORT}`);
-  console.log(`Data file: ${DB_FILE}`);
+  console.log(`Requested data file: ${REQUESTED_DB_FILE}`);
+  console.log(`Active data file: ${activeDbFile}`);
 });
