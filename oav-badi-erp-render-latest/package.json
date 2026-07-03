@@ -1,0 +1,13 @@
+{
+  "name": "oav-badi-erp-render-latest",
+  "version": "0.2.0",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "smoke": "node smoke-test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "students": [],
+  "teachers": [
+    {
+      "id": "tch-001",
+      "name": "Principal / Admin",
+      "role": "Admin",
+      "phone": "",
+      "assignedClass": "",
+      "status": "Present"
+    }
+  ],
+  "attendance": [],
+  "staffAttendance": [],
+  "mdmEntries": [],
+  "messageLogs": [],
+  "settings": {
+    "schoolName": "Odisha Adarsha Vidyalaya, Badi",
+    "attendanceCutoff": "09:00",
+    "lowAttendanceThreshold": 75,
+    "workingMonths": {
+      "2026-07": {
+        "workingDays": 24,
+        "holidays": []
+      }
+    }
+  }
+}
