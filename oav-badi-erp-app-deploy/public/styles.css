@@ -45,6 +45,7 @@ h2 { font-size: 18px; margin-bottom: 12px; }
 .warn strong { color: var(--yellow); }
 .info strong { color: var(--blue); }
 .toolbar, .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; margin-bottom: 12px; }
+.file-import { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; margin-bottom: 8px; padding: 12px; border: 1px dashed var(--line); border-radius: 8px; background: #f8fafc; }
 label { display: grid; gap: 5px; color: var(--muted); font-size: 12px; min-width: 140px; }
 label.wide { min-width: 260px; flex: 1; }
 input, select, textarea, button { font: inherit; }
@@ -55,6 +56,8 @@ button { border-radius: 7px; padding: 10px 13px; cursor: pointer; min-height: 40
 .primary { color: #fff; background: var(--blue); border-color: var(--blue); }
 .secondary { color: var(--ink); background: #fff; }
 .danger { color: #fff; background: var(--red); border-color: var(--red); padding: 7px 10px; min-height: 34px; }
+.row-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.row-actions .secondary, .row-actions .danger { padding: 7px 10px; min-height: 34px; }
 table { width: 100%; border-collapse: collapse; font-size: 14px; }
 th, td { padding: 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
 th { color: var(--muted); font-size: 12px; background: #f8fafc; }
@@ -85,6 +88,7 @@ th { color: var(--muted); font-size: 12px; background: #f8fafc; }
   header { display: grid; }
   h1 { font-size: 22px; }
   .toolbar, .actions { display: grid; grid-template-columns: 1fr; }
+  .file-import { display: grid; grid-template-columns: 1fr; }
   label, label.wide { min-width: 0; width: 100%; }
   input, select, textarea, button { width: 100%; }
   table { min-width: 680px; }
