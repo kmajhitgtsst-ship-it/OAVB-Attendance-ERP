@@ -4,6 +4,7 @@ const statuses = ["Present", "Absent", "Leave", "Holiday", "Late"];
 let db = {};
 let workingAttendance = new Map();
 let activeTeacherId = localStorage.getItem("oavActiveTeacherId") || "principal";
+let editingStudentId = null;
 
 function localDateKey(date = new Date()) {
   const year = date.getFullYear();
@@ -219,7 +220,7 @@ function renderStudents() {
     <tr>
       <td>${escapeHtml(student.roll)}</td><td>${escapeHtml(student.name)}</td><td>${escapeHtml(classKey(student))}</td>
       <td>${escapeHtml(student.guardian || "")}</td><td>${escapeHtml(student.phone || "")}</td><td>${student.hostel ? "Yes" : "No"}</td>
-      <td>${isTeacherMode() ? "" : `<button class="danger delete-student" data-student="${escapeHtml(student.id)}">Delete</button>`}</td>
+      <td>${isTeacherMode() ? "" : `<div class="row-actions"><button class="secondary edit-student" data-student="${escapeHtml(student.id)}">Edit</button><button class="danger delete-student" data-student="${escapeHtml(student.id)}">Delete</button></div>`}</td>
     </tr>
   `).join("");
 }
@@ -306,6 +307,7 @@ async function load() {
 async function addStudent() {
   const scope = activeScope();
   const payload = {
+    id: editingStudentId || undefined,
     roll: $("studentRoll").value,
     name: $("studentName").value,
     className: scope ? scope.className : $("studentClass").value,
@@ -314,10 +316,35 @@ async function addStudent() {
     phone: $("studentPhone").value
   };
   await api("/api/students", { method: "POST", body: payload });
-  $("studentStatus").textContent = `${payload.name} saved.`;
+  $("studentStatus").textContent = editingStudentId ? `${payload.name} updated.` : `${payload.name} saved.`;
+  clearStudentForm();
+  await load();
+}
+
+function clearStudentForm() {
+  editingStudentId = null;
   $("studentName").value = "";
   $("studentRoll").value = "";
-  await load();
+  $("studentGuardian").value = "";
+  $("studentPhone").value = "";
+  $("addStudent").textContent = "Add Student";
+  $("cancelStudentEdit").classList.add("hidden");
+}
+
+function editStudent(studentId) {
+  const student = db.students.find(item => item.id === studentId);
+  if (!student) return;
+  editingStudentId = student.id;
+  $("studentClass").value = student.className;
+  $("studentSection").value = student.section;
+  $("studentRoll").value = student.roll;
+  $("studentName").value = student.name;
+  $("studentGuardian").value = student.guardian || "";
+  $("studentPhone").value = student.phone || "";
+  $("addStudent").textContent = "Update Student";
+  $("cancelStudentEdit").classList.remove("hidden");
+  $("studentStatus").textContent = `${student.name} editing. Change details and click Update Student.`;
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 async function importStudents() {
@@ -333,6 +360,57 @@ async function importStudents() {
   $("studentStatus").textContent = `${result.added} student(s) imported.`;
   $("studentBulk").value = "";
   await load();
+}
+
+async function importWholeSchoolStudents() {
+  const text = $("studentBulk").value.trim();
+  if (!text) {
+    $("studentStatus").textContent = "CSV file/text first load or paste karo.";
+    return;
+  }
+  const result = await api("/api/students/whole-school", {
+    method: "POST",
+    body: { text }
+  });
+  $("studentStatus").textContent = `${result.added} added, ${result.updated} updated, ${result.skipped} skipped.`;
+  $("studentBulk").value = "";
+  await load();
+}
+
+function loadStudentFile() {
+  const file = $("studentImportFile").files[0];
+  if (!file) {
+    $("studentStatus").textContent = "Pehle CSV file choose karo.";
+    return;
+  }
+  const extension = file.name.split(".").pop().toLowerCase();
+  if (extension === "xlsx" || extension === "xls") {
+    if (!window.XLSX) {
+      $("studentStatus").textContent = "Excel support load nahi hua. Excel me file ko CSV me save karke choose karo.";
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const workbook = XLSX.read(reader.result, { type: "array" });
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      $("studentBulk").value = XLSX.utils.sheet_to_csv(firstSheet);
+      $("studentStatus").textContent = `${file.name} loaded. Ab Import Whole School CSV click karo.`;
+    };
+    reader.onerror = () => {
+      $("studentStatus").textContent = "Excel file read nahi ho pa raha hai.";
+    };
+    reader.readAsArrayBuffer(file);
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    $("studentBulk").value = String(reader.result || "");
+    $("studentStatus").textContent = `${file.name} loaded. Ab Import Whole School CSV click karo.`;
+  };
+  reader.onerror = () => {
+    $("studentStatus").textContent = "File read nahi ho pa raha hai.";
+  };
+  reader.readAsText(file);
 }
 
 async function importTeachers() {
@@ -460,7 +538,10 @@ function bind() {
     renderAll();
   });
   $("addStudent").addEventListener("click", addStudent);
+  $("cancelStudentEdit").addEventListener("click", clearStudentForm);
   $("importStudents").addEventListener("click", importStudents);
+  $("loadStudentFile").addEventListener("click", loadStudentFile);
+  $("importWholeSchoolStudents").addEventListener("click", importWholeSchoolStudents);
   $("importTeachers").addEventListener("click", importTeachers);
   $("previewBulk").addEventListener("click", previewBulk);
   $("applyBulk").addEventListener("click", applyBulk);
@@ -487,6 +568,9 @@ function bind() {
     }
     if (event.target.matches(".delete-student")) {
       deleteStudent(event.target.dataset.student);
+    }
+    if (event.target.matches(".edit-student")) {
+      editStudent(event.target.dataset.student);
     }
     if (event.target.matches(".delete-teacher")) {
       deleteTeacher(event.target.dataset.teacher);
