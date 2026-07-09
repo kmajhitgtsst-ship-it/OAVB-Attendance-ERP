@@ -3,7 +3,7 @@ services:
     name: oav-badi-attendance-erp
     runtime: static
     buildCommand: echo "Static HTML app - no build required"
-    staticPublishPath: outputs
+    staticPublishPath: .
     routes:
       - type: rewrite
         source: /*
