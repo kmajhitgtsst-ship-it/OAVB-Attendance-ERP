@@ -2286,7 +2286,7 @@
           name: row[1],
           role: row[2] || "Teacher",
           mobile: row[4] || "+91 9000000000",
-          assignedClass: row[6] || "Not assigned",
+          assignedClass: normalizeAssignedClass(row[6]),
           status: row[9] || "Present"
         };
       }
@@ -2295,9 +2295,17 @@
         name: row[0],
         role: row[1] || "Teacher",
         mobile: row[2] || "+91 9000000000",
-        assignedClass: row[3] || "Not assigned",
+        assignedClass: normalizeAssignedClass(row[3]),
         status: "Present"
       };
+    }
+
+    function normalizeAssignedClass(value) {
+      const text = String(value || "").trim();
+      if (!text || /^not\s*assigned$/i.test(text)) return "";
+      if (/^Class\s+/i.test(text)) return text.replace(/\s+/g, " ").replace(/\s+-\s+/g, "-");
+      if (/^(VI|VII|VIII|IX|X|XI|XII)(-| |$)/i.test(text)) return `Class ${text.toUpperCase().replace(/\s+/g, "-")}`;
+      return text;
     }
 
     function importBulkStudents() {
@@ -2415,11 +2423,11 @@
           <td>${teacher[0]}</td>
           <td>${teacher[1]}</td>
           <td>${teacher[2]}</td>
-          <td>${teacher[3]}</td>
+          <td>${teacher[3] || '<span class="status absent">Class not assigned</span>'}</td>
           <td><span class="status ${teacher[4] === "Leave" ? "leave" : "present"}">${teacher[4]}</span></td>
           <td>${teacherLoginId(teacher[0])}</td>
           <td>${teacherPassword(teacher[0])}</td>
-          <td><button class="secondary edit-teacher" data-index="${index}">Edit</button> <button class="secondary reset-teacher-password" data-index="${index}">Reset</button> <button class="secondary delete-teacher" data-index="${index}">Delete</button></td>
+          <td><button class="secondary assign-teacher-class" data-index="${index}">Assign Class</button> <button class="secondary edit-teacher" data-index="${index}">Edit</button> <button class="secondary reset-teacher-password" data-index="${index}">Reset</button> <button class="secondary delete-teacher" data-index="${index}">Delete</button></td>
         </tr>
       `).join("");
     }
@@ -2451,20 +2459,40 @@
       if (!name) return;
       const role = prompt("Role", teacher[1]) || teacher[1];
       const mobile = prompt("Mobile", teacher[2]) || teacher[2];
-      const assignedClass = prompt("Assigned Class", teacher[3]) || teacher[3];
+      const assignedClass = normalizeAssignedClass(prompt("Assigned Class", teacher[3]) || teacher[3]);
       const status = prompt("Status: Present/Leave", teacher[4]) || teacher[4];
       const oldName = teacher[0];
       teachers[index] = [name, role, mobile, assignedClass, status];
       if (teacherAssignments[oldName]) {
         delete teacherAssignments[oldName];
       }
-      teacherAssignments[name] = assignedClass;
+      syncTeacherAssignmentsFromMaster();
       saveLocalData();
       populateLoginTeachers();
       renderTeachers();
       renderClassGroups();
       document.getElementById("teacherBulkStatus").textContent = `${name} updated.`;
     }
+
+    function assignTeacherClass(index) {
+      const teacher = teachers[index];
+      if (!teacher) return;
+      const assignedClass = normalizeAssignedClass(prompt("Assigned Class (Example: Class VI-A, Class X-B, Class XII-SCIENCE)", teacher[3] || ""));
+      if (!assignedClass) {
+        document.getElementById("teacherBulkStatus").textContent = "Class not assigned. Use format like Class VI-A.";
+        return;
+      }
+      teacher[3] = assignedClass;
+      syncTeacherAssignmentsFromMaster();
+      saveLocalData();
+      populateLoginTeachers();
+      renderTeachers();
+      renderTeacherAttendance();
+      renderClassGroups();
+      applyClassAccess();
+      document.getElementById("teacherBulkStatus").textContent = `${teacher[0]} assigned to ${assignedClass}. Login dropdown updated.`;
+    }
+
 
     function resetTeacherPassword(index) {
       const teacher = teachers[index];
@@ -2516,9 +2544,10 @@
           teachers.push(nextTeacher);
           added += 1;
         }
-        teacherAssignments[teacherData.name] = teacherData.assignedClass;
       });
-      document.getElementById("teacherBulkStatus").textContent = `${added} teacher(s) added, ${updated} updated. ${skipped} row(s) skipped.`;
+      syncTeacherAssignmentsFromMaster();
+      const assignedCount = Object.keys(teacherAssignments).length;
+      document.getElementById("teacherBulkStatus").textContent = `${added} teacher(s) added, ${updated} updated. ${skipped} row(s) skipped. ${assignedCount} class teacher login(s) active.`;
       saveLocalData();
       renderTeachers();
       populateLoginTeachers();
@@ -4600,6 +4629,11 @@
     document.addEventListener("click", event => {
       if (!event.target.matches(".edit-teacher")) return;
       editTeacher(Number(event.target.dataset.index));
+    });
+
+    document.addEventListener("click", event => {
+      if (!event.target.matches(".assign-teacher-class")) return;
+      assignTeacherClass(Number(event.target.dataset.index));
     });
 
     document.addEventListener("click", event => {
