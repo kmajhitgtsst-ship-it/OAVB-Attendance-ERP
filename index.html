@@ -470,6 +470,54 @@
       margin-bottom: 14px;
     }
 
+    .login-shell {
+      display: grid;
+      grid-template-columns: minmax(280px, .9fr) minmax(320px, 1.15fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .login-visual {
+      min-height: 360px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #10202f;
+      position: relative;
+    }
+
+    .login-visual img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .login-visual::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(16, 32, 47, .08), rgba(16, 32, 47, .55));
+    }
+
+    .login-caption {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      z-index: 1;
+      color: #fff;
+    }
+
+    .login-caption strong {
+      display: block;
+      font-size: 24px;
+      margin-bottom: 6px;
+    }
+
+    .login-form {
+      align-content: start;
+    }
+
     body.login-only .app {
       grid-template-columns: 1fr;
     }
@@ -515,6 +563,12 @@
         overflow-x: auto;
       }
       table { min-width: 680px; }
+      .login-shell {
+        grid-template-columns: 1fr;
+      }
+      .login-visual {
+        min-height: 240px;
+      }
     }
   </style>
 </head>
@@ -548,43 +602,54 @@
 
     <main>
       <section class="card role-panel">
-        <div class="toolbar">
-          <div class="field">
-            <label for="loginRole">Login Role</label>
-            <select id="loginRole">
-              <option value="principal">Principal / Admin</option>
-              <option value="teacher">Class Teacher</option>
-              <option value="office">Staff / I/C Role</option>
-            </select>
+        <div class="login-shell">
+          <div class="login-visual">
+            <img src="assets/oav-badi-school-login.jpg" alt="OAV Badi school building">
+            <div class="login-caption">
+              <strong>OAV BADI ERP</strong>
+              <span>Advanced Attendance System<br>Powered By DETH</span>
+            </div>
           </div>
-          <div class="field">
-            <label for="loginTeacher">Teacher</label>
-            <select id="loginTeacher"></select>
+          <div class="login-form">
+            <div class="toolbar">
+              <div class="field">
+                <label for="loginRole">Login Role</label>
+                <select id="loginRole">
+                  <option value="principal">Principal / Admin</option>
+                  <option value="teacher">Class Teacher</option>
+                  <option value="office">Staff / I/C Role</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="loginTeacher">Teacher</label>
+                <select id="loginTeacher"></select>
+              </div>
+              <div class="field">
+                <label for="loginUserId">Login ID</label>
+                <input id="loginUserId" placeholder="admin / principal / teacher@oavb">
+              </div>
+              <div class="field">
+                <label for="loginPassword">Password</label>
+                <input id="loginPassword" type="password" placeholder="Password" autocomplete="current-password">
+              </div>
+              <div class="field">
+                <label for="rememberLogin">Auto-save</label>
+                <select id="rememberLogin"><option value="yes">Yes</option><option value="no">No</option></select>
+              </div>
+              <div class="field">
+                <label>Access</label>
+                <input id="accessSummary" value="All classes available" readonly>
+              </div>
+              <button class="primary" id="loginButton">Login</button>
+              <button class="secondary" id="toggleLoginPassword" type="button">Show Password</button>
+              <button class="secondary" id="forgotLoginPassword" type="button">Forgot Password</button>
+              <button class="secondary" id="resetLoginPassword" type="button">Reset Password</button>
+              <button class="secondary" id="logoutButton" type="button">Logout</button>
+              <button class="secondary" id="clearLocalData">Clear Local Saved Data</button>
+            </div>
+            <p class="subtle">Added student and teacher details are saved in this browser on this computer.</p>
           </div>
-          <div class="field">
-            <label for="loginUserId">Login ID</label>
-            <input id="loginUserId" placeholder="admin / principal / teacher@oavb">
-          </div>
-          <div class="field">
-            <label for="loginPassword">Password</label>
-            <input id="loginPassword" type="password" placeholder="Password">
-          </div>
-          <div class="field">
-            <label for="rememberLogin">Auto-save</label>
-            <select id="rememberLogin"><option value="yes">Yes</option><option value="no">No</option></select>
-          </div>
-          <div class="field">
-            <label>Access</label>
-            <input id="accessSummary" value="All classes available" readonly>
-          </div>
-          <button class="primary" id="loginButton">Login</button>
-          <button class="secondary" id="toggleLoginPassword" type="button">Show Password</button>
-          <button class="secondary" id="forgotLoginPassword" type="button">Forgot Password</button>
-          <button class="secondary" id="resetLoginPassword" type="button">Reset Password</button>
-          <button class="secondary" id="logoutButton" type="button">Logout</button>
-          <button class="secondary" id="clearLocalData">Clear Local Saved Data</button>
         </div>
-        <p class="subtle">Added student and teacher details are saved in this browser on this computer.</p>
       </section>
 
       <section id="dashboard" class="page">
@@ -1539,7 +1604,7 @@
     const monthSettings = {
       "2026-07": { workingDays: 24, holidays: [] }
     };
-    const APP_VERSION = "2026-07-10-0715";
+    const APP_VERSION = "2026-07-10-1935";
     const CLOUD_KEYS = [
       "oavBadiClassData",
       "oavBadiTeachers",
@@ -1875,22 +1940,22 @@
       const selected = document.getElementById("loginTeacher").value;
       if (role === "teacher" && selected) {
         document.getElementById("loginUserId").value = teacherLoginId(selected);
-        document.getElementById("loginPassword").value = teacherPassword(selected);
+        document.getElementById("loginPassword").value = "";
         return;
       }
       if (role === "principal" && selected) {
         document.getElementById("loginUserId").value = teacherLoginId(selected);
-        document.getElementById("loginPassword").value = teacherPassword(selected);
+        document.getElementById("loginPassword").value = "";
         return;
       }
       if (role === "office" && selected) {
         document.getElementById("loginUserId").value = teacherLoginId(selected);
-        document.getElementById("loginPassword").value = teacherPassword(selected);
+        document.getElementById("loginPassword").value = "";
         return;
       }
       if (role === "principal") {
         document.getElementById("loginUserId").value = "principal";
-        document.getElementById("loginPassword").value = PRINCIPAL_PASSWORD;
+        document.getElementById("loginPassword").value = "";
       }
     }
 
@@ -1898,11 +1963,11 @@
       const role = document.getElementById("loginRole").value;
       const selected = document.getElementById("loginTeacher").value;
       if (selected) {
-        document.getElementById("accessSummary").value = `Login ID: ${teacherLoginId(selected)} | Password: ${teacherPassword(selected)}`;
+        document.getElementById("accessSummary").value = `Login ID: ${teacherLoginId(selected)}. Contact Principal/Admin for password reset.`;
         return;
       }
       if (role === "principal") {
-        document.getElementById("accessSummary").value = `Principal: principal / ${PRINCIPAL_PASSWORD} | Admin: admin / ${ADMIN_PASSWORD}`;
+        document.getElementById("accessSummary").value = "Principal/Admin password is protected. Contact system admin.";
       } else {
         document.getElementById("accessSummary").value = "Select a teacher/staff first, then use Forgot Password.";
       }
@@ -1910,16 +1975,23 @@
 
     function resetLoginPassword() {
       const selected = document.getElementById("loginTeacher").value;
+      const userId = document.getElementById("loginUserId").value.trim().toLowerCase();
+      const password = document.getElementById("loginPassword").value;
+      const resetAllowed = (userId === "principal" && password === PRINCIPAL_PASSWORD) || (userId === "admin" && password === ADMIN_PASSWORD);
+      if (!resetAllowed) {
+        document.getElementById("accessSummary").value = "Reset denied. Enter Principal/Admin ID and password first.";
+        return;
+      }
       if (selected) {
         teacherPasswords[selected] = DEFAULT_TEACHER_PASSWORD;
         saveLocalData();
-        fillLoginCredentials();
+        document.getElementById("loginPassword").value = "";
         renderTeachers();
-        document.getElementById("accessSummary").value = `${selected} password reset to ${DEFAULT_TEACHER_PASSWORD}.`;
+        document.getElementById("accessSummary").value = `${selected} password reset. Share password privately: ${DEFAULT_TEACHER_PASSWORD}`;
         return;
       }
-      fillLoginCredentials();
-      document.getElementById("accessSummary").value = `Generic credentials loaded. Principal password: ${PRINCIPAL_PASSWORD}`;
+      document.getElementById("loginPassword").value = "";
+      document.getElementById("accessSummary").value = "Select a staff/teacher before reset.";
     }
 
     function loadRememberedLogin() {
@@ -1929,7 +2001,7 @@
       document.getElementById("loginRole").value = data.role || "principal";
       populateLoginTeachers();
       document.getElementById("loginUserId").value = data.userId || "";
-      document.getElementById("loginPassword").value = data.password || "";
+      document.getElementById("loginPassword").value = "";
       document.getElementById("rememberLogin").value = "yes";
       if (data.teacher) document.getElementById("loginTeacher").value = data.teacher;
       if (!document.getElementById("loginTeacher").value && data.teacher) {
@@ -1950,7 +2022,7 @@
         return;
       }
       if (document.getElementById("rememberLogin").value === "yes") {
-        localStorage.setItem("oavBadiRememberedLogin", JSON.stringify({ role, teacher, userId, password }));
+        localStorage.setItem("oavBadiRememberedLogin", JSON.stringify({ role, teacher, userId }));
       } else {
         localStorage.removeItem("oavBadiRememberedLogin");
       }
@@ -2841,7 +2913,7 @@
           <td>${teacher[3] || '<span class="status absent">Class not assigned</span>'}</td>
           <td><span class="status ${teacher[4] === "Leave" ? "leave" : "present"}">${teacher[4]}</span></td>
           <td>${teacherLoginId(teacher[0])}</td>
-          <td>${teacherPassword(teacher[0])}</td>
+          <td><span class="status leave">Protected</span></td>
           <td><button class="secondary assign-teacher-class" data-index="${index}">Assign Class</button> <button class="secondary assign-admin-principal" data-index="${index}">Assign Admin/Principal</button> <button class="secondary assign-erp-role" data-index="${index}">Assign ERP Role</button> <button class="secondary edit-teacher" data-index="${index}">Edit</button> <button class="secondary reset-teacher-password" data-index="${index}">Reset</button> <button class="secondary delete-teacher" data-index="${index}">Delete</button></td>
         </tr>
       `).join("");
@@ -2923,7 +2995,7 @@
       saveLocalData();
       renderTeachers();
       renderTeacherAttendance();
-      document.getElementById("teacherBulkStatus").textContent = `${teacher[0]} assigned as ${teacher[1]}. Login ID: ${teacherLoginId(teacher[0])}, Password: ${teacherPassword(teacher[0])}`;
+      document.getElementById("teacherBulkStatus").textContent = `${teacher[0]} assigned as ${teacher[1]}. Login ID: ${teacherLoginId(teacher[0])}. Password protected.`;
     }
 
     function assignErpRole(index) {
@@ -2953,7 +3025,7 @@
       renderTeachers();
       renderTeacherAttendance();
       populateLoginTeachers();
-      document.getElementById("teacherBulkStatus").textContent = `${teacher[0]} assigned as ${teacher[1]}. Login ID: ${teacherLoginId(teacher[0])}, Password: ${teacherPassword(teacher[0])}`;
+      document.getElementById("teacherBulkStatus").textContent = `${teacher[0]} assigned as ${teacher[1]}. Login ID: ${teacherLoginId(teacher[0])}. Password protected.`;
     }
 
 
