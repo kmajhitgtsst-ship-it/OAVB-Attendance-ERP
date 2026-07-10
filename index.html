@@ -1518,6 +1518,25 @@
       "2026-07": { workingDays: 24, holidays: [] }
     };
     const APP_VERSION = "2026-07-10-0715";
+    const CLOUD_KEYS = [
+      "oavBadiClassData",
+      "oavBadiTeachers",
+      "oavBadiTeacherAssignments",
+      "oavBadiTeacherPasswords",
+      "oavBadiExamResults",
+      "oavBadiImportedTimetableRows",
+      "oavBadiStockBackups",
+      "oavBadiMonthSettings",
+      "oavBadiDailyAttendanceRecords",
+      "oavBadiMdmRecords",
+      "oavBadiMdmStockEntries",
+      "oavBadiMdmSettings",
+      "oavBadiRememberedLogin"
+    ];
+    const CLOUD_TS_KEY = "oavBadiCloudUpdatedAt";
+    let cloudSyncReady = false;
+    let cloudSyncTimer = null;
+    let cloudApplyingRemote = false;
     const dailyAttendanceRecords = {};
     const mdmRecords = [];
     const mdmStockEntries = [];
@@ -1567,6 +1586,10 @@
       localStorage.setItem("oavBadiMdmRecords", JSON.stringify(mdmRecords));
       localStorage.setItem("oavBadiMdmStockEntries", JSON.stringify(mdmStockEntries));
       localStorage.setItem("oavBadiMdmSettings", JSON.stringify(mdmSettings));
+      if (cloudSyncReady && !cloudApplyingRemote) {
+        localStorage.setItem(CLOUD_TS_KEY, String(Date.now()));
+        scheduleCloudPush();
+      }
     }
 
     function loadLocalData() {
@@ -1978,6 +2001,103 @@
       document.addEventListener("visibilitychange", () => {
         if (!document.hidden) check();
       });
+    }
+
+    function collectCloudState() {
+      return CLOUD_KEYS.reduce((state, key) => {
+        const value = localStorage.getItem(key);
+        if (value !== null) state[key] = value;
+        return state;
+      }, {});
+    }
+
+    function hasMeaningfulLocalCloudData() {
+      try {
+        const savedTeachers = JSON.parse(localStorage.getItem("oavBadiTeachers") || "[]");
+        const savedAttendance = JSON.parse(localStorage.getItem("oavBadiDailyAttendanceRecords") || "{}");
+        const savedMdm = JSON.parse(localStorage.getItem("oavBadiMdmRecords") || "[]");
+        return savedTeachers.length > 0 || Object.keys(savedAttendance).length > 0 || savedMdm.length > 0;
+      } catch (error) {
+        return false;
+      }
+    }
+
+    function applyCloudState(state, updatedAt) {
+      cloudApplyingRemote = true;
+      CLOUD_KEYS.forEach(key => {
+        if (Object.prototype.hasOwnProperty.call(state, key)) {
+          localStorage.setItem(key, state[key]);
+        }
+      });
+      localStorage.setItem(CLOUD_TS_KEY, String(updatedAt || Date.now()));
+      cloudApplyingRemote = false;
+    }
+
+    function scheduleCloudPush() {
+      if (!location.protocol.startsWith("http")) return;
+      clearTimeout(cloudSyncTimer);
+      cloudSyncTimer = setTimeout(pushCloudState, 800);
+    }
+
+    async function pushCloudState() {
+      if (!cloudSyncReady || cloudApplyingRemote || !location.protocol.startsWith("http")) return;
+      const updatedAt = Number(localStorage.getItem(CLOUD_TS_KEY) || Date.now());
+      try {
+        const response = await fetch("/api/cloud-state", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ updatedAt, state: collectCloudState() })
+        });
+        if (response.status === 409) {
+          const payload = await response.json();
+          if (payload.current?.updatedAt) {
+            applyCloudState(payload.current.state || {}, payload.current.updatedAt);
+            location.reload();
+          }
+        }
+      } catch (error) {
+        document.getElementById("accessSummary").value = "Cloud sync offline. Local browser data is still saved.";
+      }
+    }
+
+    async function pullCloudState({ reloadOnApply = false } = {}) {
+      if (!location.protocol.startsWith("http")) return;
+      try {
+        const response = await fetch(`/api/cloud-state?ts=${Date.now()}`, { cache: "no-store" });
+        if (!response.ok) return;
+        const payload = await response.json();
+        const remoteUpdatedAt = Number(payload.updatedAt || 0);
+        const localUpdatedAt = Number(localStorage.getItem(CLOUD_TS_KEY) || 0);
+        if (remoteUpdatedAt > localUpdatedAt && payload.state && Object.keys(payload.state).length) {
+          applyCloudState(payload.state, remoteUpdatedAt);
+          if (reloadOnApply) location.reload();
+        }
+      } catch (error) {
+        // Keep local work available if network is temporarily unavailable.
+      }
+    }
+
+    async function startCloudSync() {
+      if (!location.protocol.startsWith("http")) return;
+      try {
+        const response = await fetch(`/api/cloud-state?ts=${Date.now()}`, { cache: "no-store" });
+        const payload = response.ok ? await response.json() : { updatedAt: 0, state: {} };
+        const remoteUpdatedAt = Number(payload.updatedAt || 0);
+        const localUpdatedAt = Number(localStorage.getItem(CLOUD_TS_KEY) || 0);
+        if (remoteUpdatedAt > localUpdatedAt && payload.state && Object.keys(payload.state).length) {
+          applyCloudState(payload.state, remoteUpdatedAt);
+          location.reload();
+          return;
+        }
+        cloudSyncReady = true;
+        if (!remoteUpdatedAt && hasMeaningfulLocalCloudData()) {
+          localStorage.setItem(CLOUD_TS_KEY, String(Date.now()));
+          scheduleCloudPush();
+        }
+        setInterval(() => pullCloudState({ reloadOnApply: true }), 15000);
+      } catch (error) {
+        cloudSyncReady = true;
+      }
     }
 
     function dateOffsetIso(daysBack) {
@@ -4910,6 +5030,7 @@
     renderExamResults();
     renderTimetableAudit();
     startAutoUpdateCheck();
+    startCloudSync();
   </script>
 </body>
 </html>

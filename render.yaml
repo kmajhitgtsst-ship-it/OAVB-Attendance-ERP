@@ -1,10 +1,6 @@
 services:
   - type: web
     name: oav-badi-attendance-erp
-    runtime: static
-    buildCommand: echo "Static HTML app - no build required"
-    staticPublishPath: .
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
+    runtime: node
+    buildCommand: echo "No build required"
+    startCommand: npm start

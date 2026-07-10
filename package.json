@@ -1,0 +1,12 @@
+{
+  "name": "oav-badi-attendance-erp",
+  "version": "1.0.0",
+  "private": true,
+  "description": "OAV BADI Attendance ERP with shared online state sync.",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
