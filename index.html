@@ -538,6 +538,9 @@
             <input id="accessSummary" value="All classes available" readonly>
           </div>
           <button class="primary" id="loginButton">Login</button>
+          <button class="secondary" id="toggleLoginPassword" type="button">Show Password</button>
+          <button class="secondary" id="forgotLoginPassword" type="button">Forgot Password</button>
+          <button class="secondary" id="resetLoginPassword" type="button">Reset Password</button>
           <button class="secondary" id="clearLocalData">Clear Local Saved Data</button>
         </div>
         <p class="subtle">Added student and teacher details are saved in this browser on this computer.</p>
@@ -1703,10 +1706,24 @@
     function populateLoginTeachers() {
       syncTeacherAssignmentsFromMaster();
       const select = document.getElementById("loginTeacher");
-      const names = Object.keys(teacherAssignments);
-      select.innerHTML = names.length ? names.map(name => (
-        `<option value="${name}">${name} - ${teacherAssignments[name]}</option>`
-      )).join("") : `<option value="">No class teacher added</option>`;
+      const role = document.getElementById("loginRole")?.value || "principal";
+      if (role === "teacher") {
+        const names = Object.keys(teacherAssignments);
+        select.innerHTML = names.length ? names.map(name => (
+          `<option value="${name}">${name} - ${teacherAssignments[name]}</option>`
+        )).join("") : `<option value="">No class teacher added</option>`;
+        return;
+      }
+      if (role === "principal") {
+        const staff = teachers.filter(teacher => /principal|admin/i.test(teacher[1] || ""));
+        select.innerHTML = staff.length ? staff.map(teacher => (
+          `<option value="${teacher[0]}">${teacher[0]} - ${teacher[1]}</option>`
+        )).join("") : `<option value="">Use generic admin/principal login</option>`;
+        return;
+      }
+      select.innerHTML = teachers.length ? teachers.map(teacher => (
+        `<option value="${teacher[0]}">${teacher[0]} - ${teacher[1]}</option>`
+      )).join("") : `<option value="">No staff added</option>`;
     }
 
     function syncTeacherAssignmentsFromMaster() {
@@ -1739,9 +1756,59 @@
 
     function adminPrincipalLoginOk(role, userId, password) {
       const id = String(userId || "").toLowerCase();
-      if (role === "admin") return id === "admin" && password === ADMIN_PASSWORD;
-      if (role === "principal") return id === "principal" && password === PRINCIPAL_PASSWORD;
-      return false;
+      if (role === "principal" && id === "admin" && password === ADMIN_PASSWORD) return true;
+      if (role === "principal" && id === "principal" && password === PRINCIPAL_PASSWORD) return true;
+      return teachers.some(teacher => {
+        const staffRole = String(teacher[1] || "").toLowerCase();
+        return /principal|admin/.test(staffRole) && id === teacherLoginId(teacher[0]) && password === teacherPassword(teacher[0]);
+      });
+    }
+
+    function fillLoginCredentials() {
+      const role = document.getElementById("loginRole").value;
+      const selected = document.getElementById("loginTeacher").value;
+      if (role === "teacher" && selected) {
+        document.getElementById("loginUserId").value = teacherLoginId(selected);
+        document.getElementById("loginPassword").value = teacherPassword(selected);
+        return;
+      }
+      if (role === "principal" && selected) {
+        document.getElementById("loginUserId").value = teacherLoginId(selected);
+        document.getElementById("loginPassword").value = teacherPassword(selected);
+        return;
+      }
+      if (role === "principal") {
+        document.getElementById("loginUserId").value = "principal";
+        document.getElementById("loginPassword").value = PRINCIPAL_PASSWORD;
+      }
+    }
+
+    function forgotLoginPassword() {
+      const role = document.getElementById("loginRole").value;
+      const selected = document.getElementById("loginTeacher").value;
+      if (selected) {
+        document.getElementById("accessSummary").value = `Login ID: ${teacherLoginId(selected)} | Password: ${teacherPassword(selected)}`;
+        return;
+      }
+      if (role === "principal") {
+        document.getElementById("accessSummary").value = `Principal: principal / ${PRINCIPAL_PASSWORD} | Admin: admin / ${ADMIN_PASSWORD}`;
+      } else {
+        document.getElementById("accessSummary").value = "Select a teacher/staff first, then use Forgot Password.";
+      }
+    }
+
+    function resetLoginPassword() {
+      const selected = document.getElementById("loginTeacher").value;
+      if (selected) {
+        teacherPasswords[selected] = DEFAULT_TEACHER_PASSWORD;
+        saveLocalData();
+        fillLoginCredentials();
+        renderTeachers();
+        document.getElementById("accessSummary").value = `${selected} password reset to ${DEFAULT_TEACHER_PASSWORD}.`;
+        return;
+      }
+      fillLoginCredentials();
+      document.getElementById("accessSummary").value = `Generic credentials loaded. Principal password: ${PRINCIPAL_PASSWORD}`;
     }
 
     function loadRememberedLogin() {
@@ -1749,10 +1816,14 @@
       if (!saved) return;
       const data = JSON.parse(saved);
       document.getElementById("loginRole").value = data.role || "principal";
+      populateLoginTeachers();
       document.getElementById("loginUserId").value = data.userId || "";
       document.getElementById("loginPassword").value = data.password || "";
       document.getElementById("rememberLogin").value = "yes";
       if (data.teacher) document.getElementById("loginTeacher").value = data.teacher;
+      if (!document.getElementById("loginTeacher").value && data.teacher) {
+        fillLoginCredentials();
+      }
     }
 
     function verifyLogin() {
@@ -1801,7 +1872,7 @@
       activeUser = { role, teacher, classKey: role === "teacher" ? assignedClass : "" };
 
       const locked = role === "teacher";
-      document.getElementById("loginTeacher").disabled = role !== "teacher";
+      document.getElementById("loginTeacher").disabled = false;
       document.getElementById("classFilter").disabled = locked;
       document.getElementById("sectionFilter").disabled = locked;
       document.getElementById("mdmClass").disabled = locked;
@@ -2427,7 +2498,7 @@
           <td><span class="status ${teacher[4] === "Leave" ? "leave" : "present"}">${teacher[4]}</span></td>
           <td>${teacherLoginId(teacher[0])}</td>
           <td>${teacherPassword(teacher[0])}</td>
-          <td><button class="secondary assign-teacher-class" data-index="${index}">Assign Class</button> <button class="secondary edit-teacher" data-index="${index}">Edit</button> <button class="secondary reset-teacher-password" data-index="${index}">Reset</button> <button class="secondary delete-teacher" data-index="${index}">Delete</button></td>
+          <td><button class="secondary assign-teacher-class" data-index="${index}">Assign Class</button> <button class="secondary assign-admin-principal" data-index="${index}">Assign Admin/Principal</button> <button class="secondary edit-teacher" data-index="${index}">Edit</button> <button class="secondary reset-teacher-password" data-index="${index}">Reset</button> <button class="secondary delete-teacher" data-index="${index}">Delete</button></td>
         </tr>
       `).join("");
     }
@@ -2491,6 +2562,24 @@
       renderClassGroups();
       applyClassAccess();
       document.getElementById("teacherBulkStatus").textContent = `${teacher[0]} assigned to ${assignedClass}. Login dropdown updated.`;
+    }
+
+    function assignAdminPrincipal(index) {
+      const teacher = teachers[index];
+      if (!teacher) return;
+      const role = prompt("Assign role: Admin or Principal", /principal/i.test(teacher[1]) ? "Principal" : /admin/i.test(teacher[1]) ? "Admin" : "Principal");
+      if (!role) return;
+      const normalized = role.trim().toLowerCase();
+      if (!["admin", "principal"].includes(normalized)) {
+        document.getElementById("teacherBulkStatus").textContent = "Please type Admin or Principal.";
+        return;
+      }
+      teacher[1] = normalized === "admin" ? "ADMIN" : "PRINCIPAL";
+      if (!teacherPasswords[teacher[0]]) teacherPasswords[teacher[0]] = DEFAULT_TEACHER_PASSWORD;
+      saveLocalData();
+      renderTeachers();
+      renderTeacherAttendance();
+      document.getElementById("teacherBulkStatus").textContent = `${teacher[0]} assigned as ${teacher[1]}. Login ID: ${teacherLoginId(teacher[0])}, Password: ${teacherPassword(teacher[0])}`;
     }
 
 
@@ -4243,25 +4332,33 @@
     });
 
     document.getElementById("loginRole").addEventListener("change", () => {
-      if (document.getElementById("loginRole").value === "teacher") {
-        const teacher = document.getElementById("loginTeacher").value;
-        document.getElementById("loginUserId").value = teacherLoginId(teacher);
-        document.getElementById("loginPassword").value = teacherPassword(teacher);
-      }
+      populateLoginTeachers();
+      fillLoginCredentials();
       applyClassAccess();
     });
 
     document.getElementById("loginTeacher").addEventListener("change", () => {
-      if (document.getElementById("loginRole").value === "teacher") {
-        const teacher = document.getElementById("loginTeacher").value;
-        document.getElementById("loginUserId").value = teacherLoginId(teacher);
-        document.getElementById("loginPassword").value = teacherPassword(teacher);
-      }
+      fillLoginCredentials();
       applyClassAccess();
     });
 
     document.getElementById("loginButton").addEventListener("click", () => {
       verifyLogin();
+    });
+
+    document.getElementById("toggleLoginPassword").addEventListener("click", () => {
+      const input = document.getElementById("loginPassword");
+      const visible = input.type === "text";
+      input.type = visible ? "password" : "text";
+      document.getElementById("toggleLoginPassword").textContent = visible ? "Show Password" : "Hide Password";
+    });
+
+    document.getElementById("forgotLoginPassword").addEventListener("click", () => {
+      forgotLoginPassword();
+    });
+
+    document.getElementById("resetLoginPassword").addEventListener("click", () => {
+      resetLoginPassword();
     });
 
     document.getElementById("exportToday").addEventListener("click", () => {
@@ -4634,6 +4731,11 @@
     document.addEventListener("click", event => {
       if (!event.target.matches(".assign-teacher-class")) return;
       assignTeacherClass(Number(event.target.dataset.index));
+    });
+
+    document.addEventListener("click", event => {
+      if (!event.target.matches(".assign-admin-principal")) return;
+      assignAdminPrincipal(Number(event.target.dataset.index));
     });
 
     document.addEventListener("click", event => {
