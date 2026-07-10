@@ -470,6 +470,27 @@
       margin-bottom: 14px;
     }
 
+    body.login-only .app {
+      grid-template-columns: 1fr;
+    }
+
+    body.login-only aside,
+    body.login-only .page {
+      display: none;
+    }
+
+    body.login-only main {
+      display: grid;
+      min-height: 100vh;
+      place-items: center;
+      padding: 24px;
+    }
+
+    body.login-only .role-panel {
+      width: min(1180px, 100%);
+      margin: 0;
+    }
+
     .hidden { display: none; }
 
     @media (max-width: 900px) {
@@ -497,7 +518,7 @@
     }
   </style>
 </head>
-<body>
+<body class="login-only">
   <div class="update-banner" id="updateBanner">New update found. Reloading automatically...</div>
   <div class="app">
     <aside>
@@ -533,7 +554,7 @@
             <select id="loginRole">
               <option value="principal">Principal / Admin</option>
               <option value="teacher">Class Teacher</option>
-              <option value="office">Office Staff</option>
+              <option value="office">Staff / I/C Role</option>
             </select>
           </div>
           <div class="field">
@@ -560,6 +581,7 @@
           <button class="secondary" id="toggleLoginPassword" type="button">Show Password</button>
           <button class="secondary" id="forgotLoginPassword" type="button">Forgot Password</button>
           <button class="secondary" id="resetLoginPassword" type="button">Reset Password</button>
+          <button class="secondary" id="logoutButton" type="button">Logout</button>
           <button class="secondary" id="clearLocalData">Clear Local Saved Data</button>
         </div>
         <p class="subtle">Added student and teacher details are saved in this browser on this computer.</p>
@@ -1571,7 +1593,8 @@
     const PRINCIPAL_PASSWORD = "Principal@OAVB#2026";
     const ADMIN_PASSWORD = "Admin@OAVB#2026";
     const DEFAULT_TEACHER_PASSWORD = "Teacher@OAVB#2026";
-    let activeUser = { role: "principal", teacher: "", classKey: "" };
+    let activeUser = { role: "guest", teacher: "", classKey: "", pages: [] };
+    let loggedIn = false;
 
     function saveLocalData() {
       localStorage.setItem("oavBadiClassData", JSON.stringify(classData));
@@ -1822,6 +1845,31 @@
       });
     }
 
+    function selectedStaff() {
+      const selected = document.getElementById("loginTeacher").value;
+      return teachers.find(teacher => teacher[0] === selected) || null;
+    }
+
+    function staffLoginOk(userId, password) {
+      const staff = selectedStaff();
+      return Boolean(staff && userId === teacherLoginId(staff[0]) && password === teacherPassword(staff[0]));
+    }
+
+    function allowedPagesFor(role, teacherName = "") {
+      if (role === "principal") return ["dashboard", "studentmaster", "attendance", "staff", "mdm", "timetable", "examresults", "reports", "modules", "settings"];
+      if (role === "teacher") return ["dashboard", "attendance", "mdm", "reports"];
+      const staff = teachers.find(teacher => teacher[0] === teacherName);
+      const staffRole = String(staff?.[1] || "").toLowerCase();
+      const pages = new Set(["dashboard"]);
+      if (/principal|admin/.test(staffRole)) return allowedPagesFor("principal");
+      if (/mdm/.test(staffRole)) ["mdm", "reports"].forEach(page => pages.add(page));
+      if (/time\s*table|timetable/.test(staffRole)) ["timetable", "reports"].forEach(page => pages.add(page));
+      if (/academic/.test(staffRole)) ["studentmaster", "attendance", "reports"].forEach(page => pages.add(page));
+      if (/exam/.test(staffRole)) ["examresults", "reports"].forEach(page => pages.add(page));
+      if (/office|clerk|assistant|staff/.test(staffRole)) ["studentmaster", "staff", "reports"].forEach(page => pages.add(page));
+      return [...pages];
+    }
+
     function fillLoginCredentials() {
       const role = document.getElementById("loginRole").value;
       const selected = document.getElementById("loginTeacher").value;
@@ -1831,6 +1879,11 @@
         return;
       }
       if (role === "principal" && selected) {
+        document.getElementById("loginUserId").value = teacherLoginId(selected);
+        document.getElementById("loginPassword").value = teacherPassword(selected);
+        return;
+      }
+      if (role === "office" && selected) {
         document.getElementById("loginUserId").value = teacherLoginId(selected);
         document.getElementById("loginPassword").value = teacherPassword(selected);
         return;
@@ -1891,7 +1944,8 @@
       const teacher = document.getElementById("loginTeacher").value;
       const adminOk = role !== "teacher" && adminPrincipalLoginOk(role, userId, password);
       const teacherOk = role === "teacher" && userId === teacherLoginId(teacher) && password === teacherPassword(teacher);
-      if (!adminOk && !teacherOk) {
+      const staffOk = role === "office" && staffLoginOk(userId, password);
+      if (!adminOk && !teacherOk && !staffOk) {
         document.getElementById("accessSummary").value = "Invalid login ID or password.";
         return;
       }
@@ -1900,8 +1954,16 @@
       } else {
         localStorage.removeItem("oavBadiRememberedLogin");
       }
+      loggedIn = true;
+      document.body.classList.remove("login-only");
       applyClassAccess();
-      document.getElementById("accessSummary").value = role === "teacher" ? `${teacher}: ${teacherAssignments[teacher]} only` : "Logged in with full access.";
+      renderNavAccess();
+      openFirstAllowedPage();
+      document.getElementById("accessSummary").value = role === "teacher"
+        ? `${teacher}: ${teacherAssignments[teacher]} only`
+        : role === "office"
+          ? `${teacher}: assigned ERP role access`
+          : "Logged in with full access.";
     }
 
     function classKeysForDashboard() {
@@ -1927,7 +1989,7 @@
       const role = document.getElementById("loginRole").value;
       const teacher = document.getElementById("loginTeacher").value;
       const assignedClass = teacherAssignments[teacher] || "";
-      activeUser = { role, teacher, classKey: role === "teacher" ? assignedClass : "" };
+      activeUser = { role, teacher, classKey: role === "teacher" ? assignedClass : "", pages: allowedPagesFor(role, teacher) };
 
       const locked = role === "teacher";
       document.getElementById("loginTeacher").disabled = false;
@@ -1944,7 +2006,7 @@
         setClassSelector("mdmClass", "mdmSection", assignedClass);
         document.getElementById("accessSummary").value = `${teacher}: ${assignedClass} only`;
       } else {
-        document.getElementById("accessSummary").value = role === "office" ? "Student/Teacher master access" : "All classes available";
+        document.getElementById("accessSummary").value = role === "office" ? "Assigned ERP role access" : "All classes available";
         updateSectionState();
         updateLinkedSectionState("masterClass", "masterSection");
         updateLinkedSectionState("mdmClass", "mdmSection");
@@ -1955,6 +2017,59 @@
       updateMdmSettingsAccess();
       renderMdm();
       renderMdmStockRegister();
+    }
+
+    function hasPageAccess(page) {
+      return activeUser.pages.includes(page);
+    }
+
+    function renderNavAccess() {
+      document.querySelectorAll(".nav-button").forEach(button => {
+        const allowed = loggedIn && hasPageAccess(button.dataset.page);
+        button.hidden = !allowed;
+        button.disabled = !allowed;
+      });
+    }
+
+    function showPage(page) {
+      if (!hasPageAccess(page)) {
+        document.getElementById("accessSummary").value = "This page is not assigned to your role.";
+        return;
+      }
+      document.querySelectorAll(".nav-button").forEach(item => item.classList.toggle("active", item.dataset.page === page));
+      document.querySelectorAll(".page").forEach(section => section.classList.add("hidden"));
+      document.getElementById(page).classList.remove("hidden");
+      if (page === "attendance") syncMdmWithAttendanceFilters();
+      if (page === "mdm") {
+        renderMdmStockRegister();
+        renderMdmGroupSummary();
+      }
+      if (page === "reports") {
+        populateReportClassOptions();
+        renderReport();
+      }
+      if (page === "examresults") {
+        populateExamClassOptions();
+        renderExamResults();
+      }
+      if (page === "dashboard") {
+        renderDashboardSnapshot();
+        renderRecentData();
+      }
+      if (page === "timetable") renderTimetableAudit();
+    }
+
+    function openFirstAllowedPage() {
+      showPage(activeUser.pages[0] || "dashboard");
+    }
+
+    function logout() {
+      loggedIn = false;
+      activeUser = { role: "guest", teacher: "", classKey: "", pages: [] };
+      document.body.classList.add("login-only");
+      renderNavAccess();
+      document.querySelectorAll(".page").forEach(section => section.classList.add("hidden"));
+      document.getElementById("accessSummary").value = "Logged out. Please login to continue.";
     }
 
     function currentGroupName() {
@@ -2727,7 +2842,7 @@
           <td><span class="status ${teacher[4] === "Leave" ? "leave" : "present"}">${teacher[4]}</span></td>
           <td>${teacherLoginId(teacher[0])}</td>
           <td>${teacherPassword(teacher[0])}</td>
-          <td><button class="secondary assign-teacher-class" data-index="${index}">Assign Class</button> <button class="secondary assign-admin-principal" data-index="${index}">Assign Admin/Principal</button> <button class="secondary edit-teacher" data-index="${index}">Edit</button> <button class="secondary reset-teacher-password" data-index="${index}">Reset</button> <button class="secondary delete-teacher" data-index="${index}">Delete</button></td>
+          <td><button class="secondary assign-teacher-class" data-index="${index}">Assign Class</button> <button class="secondary assign-admin-principal" data-index="${index}">Assign Admin/Principal</button> <button class="secondary assign-erp-role" data-index="${index}">Assign ERP Role</button> <button class="secondary edit-teacher" data-index="${index}">Edit</button> <button class="secondary reset-teacher-password" data-index="${index}">Reset</button> <button class="secondary delete-teacher" data-index="${index}">Delete</button></td>
         </tr>
       `).join("");
     }
@@ -2808,6 +2923,36 @@
       saveLocalData();
       renderTeachers();
       renderTeacherAttendance();
+      document.getElementById("teacherBulkStatus").textContent = `${teacher[0]} assigned as ${teacher[1]}. Login ID: ${teacherLoginId(teacher[0])}, Password: ${teacherPassword(teacher[0])}`;
+    }
+
+    function assignErpRole(index) {
+      const teacher = teachers[index];
+      if (!teacher) return;
+      const role = prompt("Assign ERP Role: MDM I/C, Time Table I/C, Academic I/C, Exam I/C", teacher[1] || "MDM I/C");
+      if (!role) return;
+      const normalized = role.trim().toLowerCase();
+      const allowed = {
+        "mdm i/c": "MDM I/C",
+        "mdm ic": "MDM I/C",
+        "time table i/c": "Time Table I/C",
+        "time table ic": "Time Table I/C",
+        "timetable i/c": "Time Table I/C",
+        "academic i/c": "Academic I/C",
+        "academic ic": "Academic I/C",
+        "exam i/c": "Exam I/C",
+        "exam ic": "Exam I/C"
+      };
+      if (!allowed[normalized]) {
+        document.getElementById("teacherBulkStatus").textContent = "Use one role: MDM I/C, Time Table I/C, Academic I/C, Exam I/C.";
+        return;
+      }
+      teacher[1] = allowed[normalized];
+      if (!teacherPasswords[teacher[0]]) teacherPasswords[teacher[0]] = DEFAULT_TEACHER_PASSWORD;
+      saveLocalData();
+      renderTeachers();
+      renderTeacherAttendance();
+      populateLoginTeachers();
       document.getElementById("teacherBulkStatus").textContent = `${teacher[0]} assigned as ${teacher[1]}. Login ID: ${teacherLoginId(teacher[0])}, Password: ${teacherPassword(teacher[0])}`;
     }
 
@@ -4412,32 +4557,7 @@
 
     document.querySelectorAll(".nav-button").forEach(button => {
       button.addEventListener("click", () => {
-        document.querySelectorAll(".nav-button").forEach(item => item.classList.remove("active"));
-        document.querySelectorAll(".page").forEach(page => page.classList.add("hidden"));
-        button.classList.add("active");
-        document.getElementById(button.dataset.page).classList.remove("hidden");
-        if (button.dataset.page === "attendance") {
-          syncMdmWithAttendanceFilters();
-        }
-        if (button.dataset.page === "mdm") {
-          renderMdmStockRegister();
-          renderMdmGroupSummary();
-        }
-        if (button.dataset.page === "reports") {
-          populateReportClassOptions();
-          renderReport();
-        }
-        if (button.dataset.page === "examresults") {
-          populateExamClassOptions();
-          renderExamResults();
-        }
-        if (button.dataset.page === "dashboard") {
-          renderDashboardSnapshot();
-          renderRecentData();
-        }
-        if (button.dataset.page === "timetable") {
-          renderTimetableAudit();
-        }
+        showPage(button.dataset.page);
       });
     });
 
@@ -4576,6 +4696,10 @@
 
     document.getElementById("loginButton").addEventListener("click", () => {
       verifyLogin();
+    });
+
+    document.getElementById("logoutButton").addEventListener("click", () => {
+      logout();
     });
 
     document.getElementById("toggleLoginPassword").addEventListener("click", () => {
@@ -4972,6 +5096,11 @@
     document.addEventListener("click", event => {
       if (!event.target.matches(".assign-admin-principal")) return;
       assignAdminPrincipal(Number(event.target.dataset.index));
+    });
+
+    document.addEventListener("click", event => {
+      if (!event.target.matches(".assign-erp-role")) return;
+      assignErpRole(Number(event.target.dataset.index));
     });
 
     document.addEventListener("click", event => {
