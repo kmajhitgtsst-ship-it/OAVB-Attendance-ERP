@@ -646,6 +646,7 @@
               <button class="primary" id="loginButton">Login</button>
               <button class="secondary" id="toggleLoginPassword" type="button">Show Password</button>
               <button class="secondary" id="forgotLoginPassword" type="button">Forgot Password</button>
+              <button class="secondary" id="changeLoginPassword" type="button">Change Password</button>
               <button class="secondary" id="resetLoginPassword" type="button">Reset Password</button>
               <button class="secondary" id="logoutButton" type="button">Logout</button>
               <button class="secondary" id="clearLocalData">Clear This Browser Data</button>
@@ -1607,7 +1608,7 @@
     const monthSettings = {
       "2026-07": { workingDays: 24, holidays: [] }
     };
-    const APP_VERSION = "2026-07-10-2036";
+    const APP_VERSION = "2026-07-10-2045";
     const CLOUD_KEYS = [
       "oavBadiClassData",
       "oavBadiTeachers",
@@ -1974,6 +1975,35 @@
       } else {
         document.getElementById("accessSummary").value = "Select a teacher/staff first, then use Forgot Password.";
       }
+    }
+
+    function changeLoginPassword() {
+      const selected = document.getElementById("loginTeacher").value;
+      const staff = selected ? teachers.find(teacher => teacher[0] === selected) : null;
+      if (!staff) {
+        document.getElementById("accessSummary").value = "Select your teacher/staff name first.";
+        return;
+      }
+      const oldPassword = prompt("Enter old password");
+      if (oldPassword !== teacherPassword(selected)) {
+        document.getElementById("accessSummary").value = "Old password is not correct.";
+        return;
+      }
+      const newPassword = prompt("Enter new password, minimum 8 characters");
+      if (!newPassword || newPassword.length < 8) {
+        document.getElementById("accessSummary").value = "Password not changed. Minimum 8 characters required.";
+        return;
+      }
+      const confirmPassword = prompt("Confirm new password");
+      if (newPassword !== confirmPassword) {
+        document.getElementById("accessSummary").value = "Password not changed. New password confirmation did not match.";
+        return;
+      }
+      teacherPasswords[selected] = newPassword;
+      saveLocalData();
+      document.getElementById("loginPassword").value = "";
+      renderTeachers();
+      document.getElementById("accessSummary").value = `${selected} password changed successfully. Login with new password.`;
     }
 
     function resetLoginPassword() {
@@ -4801,6 +4831,10 @@
 
     document.getElementById("forgotLoginPassword").addEventListener("click", () => {
       forgotLoginPassword();
+    });
+
+    document.getElementById("changeLoginPassword").addEventListener("click", () => {
+      changeLoginPassword();
     });
 
     document.getElementById("resetLoginPassword").addEventListener("click", () => {
