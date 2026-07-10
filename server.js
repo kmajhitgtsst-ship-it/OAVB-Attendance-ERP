@@ -71,6 +71,9 @@ function contentType(filePath) {
   if (ext === ".js") return "text/javascript";
   if (ext === ".json") return "application/json";
   if (ext === ".csv") return "text/csv";
+  if (ext === ".jpg" || ext === ".jpeg") return "image/jpeg";
+  if (ext === ".png") return "image/png";
+  if (ext === ".webp") return "image/webp";
   return "application/octet-stream";
 }
 

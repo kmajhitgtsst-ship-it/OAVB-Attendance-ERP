@@ -481,7 +481,10 @@
       min-height: 360px;
       border-radius: 8px;
       overflow: hidden;
-      background: #10202f;
+      background:
+        linear-gradient(180deg, rgba(16, 32, 47, .18), rgba(16, 32, 47, .78)),
+        url("assets/oav-badi-school-login.jpg") center / cover no-repeat,
+        #10202f;
       position: relative;
     }
 
@@ -604,7 +607,7 @@
       <section class="card role-panel">
         <div class="login-shell">
           <div class="login-visual">
-            <img src="assets/oav-badi-school-login.jpg" alt="OAV Badi school building">
+            <img src="assets/oav-badi-school-login.jpg" alt="OAV Badi school building" onerror="this.style.display='none'">
             <div class="login-caption">
               <strong>OAV BADI ERP</strong>
               <span>Advanced Attendance System<br>Powered By DETH</span>
@@ -645,7 +648,7 @@
               <button class="secondary" id="forgotLoginPassword" type="button">Forgot Password</button>
               <button class="secondary" id="resetLoginPassword" type="button">Reset Password</button>
               <button class="secondary" id="logoutButton" type="button">Logout</button>
-              <button class="secondary" id="clearLocalData">Clear Local Saved Data</button>
+              <button class="secondary" id="clearLocalData">Clear This Browser Data</button>
             </div>
             <p class="subtle">Added student and teacher details are saved in this browser on this computer.</p>
           </div>
@@ -1604,7 +1607,7 @@
     const monthSettings = {
       "2026-07": { workingDays: 24, holidays: [] }
     };
-    const APP_VERSION = "2026-07-10-1935";
+    const APP_VERSION = "2026-07-10-2036";
     const CLOUD_KEYS = [
       "oavBadiClassData",
       "oavBadiTeachers",
@@ -2142,6 +2145,21 @@
       renderNavAccess();
       document.querySelectorAll(".page").forEach(section => section.classList.add("hidden"));
       document.getElementById("accessSummary").value = "Logged out. Please login to continue.";
+    }
+
+    function clearThisBrowserData() {
+      const first = confirm("This will clear only this browser's local copy. Online/server data will not be deleted. Continue?");
+      if (!first) return;
+      const typed = prompt("Type CLEAR THIS BROWSER to confirm.");
+      if (typed !== "CLEAR THIS BROWSER") {
+        document.getElementById("accessSummary").value = "Clear cancelled. No data deleted.";
+        return;
+      }
+      CLOUD_KEYS.forEach(key => localStorage.removeItem(key));
+      localStorage.removeItem(CLOUD_TS_KEY);
+      localStorage.removeItem("oavBadiRememberedLogin");
+      document.getElementById("accessSummary").value = "This browser data cleared. Online data is safe. Reloading from server...";
+      setTimeout(() => location.reload(), 800);
     }
 
     function currentGroupName() {
@@ -4801,19 +4819,7 @@
     });
 
     document.getElementById("clearLocalData").addEventListener("click", () => {
-      localStorage.removeItem("oavBadiClassData");
-      localStorage.removeItem("oavBadiTeachers");
-      localStorage.removeItem("oavBadiTeacherAssignments");
-      localStorage.removeItem("oavBadiTeacherPasswords");
-      localStorage.removeItem("oavBadiExamResults");
-      localStorage.removeItem("oavBadiImportedTimetableRows");
-      localStorage.removeItem("oavBadiStockBackups");
-      localStorage.removeItem("oavBadiMonthSettings");
-      localStorage.removeItem("oavBadiDailyAttendanceRecords");
-      localStorage.removeItem("oavBadiMdmRecords");
-      localStorage.removeItem("oavBadiMdmStockEntries");
-      localStorage.removeItem("oavBadiMdmSettings");
-      document.getElementById("accessSummary").value = "Local saved data cleared. Refresh page to reload demo data.";
+      clearThisBrowserData();
     });
 
     ["reportType", "reportClass", "reportDate", "reportMonth"].forEach(id => {
