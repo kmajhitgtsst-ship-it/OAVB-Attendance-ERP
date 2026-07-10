@@ -1199,10 +1199,15 @@
             <button class="secondary" id="downloadTimetableExcel">Download Excel</button>
           </div>
           <div class="field">
+            <label for="timeTableCsvFile">Upload Timetable CSV File</label>
+            <input id="timeTableCsvFile" type="file" accept=".csv,.txt">
+          </div>
+          <div class="field">
             <label for="timeTableCsvText">Paste Updated Timetable CSV</label>
             <textarea id="timeTableCsvText" placeholder="Paste extracted timetable CSV rows here. Columns: DAY,CLASS,period cells... Teacher codes in brackets like MATH (TM)."></textarea>
           </div>
           <div class="toolbar">
+            <button class="primary" id="uploadTimetableCsv">Upload & Import CSV</button>
             <button class="primary" id="importTimetableCsv">Import Timetable CSV</button>
             <button class="secondary" id="loadTimetableTemplate">Load PDF Style Template</button>
             <button class="secondary" id="downloadTimetableTemplate">Download CSV Template</button>
@@ -1500,30 +1505,15 @@
       fuelRate: 0.7,
       spiceRate: 0.5
     };
-    const teachers = [
-      ["S. Mishra", "TGT Science", "+91 9876543200", "Class VI-A", "Present"],
-      ["R. Sahoo", "PGT Mathematics", "+91 9876543201", "Class XI-SCIENCE", "Present"],
-      ["M. Pradhan", "Warden", "+91 9876543202", "Hostel", "Present"],
-      ["A. Nayak", "Office Assistant", "+91 9876543203", "Office", "Leave"]
-    ];
-    const teacherAssignments = {
-      "S. Mishra": "Class VI-A",
-      "K. Das": "Class VI-B",
-      "R. Sahoo": "Class VII-A",
-      "M. Pradhan": "Class VII-B",
-      "A. Nayak": "Class VIII-A",
-      "P. Behera": "Class VIII-B",
-      "D. Jena": "Class IX-A",
-      "B. Sahoo": "Class IX-B",
-      "N. Patra": "Class X-A",
-      "L. Mohanty": "Class X-B",
-      "P. Mohapatra": "Class XI-SCIENCE",
-      "S. Das": "Class XII-SCIENCE"
-    };
+    const teachers = [];
+    const teacherAssignments = {};
     const teacherPasswords = {};
     const examResults = [];
     const importedTimetableRows = [];
     const savedStockBackups = [];
+    const PRINCIPAL_PASSWORD = "Principal@OAVB#2026";
+    const ADMIN_PASSWORD = "Admin@OAVB#2026";
+    const DEFAULT_TEACHER_PASSWORD = "Teacher@OAVB#2026";
     let activeUser = { role: "principal", teacher: "", classKey: "" };
 
     function saveLocalData() {
@@ -1616,6 +1606,8 @@
           mdmStockEntries.push(seededEntry);
         }
       }
+
+      syncTeacherAssignmentsFromMaster();
     }
 
     function buildMonthRecord(roll, classIndex, sectionIndex) {
@@ -1709,10 +1701,31 @@
     }
 
     function populateLoginTeachers() {
+      syncTeacherAssignmentsFromMaster();
       const select = document.getElementById("loginTeacher");
-      select.innerHTML = Object.keys(teacherAssignments).map(name => (
+      const names = Object.keys(teacherAssignments);
+      select.innerHTML = names.length ? names.map(name => (
         `<option value="${name}">${name} - ${teacherAssignments[name]}</option>`
-      )).join("");
+      )).join("") : `<option value="">No class teacher added</option>`;
+    }
+
+    function syncTeacherAssignmentsFromMaster() {
+      const nextAssignments = {};
+      const teacherNames = new Set();
+      teachers.forEach(teacher => {
+        const name = String(teacher[0] || "").trim();
+        const assignedClass = String(teacher[3] || "").trim();
+        if (!name) return;
+        teacherNames.add(name);
+        if (/^Class\s+/i.test(assignedClass)) {
+          nextAssignments[name] = assignedClass;
+        }
+      });
+      Object.keys(teacherAssignments).forEach(name => delete teacherAssignments[name]);
+      Object.assign(teacherAssignments, nextAssignments);
+      Object.keys(teacherPasswords).forEach(name => {
+        if (!teacherNames.has(name)) delete teacherPasswords[name];
+      });
     }
 
     function teacherLoginId(name) {
@@ -1720,8 +1733,15 @@
     }
 
     function teacherPassword(name) {
-      if (!teacherPasswords[name]) teacherPasswords[name] = "Oavb@4922251";
+      if (!teacherPasswords[name]) teacherPasswords[name] = DEFAULT_TEACHER_PASSWORD;
       return teacherPasswords[name];
+    }
+
+    function adminPrincipalLoginOk(role, userId, password) {
+      const id = String(userId || "").toLowerCase();
+      if (role === "admin") return id === "admin" && password === ADMIN_PASSWORD;
+      if (role === "principal") return id === "principal" && password === PRINCIPAL_PASSWORD;
+      return false;
     }
 
     function loadRememberedLogin() {
@@ -1740,7 +1760,7 @@
       const userId = document.getElementById("loginUserId").value.trim();
       const password = document.getElementById("loginPassword").value;
       const teacher = document.getElementById("loginTeacher").value;
-      const adminOk = role !== "teacher" && ["admin", "principal"].includes(userId.toLowerCase()) && password === "Oavb@4922251";
+      const adminOk = role !== "teacher" && adminPrincipalLoginOk(role, userId, password);
       const teacherOk = role === "teacher" && userId === teacherLoginId(teacher) && password === teacherPassword(teacher);
       if (!adminOk && !teacherOk) {
         document.getElementById("accessSummary").value = "Invalid login ID or password.";
@@ -2086,10 +2106,12 @@
       const rows = document.getElementById("classGroupRows");
       rows.innerHTML = "";
       classGroups.forEach(group => {
+        const classKey = group[0].replace(" Parents Group", "");
+        const teacherName = Object.entries(teacherAssignments).find(([, assignedClass]) => assignedClass === classKey)?.[0] || "Not Assigned";
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${group[0]}</td>
-          <td>${group[1]}</td>
+          <td>${teacherName}</td>
           <td>${group[2]}</td>
           <td>${group[3]}</td>
           <td><button class="secondary send-group" data-group="${group[0]}">Send</button></td>
@@ -2447,10 +2469,10 @@
     function resetTeacherPassword(index) {
       const teacher = teachers[index];
       if (!teacher) return;
-      teacherPasswords[teacher[0]] = "Oavb@4922251";
+      teacherPasswords[teacher[0]] = DEFAULT_TEACHER_PASSWORD;
       saveLocalData();
       renderTeachers();
-      document.getElementById("teacherBulkStatus").textContent = `${teacher[0]} password reset to default.`;
+      document.getElementById("teacherBulkStatus").textContent = `${teacher[0]} password reset to ${DEFAULT_TEACHER_PASSWORD}.`;
     }
 
     function deleteTeacher(index) {
@@ -2721,7 +2743,7 @@
     function verifyStockResetPermission() {
       const userId = document.getElementById("stockResetUserId").value.trim().toLowerCase();
       const password = document.getElementById("stockResetPassword").value;
-      return ["principal", "admin"].includes(userId) && password === "Oavb@4922251";
+      return (userId === "principal" && password === PRINCIPAL_PASSWORD) || (userId === "admin" && password === ADMIN_PASSWORD);
     }
 
     function resetStockRegister() {
@@ -3730,6 +3752,28 @@
       document.getElementById("timeTableStatus").textContent = `${importedTimetableRows.length} timetable row(s) imported.`;
     }
 
+    function importTimetableCsvFile() {
+      const file = document.getElementById("timeTableCsvFile").files[0];
+      if (!file) {
+        document.getElementById("timeTableStatus").textContent = "Please choose a timetable CSV file first.";
+        return;
+      }
+      if (!/\.(csv|txt)$/i.test(file.name)) {
+        document.getElementById("timeTableStatus").textContent = "Only CSV/TXT timetable files can be uploaded here. Use Download CSV Template, fill it, then upload.";
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        document.getElementById("timeTableCsvText").value = reader.result || "";
+        importTimetableCsv();
+        document.getElementById("timeTableStatus").textContent = `${file.name} uploaded. ${importedTimetableRows.length} timetable row(s) imported.`;
+      };
+      reader.onerror = () => {
+        document.getElementById("timeTableStatus").textContent = "Could not read timetable CSV file.";
+      };
+      reader.readAsText(file);
+    }
+
     function currentTimetableRows() {
       if (importedTimetableRows.length) return importedTimetableRows;
       return [...document.querySelectorAll("#timeTableBody tr")].map(row => {
@@ -4268,6 +4312,10 @@
       updateDateDayLabels();
     });
 
+    document.getElementById("uploadTimetableCsv").addEventListener("click", () => {
+      importTimetableCsvFile();
+    });
+
     document.getElementById("importTimetableCsv").addEventListener("click", () => {
       importTimetableCsv();
     });
@@ -4275,6 +4323,7 @@
     document.getElementById("clearTimetableImport").addEventListener("click", () => {
       importedTimetableRows.length = 0;
       document.getElementById("timeTableCsvText").value = "";
+      document.getElementById("timeTableCsvFile").value = "";
       saveLocalData();
       renderTimetableAudit();
       document.getElementById("timeTableStatus").textContent = "Imported timetable cleared. Manual grid is active.";
@@ -4582,10 +4631,11 @@
       }
     });
 
-    renderClassGroups();
     loadLocalData();
+    saveLocalData();
     applyMdmSettingsToForm();
     populateLoginTeachers();
+    renderClassGroups();
     loadRememberedLogin();
     document.getElementById("whatsappLog").dataset.empty = "true";
     document.getElementById("mdmLog").dataset.empty = "true";
