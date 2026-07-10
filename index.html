@@ -3,6 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>OAV BADI Attendance ERP</title>
   <style>
     :root {
@@ -35,6 +38,21 @@
       display: grid;
       grid-template-columns: 260px minmax(0, 1fr);
       min-height: 100vh;
+    }
+
+    .update-banner {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      z-index: 1000;
+      display: none;
+      max-width: 320px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      background: #10202f;
+      color: #fff;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, .2);
+      font-size: 14px;
     }
 
     aside {
@@ -480,6 +498,7 @@
   </style>
 </head>
 <body>
+  <div class="update-banner" id="updateBanner">New update found. Reloading automatically...</div>
   <div class="app">
     <aside>
       <div class="brand">
@@ -563,6 +582,21 @@
           <div class="card metric bad"><span>Absent Today</span><strong id="absentCount">18</strong></div>
           <div class="card metric warn"><span>Late Arrivals</span><strong id="lateCount">11</strong></div>
           <div class="card metric info"><span>Staff Present</span><strong>37/40</strong></div>
+        </div>
+
+        <div class="card" style="margin-bottom: 18px;">
+          <div class="section-title">
+            <h2>Last Saved Data</h2>
+            <button class="secondary" id="refreshRecentData">Refresh</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Date</th><th>Attendance Classes</th><th>Present</th><th>Absent</th><th>Leave</th><th>MDM Classes</th><th>MDM Served</th><th>Saved Time</th></tr>
+              </thead>
+              <tbody id="recentDataRows"></tbody>
+            </table>
+          </div>
         </div>
 
         <div class="grid two-col">
@@ -1483,6 +1517,7 @@
     const monthSettings = {
       "2026-07": { workingDays: 24, holidays: [] }
     };
+    const APP_VERSION = "2026-07-10-0715";
     const dailyAttendanceRecords = {};
     const mdmRecords = [];
     const mdmStockEntries = [];
@@ -1923,6 +1958,78 @@
       return offsetDate.toISOString().slice(0, 10);
     }
 
+    function startAutoUpdateCheck() {
+      if (!location.protocol.startsWith("http")) return;
+      const check = async () => {
+        try {
+          const response = await fetch(`${location.pathname}?versionCheck=${Date.now()}`, { cache: "no-store" });
+          const html = await response.text();
+          const match = html.match(/const APP_VERSION = "([^"]+)"/);
+          if (match && match[1] !== APP_VERSION) {
+            const banner = document.getElementById("updateBanner");
+            banner.style.display = "block";
+            setTimeout(() => location.reload(), 2000);
+          }
+        } catch (error) {
+          // Offline or temporary network issue; keep current page running.
+        }
+      };
+      setInterval(check, 30000);
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden) check();
+      });
+    }
+
+    function dateOffsetIso(daysBack) {
+      const date = new Date();
+      date.setDate(date.getDate() - daysBack);
+      const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+      return offsetDate.toISOString().slice(0, 10);
+    }
+
+    function recentDataSummary(date) {
+      const attendanceRecords = Object.values(dailyAttendanceRecords).filter(record => record.date === date);
+      const mdmDayRecords = mdmRecords.filter(record => record.date === date);
+      const totals = attendanceRecords.reduce((acc, record) => {
+        (record.students || []).forEach(student => {
+          const status = student.status || "Present";
+          if (status === "Absent") acc.absent += 1;
+          else if (status === "Leave") acc.leave += 1;
+          else if (status === "Holiday") acc.holiday += 1;
+          else acc.present += 1;
+        });
+        if (record.savedAt && (!acc.savedAt || record.savedAt > acc.savedAt)) acc.savedAt = record.savedAt;
+        return acc;
+      }, { present: 0, absent: 0, leave: 0, holiday: 0, savedAt: "" });
+      const mdmSavedAt = mdmDayRecords.reduce((latest, record) => record.savedAt && record.savedAt > latest ? record.savedAt : latest, "");
+      return {
+        date,
+        attendanceClasses: attendanceRecords.length,
+        present: totals.present,
+        absent: totals.absent,
+        leave: totals.leave,
+        mdmClasses: mdmDayRecords.length,
+        mdmServed: mdmDayRecords.reduce((sum, record) => sum + Number(record.served || 0), 0),
+        savedAt: [totals.savedAt, mdmSavedAt].filter(Boolean).sort().pop() || ""
+      };
+    }
+
+    function renderRecentData() {
+      const rows = [recentDataSummary(todayIsoDate()), recentDataSummary(dateOffsetIso(1))];
+      document.getElementById("recentDataRows").innerHTML = rows.map((row, index) => `
+        <tr>
+          <td>${index === 0 ? "Today" : "Yesterday"}<br><span class="subtle">${row.date}</span></td>
+          <td>${row.attendanceClasses}</td>
+          <td>${row.present}</td>
+          <td>${row.absent}</td>
+          <td>${row.leave}</td>
+          <td>${row.mdmClasses}</td>
+          <td>${row.mdmServed}</td>
+          <td>${row.savedAt ? new Date(row.savedAt).toLocaleString() : "No saved data"}</td>
+        </tr>
+      `).join("");
+    }
+
     function setAttendanceDateToToday() {
       const today = todayIsoDate();
       if (document.getElementById("dateFilter").value === "2026-07-02") {
@@ -1986,6 +2093,7 @@
           hostel: student[2] || ""
         }))
       };
+      renderRecentData();
     }
 
     function resetAttendanceEntry() {
@@ -2001,6 +2109,7 @@
       });
       document.getElementById("bulkRolls").value = "";
       saveLocalData();
+      renderRecentData();
       loadClassStudents();
       syncMdmWithAttendanceFilters();
       document.getElementById("attendanceSubmitStatus").textContent = `${key} ${date}: reset complete. All students set Present.`;
@@ -3059,6 +3168,7 @@
       const record = {
         date: data.date,
         classGroup: data.key,
+        savedAt: new Date().toISOString(),
         category: data.category,
         menu: data.rule.menu,
         eligible: data.eligible ? data.selected.length : 0,
@@ -3093,6 +3203,7 @@
         </li>
       ` + log.innerHTML;
       saveLocalData();
+      renderRecentData();
       renderMdmGroupSummary();
       renderMdmStockRegister();
     }
@@ -4202,6 +4313,7 @@
         }
         if (button.dataset.page === "dashboard") {
           renderDashboardSnapshot();
+          renderRecentData();
         }
         if (button.dataset.page === "timetable") {
           renderTimetableAudit();
@@ -4366,6 +4478,10 @@
       document.getElementById("reportDate").value = date;
       document.getElementById("reportMonth").value = date.slice(0, 7);
       downloadReportExcel("daily");
+    });
+
+    document.getElementById("refreshRecentData").addEventListener("click", () => {
+      renderRecentData();
     });
 
     document.getElementById("clearLocalData").addEventListener("click", () => {
@@ -4787,11 +4903,13 @@
     renderMdmStockRegister();
     renderMdmReference();
     renderDashboardSnapshot();
+    renderRecentData();
     populateReportClassOptions();
     renderReport();
     populateExamClassOptions();
     renderExamResults();
     renderTimetableAudit();
+    startAutoUpdateCheck();
   </script>
 </body>
 </html>
