@@ -1205,6 +1205,10 @@
               <label for="individualStudent">Student</label>
               <select id="individualStudent"></select>
             </div>
+            <div class="field">
+              <label for="whatsappCustomNumber">New Number</label>
+              <input id="whatsappCustomNumber" placeholder="Optional mobile number">
+            </div>
             <button class="secondary" id="refreshWhatsapp">Refresh Message</button>
             <button class="secondary" id="copyWhatsappLink">Copy Link</button>
             <button class="primary" id="sendWhatsapp">Send WhatsApp</button>
@@ -1834,7 +1838,7 @@
     const monthSettings = {
       "2026-07": { workingDays: 24, holidays: [] }
     };
-    const APP_VERSION = "2026-07-11-1910";
+    const APP_VERSION = "2026-07-11-1945";
     const CLOUD_KEYS = [
       "oavBadiClassData",
       "oavBadiTeachers",
@@ -2169,7 +2173,7 @@
 
     function allowedPagesFor(role, teacherName = "") {
       if (role === "principal") return ["dashboard", "studentmaster", "attendance", "staff", "mdm", "timetable", "examresults", "reports", "modules", "settings"];
-      if (role === "teacher") return ["dashboard", "attendance", "mdm", "reports"];
+      if (role === "teacher") return ["dashboard", "attendance", "mdm", "timetable", "reports"];
       const staff = teachers.find(teacher => teacher[0] === teacherName);
       const staffRole = String(staff?.[1] || "").toLowerCase();
       const pages = new Set(["dashboard"]);
@@ -2413,7 +2417,10 @@
         renderDashboardSnapshot();
         renderRecentData();
       }
-      if (page === "timetable") renderTimetableAudit();
+      if (page === "timetable") {
+        renderTimetableAudit();
+        updateTimetableAccess();
+      }
     }
 
     function openFirstAllowedPage() {
@@ -2673,10 +2680,10 @@
       }
 
       selected.forEach(student => {
-        const status = student[8]?.[selectedMonthIndex()] || "Present";
-        student[4] = status;
-        student[3] = status === "Present" ? "08:55" : "-";
+        student[4] = "Present";
+        student[3] = "08:55";
         student[5] = "";
+        if (student[8]) student[8][selectedMonthIndex()] = "Present";
       });
       attendanceSubmitted = false;
       document.getElementById("attendanceSubmitStatus").textContent = `${key} ${date}: no saved entry yet. Mark attendance and submit.`;
@@ -2826,20 +2833,34 @@
     }
 
     function whatsappTargetPhone() {
+      const customPhone = cleanWhatsappPhone(document.getElementById("whatsappCustomNumber")?.value || "");
+      if (customPhone) return customPhone;
       const type = document.getElementById("messageType").value;
       if (type !== "individual") return "";
       const selectedStudent = students.find(student => student[0] === document.getElementById("individualStudent").value);
       return cleanWhatsappPhone(selectedStudent?.[7]);
     }
 
+    function isMobileDevice() {
+      return /Android|iPhone|iPad|iPod|Windows Phone|Mobile/i.test(navigator.userAgent || "") || window.innerWidth <= 900;
+    }
+
+    function whatsappComposeLink(phone, message) {
+      const encodedMessage = encodeURIComponent(message || "");
+      const cleanPhone = cleanWhatsappPhone(phone);
+      if (cleanPhone) {
+        return isMobileDevice()
+          ? `whatsapp://send?phone=${cleanPhone}&text=${encodedMessage}`
+          : `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
+      }
+      return isMobileDevice()
+        ? `whatsapp://send?text=${encodedMessage}`
+        : `https://web.whatsapp.com/send?text=${encodedMessage}`;
+    }
+
     function buildWhatsappLink(groupName = document.getElementById("whatsappGroup").value) {
       const message = document.getElementById("whatsappMessage").value || buildWhatsappMessage(groupName);
-      const encodedMessage = encodeURIComponent(message);
-      const phone = whatsappTargetPhone();
-      if (phone) {
-        return `https://wa.me/${phone}?text=${encodedMessage}`;
-      }
-      return `https://web.whatsapp.com/send?text=${encodedMessage}`;
+      return whatsappComposeLink(whatsappTargetPhone(), message);
     }
 
     function copyWhatsappLink() {
@@ -2874,7 +2895,10 @@
       const now = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
       const type = document.getElementById("messageType").value;
       const selectedStudent = students.find(student => student[0] === document.getElementById("individualStudent").value);
-      const target = type === "individual" && selectedStudent
+      const customPhone = cleanWhatsappPhone(document.getElementById("whatsappCustomNumber")?.value || "");
+      const target = customPhone
+        ? `new number +${customPhone}`
+        : type === "individual" && selectedStudent
         ? `${selectedStudent[1]} parent (${selectedStudent[7]})`
         : groupName;
       if (log.dataset.empty === "true") {
@@ -3717,6 +3741,38 @@
         : "Class Teacher login me stock/price entry disabled hai. Principal/Office Staff MDM tab se save karenge.";
     }
 
+    function canEditTimetable() {
+      if (activeUser.role === "principal") return true;
+      const staff = teachers.find(teacher => teacher[0] === activeUser.teacher);
+      const staffRole = String(staff?.[1] || "").toLowerCase();
+      return /principal|admin|time\s*table|timetable/.test(staffRole);
+    }
+
+    function updateTimetableAccess() {
+      const canEdit = canEditTimetable();
+      [
+        "timeTableClass",
+        "timeTableWeek",
+        "absentTeacherCodes",
+        "timeTableCsvFile",
+        "timeTableCsvText",
+        "uploadTimetableCsv",
+        "importTimetableCsv",
+        "loadTimetableTemplate",
+        "downloadTimetableTemplate",
+        "clearTimetableImport",
+        "generateArrangement",
+        "saveDailyArrangement"
+      ].forEach(id => {
+        const element = document.getElementById(id);
+        if (element) element.disabled = !canEdit;
+      });
+      const status = document.getElementById("timeTableStatus");
+      if (status && !canEdit) {
+        status.textContent = "Teacher view only: Weekly/Today's Time Table dekh sakte hain. Edit/import access Time Table I/C, Principal/Admin ke paas hai.";
+      }
+    }
+
     function parseRollSelectionForList(input, list) {
       const rolls = new Set();
       const invalid = [];
@@ -4483,8 +4539,7 @@
         .filter(student => ["Absent", "Late", "Leave"].includes(student.status))
         .map(student => {
           const message = `Dear Parent, your ward ${student.name} of ${classGroup} is marked ${String(student.status).toLowerCase()} on ${date}. Regards, Class Teacher, OAV Badi`;
-          const phone = cleanWhatsappPhone(student.mobile);
-          const link = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(message)}` : `https://web.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+          const link = whatsappComposeLink(student.mobile, message);
           return [date, classGroup, student.roll, student.name, student.status, student.guardian || "", student.mobile || "", link];
         }));
     }
@@ -4662,9 +4717,7 @@
     }
 
     function resultWhatsappLink(result) {
-      const phone = cleanWhatsappPhone(result.mobile);
-      const message = encodeURIComponent(resultMessage(result));
-      return phone ? `https://wa.me/${phone}?text=${message}` : `https://web.whatsapp.com/send?text=${message}`;
+      return whatsappComposeLink(result.mobile, resultMessage(result));
     }
 
     function renderExamResults() {
@@ -5005,6 +5058,7 @@
       document.getElementById("timeTableStatus").innerHTML = `Today: ${timetableTodayName()}. Available for arrangement: ${available}. Current day workload: ${workloadText}. Dropdown me low weekly/monthly arrangement wale teachers upar rakhe gaye hain.`;
       document.getElementById("timeTableArrangementRows").innerHTML = arrangements.length
         ? arrangements.map(row => {
+            const selectDisabled = canEditTimetable() ? "" : " disabled";
             const options = row.options.length
               ? row.options.map(option => {
                   const selected = option.code === row.selected ? " selected" : "";
@@ -5018,7 +5072,7 @@
               <td>${htmlSafe(row.absent)}</td>
               <td>${htmlSafe(row.original)}</td>
               <td>${htmlSafe(arrangementSubjectLabel(row.best))}</td>
-              <td><select class="arrangement-select" data-key="${htmlSafe(arrangementKey(row))}">${options}</select></td>
+              <td><select class="arrangement-select" data-key="${htmlSafe(arrangementKey(row))}"${selectDisabled}>${options}</select></td>
               <td>${htmlSafe(row.load)}</td>
             </tr>`;
           }).join("")
@@ -5072,6 +5126,7 @@
       renderTimetableRaw(rows);
       renderTimetableWorkload(rows);
       renderTimetableConflicts(rows);
+      updateTimetableAccess();
     }
 
     function downloadTimetableExcel() {
@@ -5822,6 +5877,10 @@
     });
 
     document.getElementById("whatsappGroup").addEventListener("change", () => {
+      refreshWhatsappMessage();
+    });
+
+    document.getElementById("whatsappCustomNumber").addEventListener("input", () => {
       refreshWhatsappMessage();
     });
 
