@@ -1421,7 +1421,7 @@
             <button class="secondary" id="showWeeklyTimetable">See Weekly Time Table</button>
             <button class="secondary" id="showTodayTimetable">See Today's Time Table</button>
           </div>
-          <div class="table-wrap" style="margin-top: 14px;">
+          <div class="table-wrap hidden" id="timeTableEditorPanel" style="margin-top: 14px;">
             <table id="timeTableGrid">
               <thead>
                 <tr><th>Day</th><th>Period 1<br>09:00-09:45</th><th>Period 2<br>09:45-10:30</th><th>Period 3<br>10:45-11:30</th><th>Period 4<br>11:30-12:15</th><th>Period 5<br>01:00-01:45</th><th>Period 6<br>01:45-02:30</th><th>Period 7<br>02:30-03:15</th><th>Period 8<br>03:15-04:00</th></tr>
@@ -1439,16 +1439,19 @@
           <p class="success-note" id="timeTableStatus">Upload/import timetable CSV, then use Weekly or Today's Time Table view.</p>
           <div class="grid two-col" style="margin-top: 14px;">
             <div class="table-wrap">
-              <h2>Daily Arrangement</h2>
+              <div class="section-title">
+                <h2>Daily Arrangement</h2>
+                <button class="secondary" id="saveDailyArrangement">Save Daily Arrangement</button>
+              </div>
               <table>
-                <thead><tr><th>Day</th><th>Class</th><th>Period</th><th>Absent</th><th>Original</th><th>Suggested Duty</th></tr></thead>
+                <thead><tr><th>Day</th><th>Class</th><th>Period</th><th>Absent</th><th>Original</th><th>Best Suggestion</th><th>Select Teacher</th><th>Load</th></tr></thead>
                 <tbody id="timeTableArrangementRows"></tbody>
               </table>
             </div>
             <div class="table-wrap">
               <h2>Workload Summary</h2>
               <table>
-                <thead><tr><th>Teacher Code</th><th>Total Periods</th></tr></thead>
+                <thead><tr><th>Teacher Code</th><th>Today Periods</th><th>This Week Arrangement</th><th>This Month Arrangement</th></tr></thead>
                 <tbody id="timeTableWorkloadRows"></tbody>
               </table>
             </div>
@@ -1467,7 +1470,7 @@
               <tbody id="timeTableTodayRows"></tbody>
             </table>
           </div>
-          <div class="table-wrap" id="timeTableWeeklyPanel" style="margin-top: 14px;">
+          <div class="table-wrap hidden" id="timeTableWeeklyPanel" style="margin-top: 14px;">
             <h2>Imported Raw Timetable</h2>
             <table>
               <thead><tr><th>Day</th><th>Class</th><th>Period 1</th><th>Period 2</th><th>Period 3</th><th>Period 4</th><th>Period 5</th><th>Period 6</th><th>Period 7</th><th>Period 8</th></tr></thead>
@@ -1712,7 +1715,7 @@
     const monthSettings = {
       "2026-07": { workingDays: 24, holidays: [] }
     };
-    const APP_VERSION = "2026-07-10-2045";
+    const APP_VERSION = "2026-07-11-0715";
     const CLOUD_KEYS = [
       "oavBadiClassData",
       "oavBadiTeachers",
@@ -1726,6 +1729,8 @@
       "oavBadiMdmRecords",
       "oavBadiMdmStockEntries",
       "oavBadiMdmSettings",
+      "oavBadiTimetableArrangementRecords",
+      "oavBadiTimetableArrangementSelections",
       "oavBadiRememberedLogin"
     ];
     const CLOUD_TS_KEY = "oavBadiCloudUpdatedAt";
@@ -1762,6 +1767,8 @@
     const teacherPasswords = {};
     const examResults = [];
     const importedTimetableRows = [];
+    const timetableArrangementRecords = [];
+    const timetableArrangementSelections = {};
     const savedStockBackups = [];
     const TIMETABLE_PERIOD_COUNT = 8;
     const DEMO_TEACHER_NAMES = new Set([
@@ -1787,6 +1794,8 @@
       localStorage.setItem("oavBadiMdmRecords", JSON.stringify(mdmRecords));
       localStorage.setItem("oavBadiMdmStockEntries", JSON.stringify(mdmStockEntries));
       localStorage.setItem("oavBadiMdmSettings", JSON.stringify(mdmSettings));
+      localStorage.setItem("oavBadiTimetableArrangementRecords", JSON.stringify(timetableArrangementRecords));
+      localStorage.setItem("oavBadiTimetableArrangementSelections", JSON.stringify(timetableArrangementSelections));
       if (cloudSyncReady && !cloudApplyingRemote) {
         localStorage.setItem(CLOUD_TS_KEY, String(Date.now()));
         scheduleCloudPush();
@@ -1806,6 +1815,8 @@
       const savedMdmRecords = localStorage.getItem("oavBadiMdmRecords");
       const savedMdmStockEntries = localStorage.getItem("oavBadiMdmStockEntries");
       const savedMdmSettings = localStorage.getItem("oavBadiMdmSettings");
+      const savedTimetableArrangementRecords = localStorage.getItem("oavBadiTimetableArrangementRecords");
+      const savedTimetableArrangementSelections = localStorage.getItem("oavBadiTimetableArrangementSelections");
 
       if (savedClassData) {
         const parsed = JSON.parse(savedClassData);
@@ -1862,6 +1873,15 @@
 
       if (savedMdmSettings) {
         Object.assign(mdmSettings, JSON.parse(savedMdmSettings));
+      }
+
+      if (savedTimetableArrangementRecords) {
+        timetableArrangementRecords.length = 0;
+        JSON.parse(savedTimetableArrangementRecords).forEach(record => timetableArrangementRecords.push(record));
+      }
+
+      if (savedTimetableArrangementSelections) {
+        Object.assign(timetableArrangementSelections, JSON.parse(savedTimetableArrangementSelections));
       }
 
       syncTeacherAssignmentsFromMaster();
@@ -4633,9 +4653,94 @@
       return /\b(IX|X|XI|XII)\b/i.test(className || "") ? "tt-class-senior" : "tt-class-junior";
     }
 
-    function timetableAvailableCodes(rows, day, periodIndex, absentCodes) {
+    function htmlSafe(value) {
+      return String(value ?? "").replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      }[char]));
+    }
+
+    function teacherCodeFromName(name) {
+      const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+      if (!parts.length) return "";
+      if (parts.length === 1) return parts[0].slice(0, 3).toUpperCase();
+      return parts.map(part => part[0]).join("").slice(0, 4).toUpperCase();
+    }
+
+    function teacherOptionPool(rows = currentTimetableRows()) {
+      const fromTimetable = timetableAllCodes(rows).map(code => ({ code, label: code }));
+      const fromMaster = teachers.map(teacher => {
+        const name = teacher[0] || "";
+        const code = teacherCodeFromName(name);
+        return { code, label: code ? `${code} - ${name}` : name };
+      }).filter(item => item.code);
+      const map = new Map();
+      [...fromTimetable, ...fromMaster].forEach(item => {
+        if (!map.has(item.code)) map.set(item.code, item);
+      });
+      return [...map.values()].sort((a, b) => a.code.localeCompare(b.code));
+    }
+
+    function arrangementDate() {
+      return todayIsoDate();
+    }
+
+    function arrangementWeekStart(dateText = arrangementDate()) {
+      const date = new Date(`${dateText}T00:00:00`);
+      const day = date.getDay() || 7;
+      date.setDate(date.getDate() - day + 1);
+      return date.toISOString().slice(0, 10);
+    }
+
+    function arrangementKey(item) {
+      return [item.date || arrangementDate(), item.day, item.className, item.period, item.absent].join("|");
+    }
+
+    function arrangementCounts(code, dateText = arrangementDate()) {
+      const month = dateText.slice(0, 7);
+      const weekStart = arrangementWeekStart(dateText);
+      const weekEnd = new Date(`${weekStart}T00:00:00`);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+      const weekEndText = weekEnd.toISOString().slice(0, 10);
+      return timetableArrangementRecords.reduce((acc, record) => {
+        if (record.selected !== code) return acc;
+        if (record.date === dateText) acc.today += 1;
+        if (record.date >= weekStart && record.date <= weekEndText) acc.week += 1;
+        if (String(record.date || "").startsWith(month)) acc.month += 1;
+        return acc;
+      }, { today: 0, week: 0, month: 0 });
+    }
+
+    function timetableDailyWorkload(rows = currentTimetableRows(), day = timetableTodayName()) {
+      const workload = {};
+      const source = rows.filter(row => String(row.day || "").toUpperCase().includes(day));
+      (source.length ? source : rows).forEach(row => row.periods.forEach(cell => {
+        extractTeacherCodes(cell).forEach(code => {
+          workload[code] = (workload[code] || 0) + 1;
+        });
+      }));
+      return workload;
+    }
+
+    function timetableAvailableCodes(rows, day, periodIndex, absentCodes, teacherOptions = teacherOptionPool(rows)) {
       const busy = new Set(rows.filter(item => item.day === day).flatMap(item => extractTeacherCodes(item.periods[periodIndex])));
-      return timetableAllCodes(rows).filter(code => !busy.has(code) && !absentCodes.includes(code));
+      return teacherOptions.map(item => item.code).filter(code => !busy.has(code) && !absentCodes.includes(code));
+    }
+
+    function rankedArrangementOptions(rows, day, periodIndex, absentCodes) {
+      const date = arrangementDate();
+      const dailyWorkload = timetableDailyWorkload(rows, String(day || "").toUpperCase());
+      return timetableAvailableCodes(rows, day, periodIndex, absentCodes)
+        .map(code => {
+          const counts = arrangementCounts(code, date);
+          const todayPeriods = dailyWorkload[code] || 0;
+          const score = (counts.month * 100) + (counts.week * 25) + (todayPeriods * 5) + counts.today;
+          return { code, todayPeriods, week: counts.week, month: counts.month, score };
+        })
+        .sort((a, b) => a.score - b.score || a.todayPeriods - b.todayPeriods || a.code.localeCompare(b.code));
     }
 
     function decoratedTimetableCell(row, periodIndex, rows, absentCodes) {
@@ -4672,15 +4777,14 @@
     }
 
     function renderTimetableWorkload(rows = currentTimetableRows()) {
-      const workload = {};
-      rows.forEach(row => row.periods.forEach(cell => {
-        extractTeacherCodes(cell).forEach(code => {
-          workload[code] = (workload[code] || 0) + 1;
-        });
-      }));
+      const workload = timetableDailyWorkload(rows);
+      const codes = teacherOptionPool(rows).map(item => item.code);
       document.getElementById("timeTableWorkloadRows").innerHTML = Object.keys(workload).length
-        ? Object.entries(workload).sort((a, b) => b[1] - a[1]).map(([code, count]) => `<tr><td>${code}</td><td>${count}</td></tr>`).join("")
-        : `<tr><td colspan="2">Teacher codes like (TM), (KM), (HCS) not found.</td></tr>`;
+        ? codes.map(code => {
+            const counts = arrangementCounts(code);
+            return `<tr><td>${htmlSafe(code)}</td><td>${workload[code] || 0}</td><td>${counts.week}</td><td>${counts.month}</td></tr>`;
+          }).join("")
+        : `<tr><td colspan="4">Teacher codes like (TM), (KM), (HCS) not found.</td></tr>`;
     }
 
     function renderTimetableConflicts(rows = currentTimetableRows()) {
@@ -4703,7 +4807,7 @@
         .split(",")
         .map(code => code.trim().toUpperCase())
         .filter(Boolean);
-      const allCodes = timetableAllCodes(rows);
+      const teacherOptions = teacherOptionPool(rows);
       const arrangements = [];
       const todayRows = todayTimetableRows(rows);
       const arrangementRows = todayRows.length ? todayRows : rows;
@@ -4711,25 +4815,81 @@
         const cellCodes = extractTeacherCodes(cell);
         const missing = cellCodes.filter(code => absentCodes.includes(code));
         if (!missing.length) return;
-        const busy = new Set(rows.filter(item => item.day === row.day).flatMap(item => extractTeacherCodes(item.periods[periodIndex])));
         missing.forEach(code => {
-          const substitute = allCodes.find(item => !busy.has(item) && !absentCodes.includes(item)) || "Manual Arrangement";
-          arrangements.push([row.day, row.className, periodIndex + 1, code, cell, substitute]);
+          const options = rankedArrangementOptions(rows, row.day, periodIndex, absentCodes);
+          const best = options[0]?.code || "Manual";
+          const item = { date: arrangementDate(), day: row.day, className: row.className, period: periodIndex + 1, absent: code };
+          const selected = timetableArrangementSelections[arrangementKey(item)] || best;
+          const selectedCounts = arrangementCounts(selected);
+          arrangements.push({ ...item, original: cell, best, selected, options, load: `${selectedCounts.week} W / ${selectedCounts.month} M` });
         });
       }));
       const available = absentCodes.length
-        ? allCodes.filter(code => !absentCodes.includes(code)).join(", ") || "No teacher code available"
+        ? teacherOptions.map(item => item.code).filter(code => !absentCodes.includes(code)).join(", ") || "No teacher code available"
         : "Enter absent teacher codes to calculate arrangement.";
-      const todayWorkload = {};
-      arrangementRows.forEach(row => row.periods.forEach(cell => extractTeacherCodes(cell).forEach(code => {
-        todayWorkload[code] = (todayWorkload[code] || 0) + 1;
-      })));
+      const todayWorkload = timetableDailyWorkload(rows);
       const workloadText = Object.entries(todayWorkload).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([code, count]) => `${code}: ${count}`).join(" | ") || "No workload data";
-      document.getElementById("timeTableStatus").innerHTML = `Today: ${timetableTodayName()}. Available for arrangement: ${available}. Current day workload: ${workloadText}. Monthly arrangement count will update from saved arrangement records in next database phase.`;
+      document.getElementById("timeTableStatus").innerHTML = `Today: ${timetableTodayName()}. Available for arrangement: ${available}. Current day workload: ${workloadText}. Dropdown me low weekly/monthly arrangement wale teachers upar rakhe gaye hain.`;
       document.getElementById("timeTableArrangementRows").innerHTML = arrangements.length
-        ? arrangements.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join("")}</tr>`).join("")
-        : `<tr><td colspan="6">No absent-teacher period found for selected codes.</td></tr>`;
+        ? arrangements.map(row => {
+            const options = row.options.length
+              ? row.options.map(option => {
+                  const selected = option.code === row.selected ? " selected" : "";
+                  return `<option value="${htmlSafe(option.code)}"${selected}>${htmlSafe(option.code)} | Today ${option.todayPeriods} | Week ${option.week} | Month ${option.month}</option>`;
+                }).join("")
+              : `<option value="Manual">Manual</option>`;
+            return `<tr>
+              <td>${htmlSafe(row.day)}</td>
+              <td>${htmlSafe(row.className)}</td>
+              <td>${row.period}</td>
+              <td>${htmlSafe(row.absent)}</td>
+              <td>${htmlSafe(row.original)}</td>
+              <td>${htmlSafe(row.best)}</td>
+              <td><select class="arrangement-select" data-key="${htmlSafe(arrangementKey(row))}">${options}</select></td>
+              <td>${htmlSafe(row.load)}</td>
+            </tr>`;
+          }).join("")
+        : `<tr><td colspan="8">No absent-teacher period found for selected codes.</td></tr>`;
       return arrangements;
+    }
+
+    function handleArrangementSelectChange(select) {
+      timetableArrangementSelections[select.dataset.key] = select.value;
+      saveLocalData();
+      renderTimetableArrangement();
+      renderTimetableWorkload();
+    }
+
+    function saveDailyArrangement() {
+      const rows = renderTimetableArrangement();
+      if (!rows.length) {
+        document.getElementById("timeTableStatus").textContent = "No daily arrangement available to save. Enter absent teacher code first.";
+        return;
+      }
+      const savedAt = new Date().toISOString();
+      rows.forEach(row => {
+        const key = arrangementKey(row);
+        const selected = timetableArrangementSelections[key] || row.selected || row.best || "Manual";
+        const record = {
+          key,
+          date: row.date || arrangementDate(),
+          day: row.day,
+          className: row.className,
+          period: row.period,
+          absent: row.absent,
+          original: row.original,
+          best: row.best,
+          selected,
+          savedAt
+        };
+        const existingIndex = timetableArrangementRecords.findIndex(item => item.key === key);
+        if (existingIndex >= 0) timetableArrangementRecords[existingIndex] = record;
+        else timetableArrangementRecords.push(record);
+        timetableArrangementSelections[key] = selected;
+      });
+      saveLocalData();
+      renderTimetableAudit();
+      document.getElementById("timeTableStatus").textContent = `${rows.length} daily arrangement row(s) saved. Weekly/monthly balance updated.`;
     }
 
     function renderTimetableAudit() {
@@ -4749,8 +4909,8 @@
         ...rows.map(row => [row.day, row.className, ...row.periods]),
         [""],
         ["DAILY ARRANGEMENT"],
-        ["Day", "Class", "Period", "Absent", "Original", "Suggested Duty"],
-        ...arrangement
+        ["Day", "Class", "Period", "Absent", "Original", "Best Suggestion", "Selected Duty", "Weekly/Monthly Load"],
+        ...arrangement.map(row => [row.day, row.className, row.period, row.absent, row.original, row.best, row.selected, row.load])
       ]);
     }
 
@@ -5227,6 +5387,16 @@
 
     document.getElementById("generateArrangement").addEventListener("click", () => {
       renderTimetableAudit();
+    });
+
+    document.getElementById("timeTableArrangementRows").addEventListener("change", event => {
+      if (event.target.classList.contains("arrangement-select")) {
+        handleArrangementSelectChange(event.target);
+      }
+    });
+
+    document.getElementById("saveDailyArrangement").addEventListener("click", () => {
+      saveDailyArrangement();
     });
 
     document.getElementById("showWeeklyTimetable").addEventListener("click", () => {
