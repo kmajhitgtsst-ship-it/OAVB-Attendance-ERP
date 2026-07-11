@@ -614,8 +614,41 @@
 
     .hidden { display: none; }
 
+    @media (max-width: 1200px) {
+      body.login-only main {
+        min-height: 100svh;
+        place-items: start stretch;
+        padding: 10px;
+      }
+      body.login-only .role-panel {
+        width: 100%;
+        margin: 0;
+      }
+      .login-shell {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .login-visual {
+        min-height: 220px;
+      }
+    }
+
     @media (max-width: 900px) {
       .app { grid-template-columns: 1fr; }
+      body.login-only {
+        background: #eef3f8;
+      }
+      body.login-only main {
+        min-height: 100svh;
+        place-items: start stretch;
+        padding: 8px;
+      }
+      body.login-only .role-panel {
+        width: 100%;
+        margin: 0;
+        border-radius: 0;
+        padding: 10px;
+      }
       aside {
         position: static;
         width: auto;
@@ -666,9 +699,70 @@
       }
       .login-shell {
         grid-template-columns: 1fr;
+        gap: 10px;
       }
       .login-visual {
-        min-height: 240px;
+        min-height: 190px;
+        border-radius: 6px;
+      }
+      .login-caption {
+        left: 14px;
+        right: 14px;
+        bottom: 14px;
+      }
+      .login-caption strong {
+        font-size: 28px;
+      }
+      .login-form {
+        gap: 10px;
+      }
+      .login-form .toolbar {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+      .login-form input,
+      .login-form select,
+      .login-form button {
+        width: 100%;
+        min-height: 52px;
+        font-size: 18px;
+      }
+      .login-form label {
+        font-size: 15px;
+      }
+      #attendance header .subtle,
+      #attendance .attendance-student-table th:nth-child(3),
+      #attendance .attendance-student-table th:nth-child(4),
+      #attendance .attendance-student-table th:nth-child(5),
+      #attendance .attendance-student-table th:nth-child(7),
+      #attendance .attendance-student-table th:nth-child(8),
+      #attendance .attendance-student-table td:nth-child(3),
+      #attendance .attendance-student-table td:nth-child(4),
+      #attendance .attendance-student-table td:nth-child(5),
+      #attendance .attendance-student-table td:nth-child(7),
+      #attendance .attendance-student-table td:nth-child(8) {
+        display: none;
+      }
+      #attendance .attendance-student-table table {
+        min-width: 0;
+        width: 100%;
+        font-size: 18px;
+      }
+      #attendance .attendance-student-table th,
+      #attendance .attendance-student-table td {
+        padding: 14px 10px;
+      }
+      #attendance .status {
+        min-height: 42px;
+        min-width: 92px;
+        font-size: 16px;
+      }
+      #attendance .bulk-preview h2 {
+        font-size: 20px;
+      }
+      #attendance .name-chip {
+        font-size: 15px;
+        padding: 8px 10px;
       }
     }
   </style>
@@ -1002,7 +1096,7 @@
               <input id="searchStudent" type="search" placeholder="Name or roll no.">
             </div>
           </div>
-          <div class="table-wrap">
+          <div class="table-wrap attendance-student-table">
             <table>
               <thead>
                 <tr><th>Roll</th><th>Student</th><th>Guardian</th><th>Hostel</th><th>In Time</th><th>Status</th><th>Remark</th><th>Action</th></tr>
@@ -1740,7 +1834,7 @@
     const monthSettings = {
       "2026-07": { workingDays: 24, holidays: [] }
     };
-    const APP_VERSION = "2026-07-11-1240";
+    const APP_VERSION = "2026-07-11-1910";
     const CLOUD_KEYS = [
       "oavBadiClassData",
       "oavBadiTeachers",
