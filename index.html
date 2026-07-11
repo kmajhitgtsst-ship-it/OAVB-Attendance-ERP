@@ -227,6 +227,22 @@
       margin-top: 14px;
     }
 
+    .timetable-stack {
+      display: grid;
+      gap: 18px;
+      margin-top: 14px;
+    }
+
+    .timetable-stack .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    .timetable-stack th,
+    .timetable-stack td {
+      white-space: nowrap;
+    }
+
     .toolbar {
       display: flex;
       gap: 10px;
@@ -1446,7 +1462,7 @@
             </table>
           </div>
           <p class="success-note" id="timeTableStatus">Upload/import timetable CSV, then use Weekly or Today's Time Table view.</p>
-          <div class="grid two-col" style="margin-top: 14px;">
+          <div class="timetable-stack">
             <div class="table-wrap">
               <div class="section-title">
                 <h2>Daily Arrangement</h2>
@@ -1724,7 +1740,7 @@
     const monthSettings = {
       "2026-07": { workingDays: 24, holidays: [] }
     };
-    const APP_VERSION = "2026-07-11-0745";
+    const APP_VERSION = "2026-07-11-1240";
     const CLOUD_KEYS = [
       "oavBadiClassData",
       "oavBadiTeachers",
@@ -4599,7 +4615,7 @@
       importedTimetableRows.length = 0;
       rows.forEach(row => {
         const day = row[0] || importedTimetableRows[importedTimetableRows.length - 1]?.day || "";
-        const className = row[1] || "";
+        const className = normalizeTimetableClassName(row[1] || "");
         if (!className || className === ".") return;
         const periods = row.slice(2, 2 + TIMETABLE_PERIOD_COUNT).map(cell => cell || ".");
         if (!periods.length) return;
@@ -4645,6 +4661,16 @@
       });
     }
 
+    function normalizeTimetableClassName(value) {
+      const text = String(value || "").trim().toUpperCase().replace(/\s+/g, "-").replace(/^CLASS-/, "");
+      if (!text) return "";
+      if (text.includes("XI") && text.includes("SCIENCE")) return "XI-SCIENCE";
+      if (text.includes("XII") && text.includes("SCIENCE")) return "XII-SCIENCE";
+      const match = text.match(/^(VI|VII|VIII|IX|X)-?([AB])$/);
+      if (match) return `${match[1]}-${match[2]}`;
+      return text;
+    }
+
     function timetableAllCodes(rows = currentTimetableRows()) {
       return [...new Set(rows.flatMap(row => row.periods.flatMap(extractTeacherCodes)))].sort();
     }
@@ -4659,13 +4685,13 @@
     }
 
     function timetableGroupCss(className) {
-      return /\b(IX|X|XI|XII)\b/i.test(className || "") ? "tt-class-senior" : "tt-class-junior";
+      return /\b(IX|X|XI|XII)\b/i.test(String(className || "").replace("-", " ")) ? "tt-class-senior" : "tt-class-junior";
     }
 
     function timetableClassCss(className) {
-      const text = String(className || "").toUpperCase();
+      const text = String(className || "").toUpperCase().replace("-", " ");
       const classMatch = text.match(/\b(VI|VII|VIII|IX|X|XI|XII)\b/);
-      const sectionMatch = text.match(/-([A-Z])\b/);
+      const sectionMatch = String(className || "").toUpperCase().match(/-([A-Z])\b/);
       const classPart = classMatch ? `tt-class-${classMatch[1].toLowerCase()}` : "";
       const sectionPart = sectionMatch ? `tt-section-${sectionMatch[1].toLowerCase()}` : "";
       return `${classPart} ${sectionPart}`.trim();
@@ -4973,10 +4999,12 @@
       const header2 = ["TIME TABLE IMPORT TEMPLATE"];
       const header3 = ["DAY", "CLASS", ...Array.from({ length: TIMETABLE_PERIOD_COUNT }, (_, index) => `PERIOD ${index + 1}`), "CLASS TEACHER", "ROOM", "REMARK"];
       const days = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
-      const classes = ["VI", "VII", "VIII", "IX", "X", "XI", "XII"];
+      const classes = ["VI-A", "VI-B", "VII-A", "VII-B", "VIII-A", "VIII-B", "IX-A", "IX-B", "X-A", "X-B", "XI-SCIENCE", "XII-SCIENCE"];
       const samples = {
-        VI: ["ODIA (JNG)", "SST (KM)", "AI (HK)", "PHE (AP)", "MATH (TM)", "SCI (HCS)", "ENG (BB)", "IT (HK)"],
-        VII: ["SCI (HCS)", "MATH (TM)", "CT (TM)", "ENG (BB)", "SST (KM)", "MATH (TM)", "ODI (SANS)", "AI (HK)"]
+        "VI-A": ["ODIA (JNG)", "SST (KM)", "AI (HK)", "PHE (AP)", "MATH (TM)", "SCI (HCS)", "ENG (BB)", "IT (HK)"],
+        "VI-B": ["ODIA (JNG)", "SST (KM)", "AI (HK)", "PHE (AP)", "MATH (TM)", "SCI (HCS)", "ENG (BB)", "IT (HK)"],
+        "VII-A": ["SCI (HCS)", "MATH (TM)", "CT (TM)", "ENG (BB)", "SST (KM)", "MATH (TM)", "ODI (SANS)", "AI (HK)"],
+        "VII-B": ["SCI (HCS)", "MATH (TM)", "CT (TM)", "ENG (BB)", "SST (KM)", "MATH (TM)", "ODI (SANS)", "AI (HK)"]
       };
       const body = days.flatMap(day => classes.map(className => [day, className, ...(samples[className] || Array(TIMETABLE_PERIOD_COUNT).fill(".")), "", "", ""]));
       return [header1, header2, header3, ...body];
