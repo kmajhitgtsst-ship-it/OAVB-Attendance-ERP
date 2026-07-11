@@ -746,7 +746,7 @@
           <div class="card metric good"><span>Students Present</span><strong id="presentCount">421</strong></div>
           <div class="card metric bad"><span>Absent Today</span><strong id="absentCount">18</strong></div>
           <div class="card metric warn"><span>Late Arrivals</span><strong id="lateCount">11</strong></div>
-          <div class="card metric info"><span>Staff Present</span><strong>37/40</strong></div>
+          <div class="card metric info"><span>Staff Present</span><strong id="staffPresentCount">0/0</strong></div>
         </div>
 
         <div class="card" style="margin-bottom: 18px;">
@@ -1104,7 +1104,7 @@
               </ul>
             </div>
           </div>
-          <div class="table-wrap" style="margin-top: 14px;">
+          <div class="table-wrap hidden" id="timeTableManualPanel" style="margin-top: 14px;">
             <table>
               <thead>
                 <tr><th>Class Group</th><th>Class Teacher</th><th>Parents</th><th>Last Sent</th><th>Action</th></tr>
@@ -1147,6 +1147,8 @@
               <textarea id="teacherBulkText" placeholder="Template format: Employee ID, Teacher Name, Role, Subject, Mobile, Email, Assigned Class...&#10;Compact format: S. Mishra,TGT Science,+91 9876543200,Class VI-A"></textarea>
             </div>
             <button class="primary" id="importTeachers">Import Teachers</button>
+            <button class="secondary" id="clearDemoTeachers">Clear Demo Teachers</button>
+            <button class="secondary" id="resetTeacherMaster">Reset Teacher Master</button>
           </div>
           <p class="success-note" id="teacherBulkStatus">Imported teachers will appear below.</p>
           <div class="table-wrap" style="margin-top: 14px;">
@@ -1422,19 +1424,19 @@
           <div class="table-wrap" style="margin-top: 14px;">
             <table id="timeTableGrid">
               <thead>
-                <tr><th>Day</th><th>Period 1<br>09:00-09:45</th><th>Period 2<br>09:45-10:30</th><th>Period 3<br>10:45-11:30</th><th>Period 4<br>11:30-12:15</th><th>Period 5<br>01:00-01:45</th><th>Period 6<br>01:45-02:30</th><th>Period 7<br>02:30-03:15</th></tr>
+                <tr><th>Day</th><th>Period 1<br>09:00-09:45</th><th>Period 2<br>09:45-10:30</th><th>Period 3<br>10:45-11:30</th><th>Period 4<br>11:30-12:15</th><th>Period 5<br>01:00-01:45</th><th>Period 6<br>01:45-02:30</th><th>Period 7<br>02:30-03:15</th><th>Period 8<br>03:15-04:00</th></tr>
               </thead>
               <tbody id="timeTableBody">
-                <tr><td>Monday</td><td contenteditable="true">English</td><td contenteditable="true">Math</td><td contenteditable="true">Science</td><td contenteditable="true">Odia</td><td contenteditable="true">Social Science</td><td contenteditable="true">Hindi</td><td contenteditable="true">Library</td></tr>
-                <tr><td>Tuesday</td><td contenteditable="true">Math</td><td contenteditable="true">English</td><td contenteditable="true">Odia</td><td contenteditable="true">Science</td><td contenteditable="true">Social Science</td><td contenteditable="true">Computer</td><td contenteditable="true">Games</td></tr>
-                <tr><td>Wednesday</td><td contenteditable="true">Science</td><td contenteditable="true">Math</td><td contenteditable="true">English</td><td contenteditable="true">Hindi</td><td contenteditable="true">Odia</td><td contenteditable="true">Art</td><td contenteditable="true">Remedial</td></tr>
-                <tr><td>Thursday</td><td contenteditable="true">Odia</td><td contenteditable="true">Science</td><td contenteditable="true">Math</td><td contenteditable="true">Social Science</td><td contenteditable="true">English</td><td contenteditable="true">Computer</td><td contenteditable="true">Club</td></tr>
-                <tr><td>Friday</td><td contenteditable="true">English</td><td contenteditable="true">Social Science</td><td contenteditable="true">Science</td><td contenteditable="true">Math</td><td contenteditable="true">Hindi</td><td contenteditable="true">Odia</td><td contenteditable="true">Library</td></tr>
-                <tr><td>Saturday</td><td contenteditable="true">Test</td><td contenteditable="true">Remedial</td><td contenteditable="true">Activity</td><td contenteditable="true">House Meeting</td><td contenteditable="true">-</td><td contenteditable="true">-</td><td contenteditable="true">-</td></tr>
+                <tr><td>Monday</td><td contenteditable="true">English</td><td contenteditable="true">Math</td><td contenteditable="true">Science</td><td contenteditable="true">Odia</td><td contenteditable="true">Social Science</td><td contenteditable="true">Hindi</td><td contenteditable="true">Library</td><td contenteditable="true">Remedial</td></tr>
+                <tr><td>Tuesday</td><td contenteditable="true">Math</td><td contenteditable="true">English</td><td contenteditable="true">Odia</td><td contenteditable="true">Science</td><td contenteditable="true">Social Science</td><td contenteditable="true">Computer</td><td contenteditable="true">Games</td><td contenteditable="true">Remedial</td></tr>
+                <tr><td>Wednesday</td><td contenteditable="true">Science</td><td contenteditable="true">Math</td><td contenteditable="true">English</td><td contenteditable="true">Hindi</td><td contenteditable="true">Odia</td><td contenteditable="true">Art</td><td contenteditable="true">Remedial</td><td contenteditable="true">Library</td></tr>
+                <tr><td>Thursday</td><td contenteditable="true">Odia</td><td contenteditable="true">Science</td><td contenteditable="true">Math</td><td contenteditable="true">Social Science</td><td contenteditable="true">English</td><td contenteditable="true">Computer</td><td contenteditable="true">Club</td><td contenteditable="true">Remedial</td></tr>
+                <tr><td>Friday</td><td contenteditable="true">English</td><td contenteditable="true">Social Science</td><td contenteditable="true">Science</td><td contenteditable="true">Math</td><td contenteditable="true">Hindi</td><td contenteditable="true">Odia</td><td contenteditable="true">Library</td><td contenteditable="true">Club</td></tr>
+                <tr><td>Saturday</td><td contenteditable="true">Test</td><td contenteditable="true">Remedial</td><td contenteditable="true">Activity</td><td contenteditable="true">House Meeting</td><td contenteditable="true">-</td><td contenteditable="true">-</td><td contenteditable="true">-</td><td contenteditable="true">-</td></tr>
               </tbody>
             </table>
           </div>
-          <p class="success-note" id="timeTableStatus">Cells me click karke subject/teacher naam edit kar sakte hain. CSV import karne par audit tables activate honge.</p>
+          <p class="success-note" id="timeTableStatus">Upload/import timetable CSV, then use Weekly or Today's Time Table view.</p>
           <div class="grid two-col" style="margin-top: 14px;">
             <div class="table-wrap">
               <h2>Daily Arrangement</h2>
@@ -1461,14 +1463,14 @@
           <div class="table-wrap hidden" id="timeTableTodayPanel" style="margin-top: 14px;">
             <h2>Today's Time Table</h2>
             <table>
-              <thead><tr><th>Day</th><th>Class</th><th>1ST-A</th><th>1ST-B</th><th>2ND-A</th><th>2ND-B</th><th>3RD-A</th><th>3RD-B</th><th>4TH-A</th><th>4TH-B</th><th>5TH-A</th><th>5TH-B</th><th>6TH-A</th><th>6TH-B</th><th>7TH-A</th><th>7TH-B</th><th>8TH-A</th><th>8TH-B</th></tr></thead>
+              <thead><tr><th>Day</th><th>Class</th><th>Period 1</th><th>Period 2</th><th>Period 3</th><th>Period 4</th><th>Period 5</th><th>Period 6</th><th>Period 7</th><th>Period 8</th></tr></thead>
               <tbody id="timeTableTodayRows"></tbody>
             </table>
           </div>
           <div class="table-wrap" id="timeTableWeeklyPanel" style="margin-top: 14px;">
             <h2>Imported Raw Timetable</h2>
             <table>
-              <thead><tr><th>Day</th><th>Class</th><th>1ST-A</th><th>1ST-B</th><th>2ND-A</th><th>2ND-B</th><th>3RD-A</th><th>3RD-B</th><th>4TH-A</th><th>4TH-B</th><th>5TH-A</th><th>5TH-B</th><th>6TH-A</th><th>6TH-B</th><th>7TH-A</th><th>7TH-B</th><th>8TH-A</th><th>8TH-B</th></tr></thead>
+              <thead><tr><th>Day</th><th>Class</th><th>Period 1</th><th>Period 2</th><th>Period 3</th><th>Period 4</th><th>Period 5</th><th>Period 6</th><th>Period 7</th><th>Period 8</th></tr></thead>
               <tbody id="timeTableRawRows"></tbody>
             </table>
           </div>
@@ -1761,6 +1763,11 @@
     const examResults = [];
     const importedTimetableRows = [];
     const savedStockBackups = [];
+    const TIMETABLE_PERIOD_COUNT = 8;
+    const DEMO_TEACHER_NAMES = new Set([
+      "s. mishra", "k. das", "r. sahoo", "m. pradhan", "a. nayak", "p. behera",
+      "d. jena", "b. sahoo", "n. patra", "l. mohanty", "p. mohapatra", "s. das"
+    ]);
     const PRINCIPAL_PASSWORD = "Principal@OAVB#2026";
     const ADMIN_PASSWORD = "Admin@OAVB#2026";
     const DEFAULT_TEACHER_PASSWORD = "Teacher@OAVB#2026";
@@ -2177,6 +2184,7 @@
     }
 
     function renderDashboardSnapshot() {
+      renderStaffMetric();
       const rows = classKeysForDashboard().map(key => {
         const selected = classData[key] || [];
         const present = selected.filter(student => student[4] === "Present" || student[4] === "Late").length;
@@ -2185,6 +2193,14 @@
         return `<tr><td>${key.replace("Class ", "")}</td><td>${selected.length}</td><td>${present}</td><td>${absent}</td><td>${percent}%</td></tr>`;
       });
       document.getElementById("dashboardClassRows").innerHTML = rows.join("");
+    }
+
+    function renderStaffMetric() {
+      const el = document.getElementById("staffPresentCount");
+      if (!el) return;
+      const staffTotal = teachers.length;
+      const staffPresent = teachers.filter(teacher => (teacher[4] || "Present") === "Present").length;
+      el.textContent = `${staffPresent}/${staffTotal}`;
     }
 
     function applyClassAccess() {
@@ -3050,7 +3066,8 @@
     }
 
     function renderTeachers() {
-      document.getElementById("teacherRows").innerHTML = teachers.map((teacher, index) => `
+      renderStaffMetric();
+      document.getElementById("teacherRows").innerHTML = teachers.length ? teachers.map((teacher, index) => `
         <tr>
           <td>${teacher[0]}</td>
           <td>${teacher[1]}</td>
@@ -3061,11 +3078,12 @@
           <td><span class="status leave">Protected</span></td>
           <td><button class="secondary assign-teacher-class" data-index="${index}">Assign Class</button> <button class="secondary assign-admin-principal" data-index="${index}">Assign Admin/Principal</button> <button class="secondary assign-erp-role" data-index="${index}">Assign ERP Role</button> <button class="secondary edit-teacher" data-index="${index}">Edit</button> <button class="secondary reset-teacher-password" data-index="${index}">Reset</button> <button class="secondary delete-teacher" data-index="${index}">Delete</button></td>
         </tr>
-      `).join("");
+      `).join("") : `<tr><td colspan="8">No teacher data uploaded yet. Import your school teacher CSV/Excel.</td></tr>`;
     }
 
     function renderTeacherAttendance() {
-      document.getElementById("teacherAttendanceRows").innerHTML = teachers.map((teacher, index) => `
+      renderStaffMetric();
+      document.getElementById("teacherAttendanceRows").innerHTML = teachers.length ? teachers.map((teacher, index) => `
         <tr>
           <td>${teacher[0]}</td>
           <td>${teacher[1]}</td>
@@ -3074,7 +3092,55 @@
           <td><button class="status ${teacher[4] === "Leave" ? "leave" : "present"} teacher-attendance-status" data-index="${index}">${teacher[4] || "Present"}</button></td>
           <td><button class="secondary delete-teacher" data-index="${index}">Delete Teacher</button></td>
         </tr>
-      `).join("");
+      `).join("") : `<tr><td colspan="6">No teacher data uploaded yet.</td></tr>`;
+    }
+
+    function normalizePersonName(name) {
+      return String(name || "").trim().toLowerCase().replace(/\s+/g, " ");
+    }
+
+    function isDemoTeacher(teacher) {
+      return DEMO_TEACHER_NAMES.has(normalizePersonName(teacher?.[0]));
+    }
+
+    function clearDemoTeachers() {
+      const demoCount = teachers.filter(isDemoTeacher).length;
+      if (!demoCount) {
+        document.getElementById("teacherBulkStatus").textContent = "No demo teacher record found.";
+        return;
+      }
+      if (!confirm(`Delete ${demoCount} demo teacher record(s)? Real uploaded teachers will remain.`)) return;
+      for (let index = teachers.length - 1; index >= 0; index -= 1) {
+        if (!isDemoTeacher(teachers[index])) continue;
+        const name = teachers[index][0];
+        teachers.splice(index, 1);
+        delete teacherAssignments[name];
+        delete teacherPasswords[name];
+      }
+      syncTeacherAssignmentsFromMaster();
+      saveLocalData();
+      populateLoginTeachers();
+      renderTeachers();
+      renderTeacherAttendance();
+      renderClassGroups();
+      document.getElementById("teacherBulkStatus").textContent = `${demoCount} demo teacher record(s) deleted. Now upload your real teacher master.`;
+    }
+
+    function resetTeacherMaster() {
+      const typed = prompt("Type RESET TEACHERS to delete all teacher master data from this ERP browser/cloud sync.");
+      if (typed !== "RESET TEACHERS") {
+        document.getElementById("teacherBulkStatus").textContent = "Teacher master reset cancelled.";
+        return;
+      }
+      teachers.length = 0;
+      Object.keys(teacherAssignments).forEach(name => delete teacherAssignments[name]);
+      Object.keys(teacherPasswords).forEach(name => delete teacherPasswords[name]);
+      saveLocalData();
+      populateLoginTeachers();
+      renderTeachers();
+      renderTeacherAttendance();
+      renderClassGroups();
+      document.getElementById("teacherBulkStatus").textContent = "Teacher master cleared. Upload your real school teacher file now.";
     }
 
     function saveTeacherAttendance() {
@@ -4506,7 +4572,7 @@
         const day = row[0] || importedTimetableRows[importedTimetableRows.length - 1]?.day || "";
         const className = row[1] || "";
         if (!className || className === ".") return;
-        const periods = row.slice(2, 18).map(cell => cell || ".");
+        const periods = row.slice(2, 2 + TIMETABLE_PERIOD_COUNT).map(cell => cell || ".");
         if (!periods.length) return;
         importedTimetableRows.push({ day: day || "Day", className, periods });
       });
@@ -4538,10 +4604,15 @@
     }
 
     function currentTimetableRows() {
-      if (importedTimetableRows.length) return importedTimetableRows;
+      if (importedTimetableRows.length) {
+        return importedTimetableRows.map(row => ({
+          ...row,
+          periods: row.periods.slice(0, TIMETABLE_PERIOD_COUNT)
+        }));
+      }
       return [...document.querySelectorAll("#timeTableBody tr")].map(row => {
         const cells = [...row.children].map(cell => cell.textContent.trim());
-        return { day: cells[0], className: document.getElementById("timeTableClass").value, periods: cells.slice(1) };
+        return { day: cells[0], className: document.getElementById("timeTableClass").value, periods: cells.slice(1, 1 + TIMETABLE_PERIOD_COUNT) };
       });
     }
 
@@ -4583,11 +4654,11 @@
         .map(code => code.trim().toUpperCase())
         .filter(Boolean);
       tbody.innerHTML = rows.length
-        ? rows.map(row => `<tr class="${timetableDayCss(row.day)} ${timetableGroupCss(row.className)}"><td>${row.day}</td><td>${row.className}</td>${Array.from({ length: 16 }, (_, index) => {
+        ? rows.map(row => `<tr class="${timetableDayCss(row.day)} ${timetableGroupCss(row.className)}"><td>${row.day}</td><td>${row.className}</td>${Array.from({ length: TIMETABLE_PERIOD_COUNT }, (_, index) => {
             const cell = decoratedTimetableCell(row, index, rows, absentCodes);
             return `<td class="${cell.arranged ? "arranged-cell" : ""}">${cell.value}</td>`;
           }).join("")}</tr>`).join("")
-        : `<tr><td colspan="18">No imported timetable rows yet.</td></tr>`;
+        : `<tr><td colspan="10">No imported timetable rows yet.</td></tr>`;
     }
 
     function todayTimetableRows(rows = currentTimetableRows()) {
@@ -4674,7 +4745,7 @@
       const arrangement = renderTimetableArrangement(rows);
       downloadExcel("time-table-audit-arrangement.xls", [
         ["TIME TABLE RAW"],
-        ["Day", "Class", "1ST-A", "1ST-B", "2ND-A", "2ND-B", "3RD-A", "3RD-B", "4TH-A", "4TH-B", "5TH-A", "5TH-B", "6TH-A", "6TH-B", "7TH-A", "7TH-B", "8TH-A", "8TH-B"],
+        ["Day", "Class", ...Array.from({ length: TIMETABLE_PERIOD_COUNT }, (_, index) => `Period ${index + 1}`)],
         ...rows.map(row => [row.day, row.className, ...row.periods]),
         [""],
         ["DAILY ARRANGEMENT"],
@@ -4686,14 +4757,14 @@
     function timetableCsvTemplateRows() {
       const header1 = ["ODISHA ADARSHA VIDYALAYA, BADI, KHARIAR"];
       const header2 = ["TIME TABLE IMPORT TEMPLATE"];
-      const header3 = ["DAY", "CLASS", "1ST-A", "1ST-B", "2ND-A", "2ND-B", "3RD-A", "3RD-B", "4TH-A", "4TH-B", "5TH-A", "5TH-B", "6TH-A", "6TH-B", "7TH-A", "7TH-B", "8TH-A", "8TH-B", "CLASS TEACHER", "ROOM", "REMARK"];
+      const header3 = ["DAY", "CLASS", ...Array.from({ length: TIMETABLE_PERIOD_COUNT }, (_, index) => `PERIOD ${index + 1}`), "CLASS TEACHER", "ROOM", "REMARK"];
       const days = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
       const classes = ["VI", "VII", "VIII", "IX", "X", "XI", "XII"];
       const samples = {
-        VI: ["ODIA (JNG)", "SST (KM)", "AI (HK)", "PHE (AP)", "SST (KM)", "LIB (AS)", "SCI (HCS)", "HIN/SANS", "MATH (TM)", "SCI (HCS)", "ENG (BB)", "IT (HK)", "VOC (CHE)", "ENG (KKT)", "HIN/SANS", "MATH (TM)"],
-        VII: ["SCI (HCS)", "MATH (TM)", "CT (TM)", "SCI (HCS)", "HIN/SANS", "ENG (BB)", "ENG (BB)", "GAME (AP)", "SST (KM)", "SST (DS)", "MATH (TM)", "HIN/SANS", "ODI (SANS)", "CT (TM)", "VOC (MRT)", "AI (HK)"]
+        VI: ["ODIA (JNG)", "SST (KM)", "AI (HK)", "PHE (AP)", "MATH (TM)", "SCI (HCS)", "ENG (BB)", "IT (HK)"],
+        VII: ["SCI (HCS)", "MATH (TM)", "CT (TM)", "ENG (BB)", "SST (KM)", "MATH (TM)", "ODI (SANS)", "AI (HK)"]
       };
-      const body = days.flatMap(day => classes.map(className => [day, className, ...(samples[className] || Array(16).fill(".")), "", "", ""]));
+      const body = days.flatMap(day => classes.map(className => [day, className, ...(samples[className] || Array(TIMETABLE_PERIOD_COUNT).fill(".")), "", "", ""]));
       return [header1, header2, header3, ...body];
     }
 
@@ -4952,6 +5023,14 @@
 
     document.getElementById("importTeachers").addEventListener("click", () => {
       importBulkTeachers();
+    });
+
+    document.getElementById("clearDemoTeachers").addEventListener("click", () => {
+      clearDemoTeachers();
+    });
+
+    document.getElementById("resetTeacherMaster").addEventListener("click", () => {
+      resetTeacherMaster();
     });
 
     document.getElementById("importStudentsFile").addEventListener("click", () => {
