@@ -36,7 +36,7 @@
 
     .app {
       display: grid;
-      grid-template-columns: 260px minmax(0, 1fr);
+      grid-template-columns: minmax(0, 1fr);
       min-height: 100vh;
     }
 
@@ -56,12 +56,17 @@
     }
 
     aside {
+      position: fixed;
+      inset: 0 auto 0 0;
+      width: 260px;
       background: var(--nav);
       color: white;
       padding: 20px 16px;
       display: flex;
       flex-direction: column;
       gap: 18px;
+      overflow-y: auto;
+      z-index: 20;
     }
 
     .brand {
@@ -123,6 +128,7 @@
 
     main {
       min-width: 0;
+      margin-left: 260px;
       padding: 24px;
     }
 
@@ -461,6 +467,28 @@
       color: var(--ink);
     }
 
+    .tt-day-monday td { background: #eef6ff; }
+    .tt-day-tuesday td { background: #f0fdf4; }
+    .tt-day-wednesday td { background: #fff7ed; }
+    .tt-day-thursday td { background: #f5f3ff; }
+    .tt-day-friday td { background: #ecfeff; }
+    .tt-day-saturday td { background: #fef2f2; }
+    .tt-class-senior td:first-child,
+    .tt-class-senior td:nth-child(2) { border-left: 4px solid #7c3aed; }
+    .tt-class-junior td:first-child,
+    .tt-class-junior td:nth-child(2) { border-left: 4px solid #0f766e; }
+    td.arranged-cell {
+      background: #fee2e2 !important;
+      color: #991b1b;
+      font-weight: 700;
+    }
+    .mini-summary {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 10px 0;
+    }
+
     .wide-field {
       min-width: min(520px, 100%);
       flex: 1 1 420px;
@@ -468,6 +496,10 @@
 
     .role-panel {
       margin-bottom: 14px;
+    }
+
+    body:not(.login-only) .role-panel {
+      display: none;
     }
 
     .login-shell {
@@ -533,6 +565,7 @@
     body.login-only main {
       display: grid;
       min-height: 100vh;
+      margin-left: 0;
       place-items: center;
       padding: 24px;
     }
@@ -548,13 +581,17 @@
       .app { grid-template-columns: 1fr; }
       aside {
         position: static;
+        width: auto;
         padding: 14px;
       }
       nav {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
-      .user-box { display: none; }
-      main { padding: 16px; }
+      .user-box { display: block; }
+      main {
+        margin-left: 0;
+        padding: 14px;
+      }
       header { display: grid; }
       .actions { justify-content: flex-start; }
       .stats,
@@ -565,7 +602,31 @@
       .table-wrap {
         overflow-x: auto;
       }
-      table { min-width: 680px; }
+      table {
+        min-width: 760px;
+        font-size: 15px;
+      }
+      th,
+      td {
+        padding: 12px 10px;
+      }
+      input,
+      select,
+      textarea,
+      button {
+        min-height: 44px;
+        font-size: 16px;
+      }
+      h1 { font-size: 26px; }
+      h2 { font-size: 22px; }
+      .card { padding: 16px; }
+      .toolbar {
+        gap: 12px;
+      }
+      .field {
+        flex: 1 1 100%;
+        min-width: 100%;
+      }
       .login-shell {
         grid-template-columns: 1fr;
       }
@@ -600,6 +661,7 @@
         Principal login<br>
         Session 2026-27<br>
         Odisha Adarsha Vidyalaya, Badi
+        <button class="secondary" id="sideLogoutButton" type="button" style="margin-top: 10px; width: 100%;">Logout</button>
       </div>
     </aside>
 
@@ -1341,6 +1403,10 @@
             <button class="secondary" id="downloadTimetableTemplate">Download CSV Template</button>
             <button class="secondary" id="clearTimetableImport">Clear Imported Timetable</button>
           </div>
+          <div class="toolbar" style="margin-top: 10px;">
+            <button class="secondary" id="showWeeklyTimetable">See Weekly Time Table</button>
+            <button class="secondary" id="showTodayTimetable">See Today's Time Table</button>
+          </div>
           <div class="table-wrap" style="margin-top: 14px;">
             <table id="timeTableGrid">
               <thead>
@@ -1380,7 +1446,14 @@
               <tbody id="timeTableConflictRows"></tbody>
             </table>
           </div>
-          <div class="table-wrap" style="margin-top: 14px;">
+          <div class="table-wrap hidden" id="timeTableTodayPanel" style="margin-top: 14px;">
+            <h2>Today's Time Table</h2>
+            <table>
+              <thead><tr><th>Day</th><th>Class</th><th>1ST-A</th><th>1ST-B</th><th>2ND-A</th><th>2ND-B</th><th>3RD-A</th><th>3RD-B</th><th>4TH-A</th><th>4TH-B</th><th>5TH-A</th><th>5TH-B</th><th>6TH-A</th><th>6TH-B</th><th>7TH-A</th><th>7TH-B</th><th>8TH-A</th><th>8TH-B</th></tr></thead>
+              <tbody id="timeTableTodayRows"></tbody>
+            </table>
+          </div>
+          <div class="table-wrap" id="timeTableWeeklyPanel" style="margin-top: 14px;">
             <h2>Imported Raw Timetable</h2>
             <table>
               <thead><tr><th>Day</th><th>Class</th><th>1ST-A</th><th>1ST-B</th><th>2ND-A</th><th>2ND-B</th><th>3RD-A</th><th>3RD-B</th><th>4TH-A</th><th>4TH-B</th><th>5TH-A</th><th>5TH-B</th><th>6TH-A</th><th>6TH-B</th><th>7TH-A</th><th>7TH-B</th><th>8TH-A</th><th>8TH-B</th></tr></thead>
@@ -1406,10 +1479,27 @@
             </div>
             <div class="field">
               <label for="examName">Exam Name</label>
-              <input id="examName" value="Periodic Test">
+              <select id="examName">
+                <option>PERIODIC TEST-1</option>
+                <option>PERIODIC TEST-2</option>
+                <option>PERIODIC TEST-3</option>
+                <option>PERIODIC TEST-4</option>
+                <option>HALF YEARLY EXAM</option>
+                <option>ANNUAL EXAM</option>
+                <option>PRE-BOARD-1</option>
+                <option>PRE-BOARD-2</option>
+                <option>VST-1</option>
+                <option>VST-2</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="examResultFile">CSV File</label>
+              <input id="examResultFile" type="file" accept=".csv,.txt">
             </div>
             <button class="secondary" id="importExamResults">Import Results</button>
+            <button class="secondary" id="importExamResultsFile">Upload CSV</button>
             <button class="secondary" id="downloadExamTemplate">Download Template</button>
+            <button class="secondary" id="resetExamResults">Reset / Delete Results</button>
           </div>
           <div class="field">
             <label for="examResultText">Paste CSV rows</label>
@@ -1418,7 +1508,7 @@
           <p class="success-note" id="examResultStatus">Paste or import marks, then send WhatsApp result messages.</p>
           <div class="table-wrap" style="margin-top: 14px;">
             <table>
-              <thead><tr><th>Class</th><th>Roll</th><th>Student</th><th>Total</th><th>%</th><th>Result</th><th>Mobile</th><th>Action</th></tr></thead>
+              <thead><tr><th>Class</th><th>Exam</th><th>Roll</th><th>Student</th><th>Father</th><th>Mother</th><th>DOB</th><th>Total</th><th>%</th><th>Result</th><th>Mobile</th><th>Action</th></tr></thead>
               <tbody id="examResultRows"></tbody>
             </table>
           </div>
@@ -1753,11 +1843,6 @@
 
       if (savedMdmSettings) {
         Object.assign(mdmSettings, JSON.parse(savedMdmSettings));
-        if (!mdmStockEntries.length) {
-          const seededEntry = currentMdmStockEntry();
-          seededEntry.id = `${seededEntry.date}-opening`;
-          mdmStockEntries.push(seededEntry);
-        }
       }
 
       syncTeacherAssignmentsFromMaster();
@@ -3271,8 +3356,7 @@
     }
 
     function mdmStockTotals() {
-      const entries = mdmStockEntries.length ? mdmStockEntries : [currentMdmStockEntry()];
-      return entries.reduce((acc, entry) => {
+      return mdmStockEntries.reduce((acc, entry) => {
         acc.rice += Number(entry.riceKg || 0);
         acc.dal += Number(entry.dalKg || 0);
         acc.soy += Number(entry.soyKg || 0);
@@ -3370,6 +3454,8 @@
       }
       mdmStockEntries.length = 0;
       mdmRecords.length = 0;
+      resetStockEntryQuantities();
+      document.getElementById("stockResetPassword").value = "";
       saveLocalData();
       renderMdm();
       renderMdmStockRegister();
@@ -4264,24 +4350,47 @@
       const select = document.getElementById("examResultClass");
       if (!select) return;
       const selected = select.value || "All";
-      const options = Object.keys(classData).sort((a, b) => a.localeCompare(b, undefined, { numeric: true })).map(key => `<option>${key}</option>`).join("");
-      select.innerHTML = `<option>All</option>${options}`;
-      select.value = [...select.options].some(option => option.value === selected) ? selected : "All";
+      const keys = Object.keys(classData).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+      const allowedKeys = activeUser.role === "teacher" && activeUser.classKey ? keys.filter(key => key === activeUser.classKey) : keys;
+      const options = allowedKeys.map(key => `<option>${key}</option>`).join("");
+      select.innerHTML = activeUser.role === "teacher" && activeUser.classKey ? options : `<option>All</option>${options}`;
+      select.value = [...select.options].some(option => option.value === selected) ? selected : (allowedKeys[0] || "All");
+    }
+
+    function findStudentMasterRecord(classGroup, roll, name) {
+      const list = classData[classGroup] || [];
+      const paddedRoll = String(Number(roll || 0)).padStart(2, "0");
+      return list.find(student => String(student[0]).padStart(2, "0") === paddedRoll)
+        || list.find(student => String(student[1] || "").trim().toLowerCase() === String(name || "").trim().toLowerCase());
+    }
+
+    function enrichExamResultFromMaster(result) {
+      const master = findStudentMasterRecord(result.classGroup, result.roll, result.name);
+      if (!master) return result;
+      result.name = result.name || master[1] || "";
+      result.father = result.father || master[6] || "";
+      result.mother = result.mother || "";
+      result.dob = result.dob || "";
+      result.mobile = result.mobile || master[7] || "";
+      return result;
     }
 
     function importExamResults() {
       const rows = parseCsvLines(document.getElementById("examResultText").value, 17);
       let added = 0;
+      const examName = document.getElementById("examName").value || "EXAM";
       rows.forEach(row => {
         if (/^class$/i.test(row[0] || "") || Number.isNaN(Number(row[2]))) return;
         const classGroup = row[0].includes("-") || row[0].includes("SCIENCE") ? row[0] : `${normalizeClassName(row[0])}-${String(row[1] || "A").toUpperCase()}`;
+        if (activeUser.role === "teacher" && activeUser.classKey && classGroup !== activeUser.classKey) return;
         const marks = {};
         examSubjects.forEach((subject, index) => {
           marks[subject] = Number(row[8 + index] || 0);
         });
         const total = Object.values(marks).reduce((sum, mark) => sum + Number(mark || 0), 0);
         const percentage = Math.round((total / (examSubjects.length * 100)) * 1000) / 10;
-        const result = {
+        const result = enrichExamResultFromMaster({
+          examName,
           classGroup,
           roll: String(Number(row[2])).padStart(2, "0"),
           name: row[3],
@@ -4293,19 +4402,46 @@
           total,
           percentage,
           result: row[16] || (percentage >= 33 ? "Pass" : "Fail")
-        };
-        const existingIndex = examResults.findIndex(item => item.classGroup === result.classGroup && item.roll === result.roll && item.name === result.name);
+        });
+        const existingIndex = examResults.findIndex(item => item.examName === result.examName && item.classGroup === result.classGroup && item.roll === result.roll && item.name === result.name);
         if (existingIndex >= 0) examResults[existingIndex] = result;
         else examResults.push(result);
         added += 1;
       });
       saveLocalData();
       renderExamResults();
-      document.getElementById("examResultStatus").textContent = `${added} exam result row(s) imported.`;
+      document.getElementById("examResultStatus").textContent = `${added} ${examName} result row(s) imported.`;
+    }
+
+    function importExamResultsFile() {
+      importTextFile(
+        document.getElementById("examResultFile").files[0],
+        "examResultText",
+        importExamResults,
+        "examResultStatus"
+      );
+    }
+
+    function resetExamResults() {
+      const filter = document.getElementById("examResultClass").value || "All";
+      const examName = document.getElementById("examName").value || "";
+      const scopeText = `${filter === "All" ? "all classes" : filter}${examName ? ` / ${examName}` : ""}`;
+      if (!confirm(`Delete exam results for ${scopeText}?`)) return;
+      const before = examResults.length;
+      for (let index = examResults.length - 1; index >= 0; index -= 1) {
+        const item = examResults[index];
+        const classMatch = filter === "All" || item.classGroup === filter;
+        const examMatch = !examName || item.examName === examName;
+        const allowed = activeUser.role !== "teacher" || item.classGroup === activeUser.classKey;
+        if (classMatch && examMatch && allowed) examResults.splice(index, 1);
+      }
+      saveLocalData();
+      renderExamResults();
+      document.getElementById("examResultStatus").textContent = `${before - examResults.length} exam result row(s) deleted.`;
     }
 
     function resultMessage(result) {
-      return `Dear Parent/Student,\nThe examination result details of your ward are given below:\nStudent's Name: ${result.name}\nFather's Name: ${result.father}\nMother's Name: ${result.mother}\nDate of Birth: ${result.dob}\nSubject-wise Marks:\n${examSubjects.map((subject, index) => `${index + 1}.${subject}: ${result.marks[subject]}`).join("\n")}\n\nTotal Marks: ${result.total}\nPercentage: ${result.percentage}%\nResult: ${result.result}\nPlease check the above details carefully. In case of any discrepancy or clarification, kindly contact the school.\nFrom:\nExamination Department\nOAV, Badi\nShared by:\nClass Teacher`;
+      return `Dear Parent/Student,\nThe ${result.examName || "examination"} result details of your ward are given below:\nStudent's Name: ${result.name}\nFather's Name: ${result.father}\nMother's Name: ${result.mother}\nDate of Birth: ${result.dob}\nSubject-wise Marks:\n${examSubjects.map((subject, index) => `${index + 1}.${subject}: ${result.marks[subject]}`).join("\n")}\n\nTotal Marks: ${result.total}\nPercentage: ${result.percentage}%\nResult: ${result.result}\nPlease check the above details carefully. In case of any discrepancy or clarification, kindly contact the school.\nFrom:\nExamination Department\nOAV, Badi\nShared by:\nClass Teacher`;
     }
 
     function resultWhatsappLink(result) {
@@ -4317,12 +4453,13 @@
     function renderExamResults() {
       populateExamClassOptions();
       const filter = document.getElementById("examResultClass").value || "All";
+      const examName = document.getElementById("examName").value || "";
       const rows = examResults
         .map((result, index) => ({ result, index }))
-        .filter(item => filter === "All" || item.result.classGroup === filter);
+        .filter(item => (filter === "All" || item.result.classGroup === filter) && (!examName || (item.result.examName || examName) === examName));
       document.getElementById("examResultRows").innerHTML = rows.length
-        ? rows.map(({ result, index }) => `<tr><td>${result.classGroup}</td><td>${Number(result.roll)}</td><td>${result.name}</td><td>${result.total}</td><td>${result.percentage}%</td><td>${result.result}</td><td>${result.mobile}</td><td><button class="secondary send-result" data-index="${index}">WhatsApp</button></td></tr>`).join("")
-        : `<tr><td colspan="8">No exam results imported yet.</td></tr>`;
+        ? rows.map(({ result, index }) => `<tr><td>${result.classGroup}</td><td>${result.examName || ""}</td><td>${Number(result.roll)}</td><td>${result.name}</td><td>${result.father || ""}</td><td>${result.mother || ""}</td><td>${result.dob || ""}</td><td>${result.total}</td><td>${result.percentage}%</td><td>${result.result}</td><td>${result.mobile}</td><td><button class="secondary send-result" data-index="${index}">WhatsApp</button></td></tr>`).join("")
+        : `<tr><td colspan="12">No exam results imported yet.</td></tr>`;
     }
 
     function downloadExamTemplate() {
@@ -4400,12 +4537,55 @@
       return [...new Set(rows.flatMap(row => row.periods.flatMap(extractTeacherCodes)))].sort();
     }
 
-    function renderTimetableRaw(rows = currentTimetableRows()) {
-      const tbody = document.getElementById("timeTableRawRows");
+    function timetableTodayName() {
+      return new Date(`${todayIsoDate()}T00:00:00`).toLocaleDateString("en-US", { weekday: "long" }).toUpperCase();
+    }
+
+    function timetableDayCss(day) {
+      const normalized = String(day || "").toLowerCase().replace(/[^a-z]/g, "");
+      return normalized ? `tt-day-${normalized}` : "";
+    }
+
+    function timetableGroupCss(className) {
+      return /\b(IX|X|XI|XII)\b/i.test(className || "") ? "tt-class-senior" : "tt-class-junior";
+    }
+
+    function timetableAvailableCodes(rows, day, periodIndex, absentCodes) {
+      const busy = new Set(rows.filter(item => item.day === day).flatMap(item => extractTeacherCodes(item.periods[periodIndex])));
+      return timetableAllCodes(rows).filter(code => !busy.has(code) && !absentCodes.includes(code));
+    }
+
+    function decoratedTimetableCell(row, periodIndex, rows, absentCodes) {
+      const value = row.periods[periodIndex] || "";
+      const missing = extractTeacherCodes(value).filter(code => absentCodes.includes(code));
+      if (!missing.length) return { value, arranged: false };
+      const substitute = timetableAvailableCodes(rows, row.day, periodIndex, absentCodes)[0] || "Manual";
+      return { value: `${value} + ${substitute}`, arranged: true };
+    }
+
+    function renderTimetableRows(targetId, rows = currentTimetableRows()) {
+      const tbody = document.getElementById(targetId);
       if (!tbody) return;
+      const absentCodes = document.getElementById("absentTeacherCodes").value
+        .split(",")
+        .map(code => code.trim().toUpperCase())
+        .filter(Boolean);
       tbody.innerHTML = rows.length
-        ? rows.map(row => `<tr><td>${row.day}</td><td>${row.className}</td>${Array.from({ length: 16 }, (_, index) => `<td>${row.periods[index] || ""}</td>`).join("")}</tr>`).join("")
+        ? rows.map(row => `<tr class="${timetableDayCss(row.day)} ${timetableGroupCss(row.className)}"><td>${row.day}</td><td>${row.className}</td>${Array.from({ length: 16 }, (_, index) => {
+            const cell = decoratedTimetableCell(row, index, rows, absentCodes);
+            return `<td class="${cell.arranged ? "arranged-cell" : ""}">${cell.value}</td>`;
+          }).join("")}</tr>`).join("")
         : `<tr><td colspan="18">No imported timetable rows yet.</td></tr>`;
+    }
+
+    function todayTimetableRows(rows = currentTimetableRows()) {
+      const today = timetableTodayName();
+      return rows.filter(row => String(row.day || "").toUpperCase().includes(today));
+    }
+
+    function renderTimetableRaw(rows = currentTimetableRows()) {
+      renderTimetableRows("timeTableRawRows", rows);
+      renderTimetableRows("timeTableTodayRows", todayTimetableRows(rows));
     }
 
     function renderTimetableWorkload(rows = currentTimetableRows()) {
@@ -4442,7 +4622,9 @@
         .filter(Boolean);
       const allCodes = timetableAllCodes(rows);
       const arrangements = [];
-      rows.forEach(row => row.periods.forEach((cell, periodIndex) => {
+      const todayRows = todayTimetableRows(rows);
+      const arrangementRows = todayRows.length ? todayRows : rows;
+      arrangementRows.forEach(row => row.periods.forEach((cell, periodIndex) => {
         const cellCodes = extractTeacherCodes(cell);
         const missing = cellCodes.filter(code => absentCodes.includes(code));
         if (!missing.length) return;
@@ -4452,6 +4634,15 @@
           arrangements.push([row.day, row.className, periodIndex + 1, code, cell, substitute]);
         });
       }));
+      const available = absentCodes.length
+        ? allCodes.filter(code => !absentCodes.includes(code)).join(", ") || "No teacher code available"
+        : "Enter absent teacher codes to calculate arrangement.";
+      const todayWorkload = {};
+      arrangementRows.forEach(row => row.periods.forEach(cell => extractTeacherCodes(cell).forEach(code => {
+        todayWorkload[code] = (todayWorkload[code] || 0) + 1;
+      })));
+      const workloadText = Object.entries(todayWorkload).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([code, count]) => `${code}: ${count}`).join(" | ") || "No workload data";
+      document.getElementById("timeTableStatus").innerHTML = `Today: ${timetableTodayName()}. Available for arrangement: ${available}. Current day workload: ${workloadText}. Monthly arrangement count will update from saved arrangement records in next database phase.`;
       document.getElementById("timeTableArrangementRows").innerHTML = arrangements.length
         ? arrangements.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join("")}</tr>`).join("")
         : `<tr><td colspan="6">No absent-teacher period found for selected codes.</td></tr>`;
@@ -4786,8 +4977,20 @@
       importExamResults();
     });
 
+    document.getElementById("importExamResultsFile").addEventListener("click", () => {
+      importExamResultsFile();
+    });
+
+    document.getElementById("resetExamResults").addEventListener("click", () => {
+      resetExamResults();
+    });
+
     document.getElementById("downloadExamTemplate").addEventListener("click", () => {
       downloadExamTemplate();
+    });
+
+    document.getElementById("examName").addEventListener("change", () => {
+      renderExamResults();
     });
 
     document.getElementById("examResultClass").addEventListener("change", () => {
@@ -4819,6 +5022,10 @@
     });
 
     document.getElementById("logoutButton").addEventListener("click", () => {
+      logout();
+    });
+
+    document.getElementById("sideLogoutButton")?.addEventListener("click", () => {
       logout();
     });
 
@@ -4931,6 +5138,20 @@
       renderTimetableAudit();
     });
 
+    document.getElementById("showWeeklyTimetable").addEventListener("click", () => {
+      document.getElementById("timeTableWeeklyPanel").classList.remove("hidden");
+      document.getElementById("timeTableTodayPanel").classList.add("hidden");
+      renderTimetableAudit();
+      document.getElementById("timeTableWeeklyPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    document.getElementById("showTodayTimetable").addEventListener("click", () => {
+      document.getElementById("timeTableTodayPanel").classList.remove("hidden");
+      document.getElementById("timeTableWeeklyPanel").classList.add("hidden");
+      renderTimetableAudit();
+      document.getElementById("timeTableTodayPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
     document.getElementById("downloadTimetableExcel").addEventListener("click", () => {
       downloadTimetableExcel();
     });
@@ -4944,7 +5165,7 @@
     });
 
     document.getElementById("absentTeacherCodes").addEventListener("input", () => {
-      renderTimetableArrangement();
+      renderTimetableAudit();
     });
 
     document.getElementById("mdmClass").addEventListener("change", () => {
