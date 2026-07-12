@@ -880,7 +880,7 @@
         <button class="nav-button" data-page="settings">Settings</button>
       </nav>
       <div class="user-box">
-        Principal login<br>
+        <span id="sideLoginRoleLabel">Not logged in</span><br>
         Session 2026-27<br>
         Odisha Adarsha Vidyalaya, Badi
         <button class="secondary" id="sideLogoutButton" type="button" style="margin-top: 10px; width: 100%;">Logout</button>
@@ -1852,11 +1852,11 @@
               <li><strong>Office Staff</strong><span>Student master and export support.</span></li>
             </ul>
           </div>
-          <div class="card hidden" id="adminResetPanel">
+          <div class="card hidden" id="adminResetPanel" style="grid-column: 1 / -1;">
             <h2>Admin Only Reset</h2>
-            <p class="subtle">This will reset all ERP data after confirmation. This option is visible only after exact ADMIN login with Login ID admin.</p>
-            <button class="secondary" id="resetEntireErp" type="button">Reset Entire ERP Data</button>
-            <p class="success-note" id="adminResetStatus">ADMIN login verified. Use this only when the full ERP data must be cleared.</p>
+            <p class="subtle">This reset keeps Student Master, Teacher Master, timetable upload, stock entries, price settings, and ERP coding safe. It clears attendance, leave, absence, MDM served entries, exam results, reports, and arrangement records.</p>
+            <button class="secondary" id="resetEntireErp" type="button">Reset Attendance / MDM Data</button>
+            <p class="success-note" id="adminResetStatus">ADMIN login verified. Use this when operational attendance and MDM data must start from zero.</p>
           </div>
         </div>
       </section>
@@ -2370,7 +2370,11 @@
         document.getElementById("accessSummary").value = "Invalid login ID or password.";
         return;
       }
-      adminSession = role !== "teacher" && userId.trim().toLowerCase() === "admin";
+      const loginId = userId.trim().toLowerCase();
+      const selectedLoginStaff = selectedStaff();
+      const selectedStaffRole = String(selectedLoginStaff?.[1] || "").toLowerCase();
+      const staffAdminLogin = Boolean(selectedLoginStaff && /admin/.test(selectedStaffRole) && loginId === teacherLoginId(selectedLoginStaff[0]));
+      adminSession = role !== "teacher" && (loginId === "admin" || staffAdminLogin);
       if (document.getElementById("rememberLogin").value === "yes") {
         localStorage.setItem("oavBadiRememberedLogin", JSON.stringify({ role, teacher, userId }));
       } else {
@@ -2385,7 +2389,9 @@
         ? `${teacher}: ${teacherAssignments[teacher]} only`
         : role === "office"
           ? `${teacher}: assigned ERP role access`
-          : "Logged in with full access.";
+          : adminSession
+            ? "Admin login active. Full access and Admin Only Reset enabled."
+            : "Logged in with full access.";
       updateAdminResetVisibility();
     }
 
@@ -2489,6 +2495,14 @@
     function updateAdminResetVisibility() {
       const panel = document.getElementById("adminResetPanel");
       if (panel) panel.classList.toggle("hidden", !adminSession);
+      const sideLabel = document.getElementById("sideLoginRoleLabel");
+      if (sideLabel) {
+        if (!loggedIn) sideLabel.textContent = "Not logged in";
+        else if (adminSession) sideLabel.textContent = "Admin login";
+        else if (activeUser.role === "principal") sideLabel.textContent = "Principal login";
+        else if (activeUser.role === "teacher") sideLabel.textContent = "Teacher login";
+        else sideLabel.textContent = "Staff login";
+      }
     }
 
     function hasPageAccess(page) {
@@ -2570,25 +2584,51 @@
         if (status) status.textContent = "Reset denied. Login with ADMIN ID to use this option.";
         return;
       }
-      const first = confirm("ADMIN ONLY: This will reset all ERP data for this system. Continue?");
+      const first = confirm("ADMIN ONLY: This will clear attendance, leave, absence, MDM served entries, reports, exam results, and arrangement records. Student/Teacher master, timetable upload, stock entries, and price settings will remain safe. Continue?");
       if (!first) return;
-      const typed = prompt("Type RESET ERP DATA to confirm full reset.");
-      if (typed !== "RESET ERP DATA") {
+      const typed = prompt("Type RESET OPERATIONAL DATA to confirm.");
+      if (typed !== "RESET OPERATIONAL DATA") {
         document.getElementById("adminResetStatus").textContent = "Reset cancelled. No data deleted.";
         return;
       }
-      CLOUD_KEYS.forEach(key => localStorage.removeItem(key));
-      localStorage.removeItem(CLOUD_TS_KEY);
-      localStorage.removeItem("oavBadiRememberedLogin");
+      Object.keys(dailyAttendanceRecords).forEach(key => delete dailyAttendanceRecords[key]);
+      mdmRecords.length = 0;
+      examResults.length = 0;
+      timetableArrangementRecords.length = 0;
+      Object.keys(timetableArrangementSelections).forEach(key => delete timetableArrangementSelections[key]);
+      Object.values(classData).forEach(list => {
+        (list || []).forEach(student => {
+          student[3] = "08:55";
+          student[4] = "Present";
+          student[5] = "";
+        });
+      });
+      attendanceSubmitted = false;
+      [
+        "oavBadiDailyAttendanceRecords",
+        "oavBadiMdmRecords",
+        "oavBadiExamResults",
+        "oavBadiTimetableArrangementRecords",
+        "oavBadiTimetableArrangementSelections"
+      ].forEach(key => localStorage.removeItem(key));
+      saveLocalData();
       if (location.protocol.startsWith("http")) {
         await fetch("/api/cloud-state", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ updatedAt: Date.now(), state: {} })
+          body: JSON.stringify({ updatedAt: Date.now(), state: collectCloudState() })
         });
       }
-      document.getElementById("adminResetStatus").textContent = "ERP data reset complete. Reloading clean system...";
-      setTimeout(() => location.reload(), 1000);
+      loadClassStudents();
+      renderDashboardSnapshot();
+      renderRecentData();
+      renderMdm();
+      renderMdmGroupSummary();
+      renderMdmStockRegister();
+      renderReport();
+      renderExamResults();
+      renderTimetableAudit();
+      document.getElementById("adminResetStatus").textContent = "Operational data reset complete. Master uploads, timetable, stock, and price settings are safe.";
     }
 
     function currentGroupName() {
