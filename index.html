@@ -1832,6 +1832,12 @@
           </div>
           <button class="primary" id="saveSettings">Save Settings</button>
         </header>
+        <div class="card hidden" id="adminResetPanel" style="margin-bottom: 14px;">
+          <h2>Admin Only Reset</h2>
+          <p class="subtle">This reset keeps Student Master, Teacher Master, timetable upload, stock entries, price settings, and ERP coding safe. It clears attendance, leave, absence, MDM served entries, exam results, reports, and arrangement records.</p>
+          <button class="secondary" id="resetEntireErp" type="button">Reset Attendance / MDM Data</button>
+          <p class="success-note" id="adminResetStatus">ADMIN login verified. Use this when operational attendance and MDM data must start from zero.</p>
+        </div>
         <div class="grid two-col">
           <div class="card grid">
             <div class="field"><label>School Name</label><input value="Odisha Adarsha Vidyalaya, Badi"></div>
@@ -1851,12 +1857,6 @@
               <li><strong>Warden</strong><span>Hostel roll call and residential reports.</span></li>
               <li><strong>Office Staff</strong><span>Student master and export support.</span></li>
             </ul>
-          </div>
-          <div class="card hidden" id="adminResetPanel" style="grid-column: 1 / -1;">
-            <h2>Admin Only Reset</h2>
-            <p class="subtle">This reset keeps Student Master, Teacher Master, timetable upload, stock entries, price settings, and ERP coding safe. It clears attendance, leave, absence, MDM served entries, exam results, reports, and arrangement records.</p>
-            <button class="secondary" id="resetEntireErp" type="button">Reset Attendance / MDM Data</button>
-            <p class="success-note" id="adminResetStatus">ADMIN login verified. Use this when operational attendance and MDM data must start from zero.</p>
           </div>
         </div>
       </section>
@@ -2373,7 +2373,12 @@
       const loginId = userId.trim().toLowerCase();
       const selectedLoginStaff = selectedStaff();
       const selectedStaffRole = String(selectedLoginStaff?.[1] || "").toLowerCase();
-      const staffAdminLogin = Boolean(selectedLoginStaff && /admin/.test(selectedStaffRole) && loginId === teacherLoginId(selectedLoginStaff[0]));
+      const loginStaffById = teachers.find(item => teacherLoginId(item[0]).toLowerCase() === loginId);
+      const loginStaffRole = String(loginStaffById?.[1] || "").toLowerCase();
+      const staffAdminLogin = Boolean(
+        (selectedLoginStaff && /admin/.test(selectedStaffRole) && loginId === teacherLoginId(selectedLoginStaff[0]).toLowerCase())
+        || (loginStaffById && /admin/.test(loginStaffRole))
+      );
       adminSession = role !== "teacher" && (loginId === "admin" || staffAdminLogin);
       if (document.getElementById("rememberLogin").value === "yes") {
         localStorage.setItem("oavBadiRememberedLogin", JSON.stringify({ role, teacher, userId }));
@@ -2545,6 +2550,9 @@
       if (page === "timetable") {
         renderTimetableAudit();
         updateTimetableAccess();
+      }
+      if (page === "settings") {
+        updateAdminResetVisibility();
       }
     }
 
