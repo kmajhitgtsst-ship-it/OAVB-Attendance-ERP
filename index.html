@@ -1854,9 +1854,9 @@
           </div>
           <div class="card hidden" id="adminResetPanel">
             <h2>Admin Only Reset</h2>
-            <p class="subtle">This will reset all ERP data after confirmation. This option is visible only after ADMIN login.</p>
+            <p class="subtle">This will reset all ERP data after confirmation. This option is visible only after exact ADMIN login with Login ID admin.</p>
             <button class="secondary" id="resetEntireErp" type="button">Reset Entire ERP Data</button>
-            <p class="success-note" id="adminResetStatus">No reset action taken.</p>
+            <p class="success-note" id="adminResetStatus">ADMIN login verified. Use this only when the full ERP data must be cleared.</p>
           </div>
         </div>
       </section>
@@ -2565,7 +2565,11 @@
     }
 
     async function resetEntireErpData() {
-      if (!adminSession) return;
+      if (!adminSession) {
+        const status = document.getElementById("adminResetStatus");
+        if (status) status.textContent = "Reset denied. Login with ADMIN ID to use this option.";
+        return;
+      }
       const first = confirm("ADMIN ONLY: This will reset all ERP data for this system. Continue?");
       if (!first) return;
       const typed = prompt("Type RESET ERP DATA to confirm full reset.");
@@ -4164,17 +4168,81 @@
       };
     }
 
+    function currentMdmRates() {
+      const readRate = (inputId, settingKey) => {
+        const input = document.getElementById(inputId);
+        const inputValue = input ? Number(input.value || 0) : 0;
+        return inputValue || Number(mdmSettings[settingKey] || 0);
+      };
+      return {
+        oil: readRate("mdmOilRate", "oilRate"),
+        dal: readRate("mdmDalRate", "dalRate"),
+        soy: readRate("mdmSoyRate", "soyRate"),
+        vegetable: readRate("mdmVegRate", "vegRate"),
+        egg: readRate("mdmEggRate", "eggRate"),
+        fruit: readRate("mdmFruitRate", "fruitRate"),
+        laddu: readRate("mdmLadduRate", "ladduRate"),
+        fuel: readRate("mdmFuelRate", "fuelRate"),
+        spice: readRate("mdmSpiceRate", "spiceRate")
+      };
+    }
+
+    function mdmRecordWithCurrentRates(record) {
+      const served = Number(record.served || 0);
+      const rule = mdmRuleForDate(record.date);
+      const rates = currentMdmRates();
+      const proteinText = record.protein || rule.protein;
+      const protein = proteinText === "Soya" ? "Soyabean" : proteinText;
+      const numberOrDefault = (value, fallback) => {
+        const number = Number(value || 0);
+        return number > 0 ? number : fallback;
+      };
+      const riceKg = numberOrDefault(record.riceKg, served * rule.riceKg);
+      const oilKg = numberOrDefault(record.oilKg, served * rule.oilKg);
+      const vegetableKg = numberOrDefault(record.vegetableKg, served * rule.vegetableKg);
+      const proteinQty = numberOrDefault(record.proteinQty, protein === "Egg" ? 0 : served * rule.proteinPerStudent);
+      const fruitQty = numberOrDefault(record.fruitQty, rule.hasChoice ? Math.max(0, served - proteinQty) : 0);
+      const ladduQty = numberOrDefault(record.ladduQty, rule.hasLaddu ? served * rule.ladduPerStudent : 0);
+      const proteinRate = protein === "Dal" ? rates.dal : (protein === "Soyabean" ? rates.soy : rates.egg);
+      const costs = {
+        protein: proteinQty * proteinRate,
+        fruit: fruitQty * rates.fruit,
+        laddu: ladduQty * rates.laddu,
+        oil: oilKg * rates.oil,
+        vegetable: vegetableKg * rates.vegetable,
+        fuel: served * rates.fuel,
+        spice: served * rates.spice
+      };
+      const totalCost = costs.protein + costs.fruit + costs.laddu + costs.oil + costs.vegetable + costs.fuel + costs.spice;
+      return {
+        ...record,
+        served,
+        protein,
+        riceKg,
+        proteinQty,
+        fruitQty,
+        ladduQty,
+        oilKg,
+        vegetableKg,
+        fuelCost: costs.fuel,
+        spiceCost: costs.spice,
+        currentCosts: costs,
+        currentRates: rates,
+        totalCost
+      };
+    }
+
     function mdmDetailsFromRecord(record) {
-      if (record.itemDetails && !String(record.itemDetails.oil || "").includes("Formula:")) return record.itemDetails;
+      const normalized = mdmRecordWithCurrentRates(record);
       return {
         rice: "0",
-        protein: Number(record.totalCost || 0) ? Number(record.totalCost || 0) : "",
-        fruit: record.fruitQty ? Number(record.fruitQty || 0) : "",
-        laddu: record.ladduQty ? Number(record.ladduQty || 0) : "",
-        oil: Number(record.oilKg || 0),
-        vegetable: Number(record.vegetableKg || 0),
-        fuel: Number(record.fuelCost || 0),
-        spice: Number(record.spiceCost || 0)
+        protein: priceDetail(record.protein, normalized.proteinQty, record.protein === "Egg" ? "pc" : "kg", record.protein === "Dal" ? normalized.currentRates.dal : (record.protein === "Soyabean" ? normalized.currentRates.soy : normalized.currentRates.egg), normalized.currentCosts.protein),
+        fruit: normalized.fruitQty ? priceDetail("Fruits", normalized.fruitQty, "pc", normalized.currentRates.fruit, normalized.currentCosts.fruit) : "-",
+        laddu: normalized.ladduQty ? priceDetail("Ragi Laddu", normalized.ladduQty, "pc", normalized.currentRates.laddu, normalized.currentCosts.laddu) : "-",
+        oil: priceDetail("Oil", normalized.oilKg.toFixed(3), "kg", normalized.currentRates.oil, normalized.currentCosts.oil),
+        vegetable: priceDetail("Vegetables", normalized.vegetableKg.toFixed(2), "kg", normalized.currentRates.vegetable, normalized.currentCosts.vegetable),
+        fuel: priceDetail("Fuel", normalized.served, "student", normalized.currentRates.fuel, normalized.currentCosts.fuel),
+        spice: priceDetail("Salt/Spices/Etc", normalized.served, "student", normalized.currentRates.spice, normalized.currentCosts.spice)
       };
     }
 
@@ -4265,22 +4333,23 @@
     }
 
     function mdmExportRowFromRecord(record) {
-      const details = mdmDetailsFromRecord(record);
+      const normalized = mdmRecordWithCurrentRates(record);
+      const details = mdmDetailsFromRecord(normalized);
       return [
-        record.date,
-        dayName(record.date),
-        mdmItemName(record),
-        record.served,
-        record.riceKg,
-        record.protein === "Dal" ? record.proteinQty : "",
-        record.protein === "Soyabean" ? record.proteinQty : "",
-        record.protein === "Egg" ? record.proteinQty : "",
-        record.fruitQty || "",
-        record.ladduQty || "",
-        record.oilKg,
-        record.fuelCost,
-        record.spiceCost,
-        record.vegetableKg,
+        normalized.date,
+        dayName(normalized.date),
+        mdmItemName(normalized),
+        normalized.served,
+        Number(normalized.riceKg || 0).toFixed(2),
+        normalized.protein === "Dal" ? Number(normalized.proteinQty || 0).toFixed(3) : "",
+        normalized.protein === "Soyabean" ? Number(normalized.proteinQty || 0).toFixed(3) : "",
+        normalized.protein === "Egg" ? Number(normalized.proteinQty || 0).toFixed(0) : "",
+        normalized.fruitQty ? Number(normalized.fruitQty || 0).toFixed(0) : "",
+        normalized.ladduQty ? Number(normalized.ladduQty || 0).toFixed(0) : "",
+        Number(normalized.oilKg || 0).toFixed(3),
+        Number(normalized.fuelCost || 0).toFixed(2),
+        Number(normalized.spiceCost || 0).toFixed(2),
+        Number(normalized.vegetableKg || 0).toFixed(2),
         details.protein,
         details.fruit,
         details.laddu,
@@ -4288,7 +4357,7 @@
         details.vegetable,
         details.fuel,
         details.spice,
-        record.totalCost
+        Number(normalized.totalCost || 0).toFixed(2)
       ];
     }
 
@@ -4325,19 +4394,20 @@
         const category = mdmCategoryForClass(key);
         const rows = mdmRecords.filter(record => record.date.startsWith(month) && record.classGroup === key);
         const sum = rows.reduce((acc, record) => {
+          const normalized = mdmRecordWithCurrentRates(record);
           acc.savedDays += 1;
-          acc.served += Number(record.served || 0);
-          acc.riceKg += Number(record.riceKg || 0);
-          if (record.protein === "Egg") acc.egg += Number(record.proteinQty || 0);
-          if (record.protein === "Dal") acc.dalKg += Number(record.proteinQty || 0);
-          if (record.protein === "Soyabean") acc.soyKg += Number(record.proteinQty || 0);
-          acc.fruit += Number(record.fruitQty || 0);
-          acc.laddu += Number(record.ladduQty || 0);
-          acc.oilKg += Number(record.oilKg || 0);
-          acc.vegetableKg += Number(record.vegetableKg || 0);
-          acc.fuelCost += Number(record.fuelCost || 0);
-          acc.spiceCost += Number(record.spiceCost || 0);
-          acc.totalCost += Number(record.totalCost || 0);
+          acc.served += Number(normalized.served || 0);
+          acc.riceKg += Number(normalized.riceKg || 0);
+          if (normalized.protein === "Egg") acc.egg += Number(normalized.proteinQty || 0);
+          if (normalized.protein === "Dal") acc.dalKg += Number(normalized.proteinQty || 0);
+          if (normalized.protein === "Soyabean") acc.soyKg += Number(normalized.proteinQty || 0);
+          acc.fruit += Number(normalized.fruitQty || 0);
+          acc.laddu += Number(normalized.ladduQty || 0);
+          acc.oilKg += Number(normalized.oilKg || 0);
+          acc.vegetableKg += Number(normalized.vegetableKg || 0);
+          acc.fuelCost += Number(normalized.fuelCost || 0);
+          acc.spiceCost += Number(normalized.spiceCost || 0);
+          acc.totalCost += Number(normalized.totalCost || 0);
           return acc;
         }, { savedDays: 0, served: 0, riceKg: 0, egg: 0, fruit: 0, laddu: 0, dalKg: 0, soyKg: 0, oilKg: 0, vegetableKg: 0, fuelCost: 0, spiceCost: 0, totalCost: 0 });
         return { category, classGroup: key, totalStudents: (classData[key] || []).length, ...sum };
@@ -4420,16 +4490,17 @@
       }, { riceKg: 0, dalKg: 0, soyKg: 0, eggPcs: 0, fruitPcs: 0, ladduPcs: 0, oilKg: 0, vegetableKg: 0, fuelAmount: 0, spiceAmount: 0 });
 
       const usedTotals = mdmRecords.reduce((acc, record) => {
-        acc.riceKg += Number(record.riceKg || 0);
-        if (record.protein === "Dal") acc.dalKg += Number(record.proteinQty || 0);
-        if (record.protein === "Soyabean") acc.soyKg += Number(record.proteinQty || 0);
-        if (record.protein === "Egg") acc.eggPcs += Number(record.proteinQty || 0);
-        acc.fruitPcs += Number(record.fruitQty || 0);
-        acc.ladduPcs += Number(record.ladduQty || 0);
-        acc.oilKg += Number(record.oilKg || 0);
-        acc.vegetableKg += Number(record.vegetableKg || 0);
-        acc.fuelAmount += Number(record.fuelCost || 0);
-        acc.spiceAmount += Number(record.spiceCost || 0);
+        const normalized = mdmRecordWithCurrentRates(record);
+        acc.riceKg += Number(normalized.riceKg || 0);
+        if (normalized.protein === "Dal") acc.dalKg += Number(normalized.proteinQty || 0);
+        if (normalized.protein === "Soyabean") acc.soyKg += Number(normalized.proteinQty || 0);
+        if (normalized.protein === "Egg") acc.eggPcs += Number(normalized.proteinQty || 0);
+        acc.fruitPcs += Number(normalized.fruitQty || 0);
+        acc.ladduPcs += Number(normalized.ladduQty || 0);
+        acc.oilKg += Number(normalized.oilKg || 0);
+        acc.vegetableKg += Number(normalized.vegetableKg || 0);
+        acc.fuelAmount += Number(normalized.fuelCost || 0);
+        acc.spiceAmount += Number(normalized.spiceCost || 0);
         return acc;
       }, { riceKg: 0, dalKg: 0, soyKg: 0, eggPcs: 0, fruitPcs: 0, ladduPcs: 0, oilKg: 0, vegetableKg: 0, fuelAmount: 0, spiceAmount: 0 });
 
