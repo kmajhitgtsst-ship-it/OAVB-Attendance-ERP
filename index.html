@@ -70,10 +70,26 @@
     }
 
     .brand {
-      display: grid;
-      gap: 4px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
       padding: 4px 8px 14px;
       border-bottom: 1px solid rgba(255,255,255,.16);
+    }
+
+    .brand-logo {
+      width: 52px;
+      height: 52px;
+      border-radius: 12px;
+      background: #fff;
+      object-fit: contain;
+      padding: 4px;
+      flex: 0 0 auto;
+    }
+
+    .brand-copy {
+      display: grid;
+      gap: 4px;
     }
 
     .brand strong {
@@ -273,6 +289,19 @@
       color: var(--ink);
     }
 
+    .password-wrap {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 48px;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .password-eye {
+      min-height: 40px;
+      padding: 8px;
+      text-align: center;
+    }
+
     textarea {
       min-height: 128px;
       resize: vertical;
@@ -315,6 +344,14 @@
     .late { color: #805600; background: #fff0c2; }
     .leave { color: #2354b8; background: #e3edff; }
     .holiday { color: #655000; background: #fff7d6; }
+
+    tr.student-absent td { background: #fff0f0; }
+    tr.student-leave td { background: #fff4e5; }
+    tr.teacher-leave td { background: #ffe2e2; }
+    tr.total-row td {
+      background: #eef4ff;
+      font-weight: 800;
+    }
 
     .token-sheet {
       display: grid;
@@ -618,7 +655,8 @@
       body.login-only main {
         min-height: 100svh;
         place-items: start stretch;
-        padding: 10px;
+        align-content: start;
+        padding: 8px;
       }
       body.login-only .role-panel {
         width: 100%;
@@ -640,14 +678,18 @@
       }
       body.login-only main {
         min-height: 100svh;
+        height: auto;
         place-items: start stretch;
-        padding: 8px;
+        align-content: start;
+        padding: 0;
       }
       body.login-only .role-panel {
         width: 100%;
         margin: 0;
         border-radius: 0;
+        border: 0;
         padding: 10px;
+        box-shadow: none;
       }
       aside {
         position: static;
@@ -702,8 +744,8 @@
         gap: 10px;
       }
       .login-visual {
-        min-height: 190px;
-        border-radius: 6px;
+        min-height: 240px;
+        border-radius: 12px;
       }
       .login-caption {
         left: 14px;
@@ -730,6 +772,44 @@
       .login-form label {
         font-size: 15px;
       }
+      #attendance header {
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+      #attendance header h1 {
+        font-size: 30px;
+      }
+      #attendance .card {
+        border-radius: 10px;
+        margin-left: -6px;
+        margin-right: -6px;
+        padding: 14px;
+      }
+      #attendance .toolbar {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+      #attendance .toolbar .field,
+      #attendance .toolbar .field[style] {
+        min-width: 100% !important;
+        width: 100%;
+      }
+      #attendance input,
+      #attendance select,
+      #attendance button {
+        width: 100%;
+        min-height: 54px;
+        font-size: 18px;
+      }
+      #attendance #bulkRolls {
+        font-size: 22px;
+        font-weight: 700;
+        min-height: 62px;
+      }
+      #attendance .bulk-preview {
+        min-height: auto;
+        padding: 14px;
+      }
       #attendance header .subtle,
       #attendance .attendance-student-table th:nth-child(3),
       #attendance .attendance-student-table th:nth-child(4),
@@ -746,16 +826,24 @@
       #attendance .attendance-student-table table {
         min-width: 0;
         width: 100%;
-        font-size: 18px;
+        font-size: 20px;
       }
       #attendance .attendance-student-table th,
       #attendance .attendance-student-table td {
-        padding: 14px 10px;
+        padding: 16px 8px;
+      }
+      #attendance .attendance-student-table th:nth-child(1),
+      #attendance .attendance-student-table td:nth-child(1) {
+        width: 58px;
+      }
+      #attendance .attendance-student-table th:nth-child(2),
+      #attendance .attendance-student-table td:nth-child(2) {
+        font-weight: 700;
       }
       #attendance .status {
-        min-height: 42px;
-        min-width: 92px;
-        font-size: 16px;
+        min-height: 48px;
+        min-width: 104px;
+        font-size: 17px;
       }
       #attendance .bulk-preview h2 {
         font-size: 20px;
@@ -772,9 +860,12 @@
   <div class="app">
     <aside>
       <div class="brand">
-        <strong>OAV BADI ERP</strong>
-        <span>Advanced Attendance System</span>
-        <small>Powered By DETH</small>
+        <img class="brand-logo" src="assets/oavs-logo.png" alt="OAVS logo">
+        <div class="brand-copy">
+          <strong>OAV BADI ERP</strong>
+          <span>Advanced Attendance System</span>
+          <small>Powered By DETH</small>
+        </div>
       </div>
       <nav aria-label="ERP sections">
         <button class="nav-button active" data-page="dashboard">Dashboard</button>
@@ -826,7 +917,10 @@
               </div>
               <div class="field">
                 <label for="loginPassword">Password</label>
-                <input id="loginPassword" type="password" placeholder="Password" autocomplete="current-password">
+                <div class="password-wrap">
+                  <input id="loginPassword" type="password" placeholder="Password" autocomplete="current-password">
+                  <button class="secondary password-eye" data-toggle-password="loginPassword" type="button" title="Show password">👁</button>
+                </div>
               </div>
               <div class="field">
                 <label for="rememberLogin">Auto-save</label>
@@ -862,9 +956,9 @@
         </header>
 
         <div class="grid stats">
-          <div class="card metric good"><span>Students Present</span><strong id="presentCount">421</strong></div>
-          <div class="card metric bad"><span>Absent Today</span><strong id="absentCount">18</strong></div>
-          <div class="card metric warn"><span>Late Arrivals</span><strong id="lateCount">11</strong></div>
+          <div class="card metric good"><span>Students Present</span><strong id="presentCount">0</strong></div>
+          <div class="card metric bad"><span>Absent Today</span><strong id="absentCount">0</strong></div>
+          <div class="card metric warn"><span>Late Arrivals</span><strong id="lateCount">0</strong></div>
           <div class="card metric info"><span>Staff Present</span><strong id="staffPresentCount">0/0</strong></div>
         </div>
 
@@ -902,7 +996,7 @@
             <div class="section-title">
               <h2>Priority Alerts</h2>
             </div>
-            <ul class="list">
+            <ul class="list" id="priorityAlertList">
               <li><strong>SMS queue ready</strong><span>18 parent absence alerts pending approval.</span></li>
               <li><strong>Class VIII review</strong><span>Attendance below weekly target for 2 days.</span></li>
               <li><strong>Device sync</strong><span>Main gate biometric last synced 09:12 AM.</span></li>
@@ -976,7 +1070,7 @@
             </ul>
           </div>
         </div>
-        <div class="card" style="margin-top: 14px;">
+        <div class="card" id="mdmDailyEntryCard" style="margin-top: 14px;">
           <div class="section-title">
             <h2>Student Bulk Entry</h2>
             <span class="pill">Excel / CSV</span>
@@ -1039,7 +1133,7 @@
             <button class="secondary" id="prepareWhatsapp">WhatsApp Class Group</button>
           </div>
         </header>
-        <div class="card">
+        <div class="card" id="attendanceListCard">
           <div class="section-title">
             <h2>Bulk Attendance Marking</h2>
             <span class="pill">Roll range supported</span>
@@ -1048,6 +1142,20 @@
             <div class="field">
               <label for="dateFilter">Date</label>
               <input id="dateFilter" type="date" value="2026-07-02">
+            </div>
+            <div class="field">
+              <label for="classFilter">Class</label>
+              <select id="classFilter">
+                <option>Class VI</option><option>Class VII</option><option>Class VIII</option><option>Class IX</option><option>Class X</option><option>Class XI-SCIENCE</option><option>Class XII-SCIENCE</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="sectionFilter">Section</label>
+              <select id="sectionFilter"><option>A</option><option>B</option></select>
+            </div>
+            <div class="field">
+              <label for="searchStudent">Search</label>
+              <input id="searchStudent" type="search" placeholder="Name or roll no.">
             </div>
             <div class="field">
               <label for="bulkStatus">Select Status</label>
@@ -1068,7 +1176,7 @@
             <button class="primary" id="submitAttendance">Submit Attendance</button>
           </div>
           <div class="grid two-col">
-            <div class="bulk-preview">
+            <div class="bulk-preview hidden">
               <h2>Selected Students Preview</h2>
               <p class="subtle" id="bulkPreviewSummary">Type roll numbers to see student names automatically.</p>
               <div class="name-preview" id="bulkNamePreview"></div>
@@ -1080,22 +1188,6 @@
           </div>
         </div>
         <div class="card">
-          <div class="toolbar">
-            <div class="field">
-              <label for="classFilter">Class</label>
-              <select id="classFilter">
-                <option>Class VI</option><option>Class VII</option><option>Class VIII</option><option>Class IX</option><option>Class X</option><option>Class XI-SCIENCE</option><option>Class XII-SCIENCE</option>
-              </select>
-            </div>
-            <div class="field">
-              <label for="sectionFilter">Section</label>
-              <select id="sectionFilter"><option>A</option><option>B</option></select>
-            </div>
-            <div class="field">
-              <label for="searchStudent">Search</label>
-              <input id="searchStudent" type="search" placeholder="Name or roll no.">
-            </div>
-          </div>
           <div class="table-wrap attendance-student-table">
             <table>
               <thead>
@@ -1213,6 +1305,7 @@
             <button class="secondary" id="copyWhatsappLink">Copy Link</button>
             <button class="primary" id="sendWhatsapp">Send WhatsApp</button>
           </div>
+          <div class="name-preview" id="absentWhatsappList"></div>
           <div class="grid two-col">
             <div class="field">
               <label for="whatsappMessage">Message Preview</label>
@@ -1248,7 +1341,7 @@
         </header>
         <div class="card table-wrap">
           <table>
-            <thead><tr><th>Name</th><th>Role</th><th>In</th><th>Out</th><th>Status</th><th>Action</th></tr></thead>
+            <thead><tr><th>Name</th><th>Code</th><th>Role</th><th>In</th><th>Out</th><th>Status</th><th>Action</th></tr></thead>
             <tbody id="teacherAttendanceRows"></tbody>
           </table>
         </div>
@@ -1276,7 +1369,7 @@
           <p class="success-note" id="teacherBulkStatus">Imported teachers will appear below.</p>
           <div class="table-wrap" style="margin-top: 14px;">
             <table>
-              <thead><tr><th>Name</th><th>Role</th><th>Mobile</th><th>Assigned Class</th><th>Status</th><th>Login ID</th><th>Password</th><th>Action</th></tr></thead>
+              <thead><tr><th>Name</th><th>Code</th><th>Role</th><th>Mobile</th><th>Assigned Class</th><th>Status</th><th>Login ID</th><th>Password</th><th>Action</th></tr></thead>
               <tbody id="teacherRows"></tbody>
             </table>
           </div>
@@ -1295,7 +1388,7 @@
             <h2>Stock Entry</h2>
             <span class="pill">MDM incharge</span>
           </div>
-          <p class="subtle">Yahan sirf naya aaya saman enter karein. Save karne par previous stock delete nahi hoga, previous + current ka total register me dikhega.</p>
+          <p class="subtle">Enter only newly received stock here. Saving a new entry will not delete previous stock; the register will show previous + current stock totals.</p>
           <div class="toolbar">
             <div class="field">
               <label for="mdmStockDate">Stock Entry Date</label>
@@ -1410,7 +1503,10 @@
             </div>
             <div class="field">
               <label for="stockResetPassword">Password</label>
-              <input id="stockResetPassword" type="password" placeholder="Principal/Admin password">
+              <div class="password-wrap">
+                <input id="stockResetPassword" type="password" placeholder="Principal/Admin password">
+                <button class="secondary password-eye" data-toggle-password="stockResetPassword" type="button" title="Show password">👁</button>
+              </div>
             </div>
             <div class="field">
               <label for="stockResetBackup">Save Old Stock</label>
@@ -1756,6 +1852,12 @@
               <li><strong>Office Staff</strong><span>Student master and export support.</span></li>
             </ul>
           </div>
+          <div class="card hidden" id="adminResetPanel">
+            <h2>Admin Only Reset</h2>
+            <p class="subtle">This will reset all ERP data after confirmation. This option is visible only after ADMIN login.</p>
+            <button class="secondary" id="resetEntireErp" type="button">Reset Entire ERP Data</button>
+            <p class="success-note" id="adminResetStatus">No reset action taken.</p>
+          </div>
         </div>
       </section>
     </main>
@@ -1838,7 +1940,7 @@
     const monthSettings = {
       "2026-07": { workingDays: 24, holidays: [] }
     };
-    const APP_VERSION = "2026-07-11-1945";
+    const APP_VERSION = "2026-07-12-erp-update-1";
     const CLOUD_KEYS = [
       "oavBadiClassData",
       "oavBadiTeachers",
@@ -1903,6 +2005,7 @@
     const DEFAULT_TEACHER_PASSWORD = "Teacher@OAVB#2026";
     let activeUser = { role: "guest", teacher: "", classKey: "", pages: [] };
     let loggedIn = false;
+    let adminSession = false;
 
     function saveLocalData() {
       localStorage.setItem("oavBadiClassData", JSON.stringify(classData));
@@ -2023,48 +2126,14 @@
       return record;
     }
 
-    classes.forEach((className, classIndex) => {
-      sections.forEach((sectionName, sectionIndex) => {
-        const key = `${className}-${sectionName}`;
-        classData[key] = Array.from({ length: 40 }, (_, itemIndex) => {
-          const roll = itemIndex + 1;
-          const name = baseNames[itemIndex % baseNames.length];
-          const shiftedName = classIndex === 0 && sectionIndex === 0 ? name : `${name} ${sectionName}`;
-          const hostel = (roll + classIndex + sectionIndex) % 2 === 0 ? "Yes" : "No";
-          const monthly = buildMonthRecord(roll, classIndex, sectionIndex);
-          return [
-            String(roll).padStart(2, "0"),
-            shiftedName,
-            hostel,
-            "08:55",
-            "Present",
-            "",
-            `Guardian ${roll}`,
-            `+91 9${classIndex}${sectionIndex}${String(roll).padStart(2, "0")}00${String(roll).padStart(2, "0")}`,
-            monthly
-          ];
-        });
+    // Student master must come only from saved/imported school data. Do not auto-create sample students.
+    classes.forEach(className => {
+      sections.forEach(sectionName => {
+        classData[`${className}-${sectionName}`] = [];
       });
     });
-
-    scienceClasses.forEach((className, classIndex) => {
-      classData[className] = Array.from({ length: 40 }, (_, itemIndex) => {
-        const roll = itemIndex + 1;
-        const name = baseNames[(itemIndex + classIndex + 5) % baseNames.length];
-        const hostel = roll % 2 === 0 ? "Yes" : "No";
-        const monthly = buildMonthRecord(roll, classIndex + 5, 0);
-        return [
-          String(roll).padStart(2, "0"),
-          `${name} Science`,
-          hostel,
-          "08:55",
-          "Present",
-          "",
-          `Guardian ${roll}`,
-          `+91 95${classIndex}${String(roll).padStart(2, "0")}00${String(roll).padStart(2, "0")}`,
-          monthly
-        ];
-      });
+    scienceClasses.forEach(className => {
+      classData[className] = [];
     });
 
     function currentClassKey() {
@@ -2301,6 +2370,7 @@
         document.getElementById("accessSummary").value = "Invalid login ID or password.";
         return;
       }
+      adminSession = role !== "teacher" && userId.trim().toLowerCase() === "admin";
       if (document.getElementById("rememberLogin").value === "yes") {
         localStorage.setItem("oavBadiRememberedLogin", JSON.stringify({ role, teacher, userId }));
       } else {
@@ -2316,6 +2386,7 @@
         : role === "office"
           ? `${teacher}: assigned ERP role access`
           : "Logged in with full access.";
+      updateAdminResetVisibility();
     }
 
     function classKeysForDashboard() {
@@ -2328,14 +2399,48 @@
 
     function renderDashboardSnapshot() {
       renderStaffMetric();
+      const today = todayIsoDate();
+      const totals = { strength: 0, present: 0, absent: 0, late: 0, leave: 0, holiday: 0 };
       const rows = classKeysForDashboard().map(key => {
         const selected = classData[key] || [];
-        const present = selected.filter(student => student[4] === "Present" || student[4] === "Late").length;
-        const absent = selected.filter(student => student[4] === "Absent").length;
+        const saved = dailyAttendanceRecords[attendanceRecordKey(today, key)];
+        const statuses = saved
+          ? (saved.students || []).map(student => student.status || "Present")
+          : selected.map(() => "Present");
+        const present = statuses.filter(status => status === "Present" || status === "Late").length;
+        const absent = statuses.filter(status => status === "Absent").length;
+        const late = statuses.filter(status => status === "Late").length;
+        const leave = statuses.filter(status => status === "Leave").length;
+        const holiday = statuses.filter(status => status === "Holiday").length;
         const percent = selected.length ? Math.round((present / selected.length) * 1000) / 10 : 0;
+        totals.strength += selected.length;
+        totals.present += present;
+        totals.absent += absent;
+        totals.late += late;
+        totals.leave += leave;
+        totals.holiday += holiday;
         return `<tr><td>${key.replace("Class ", "")}</td><td>${selected.length}</td><td>${present}</td><td>${absent}</td><td>${percent}%</td></tr>`;
       });
+      const totalPercent = totals.strength ? Math.round((totals.present / totals.strength) * 1000) / 10 : 0;
+      rows.push(`<tr class="total-row"><td>Total</td><td>${totals.strength}</td><td>${totals.present}</td><td>${totals.absent}</td><td>${totalPercent}%</td></tr>`);
       document.getElementById("dashboardClassRows").innerHTML = rows.join("");
+      document.getElementById("presentCount").textContent = totals.present;
+      document.getElementById("absentCount").textContent = totals.absent;
+      document.getElementById("lateCount").textContent = totals.late;
+      renderPriorityAlerts(totals);
+    }
+
+    function renderPriorityAlerts(totals) {
+      const list = document.getElementById("priorityAlertList");
+      if (!list) return;
+      const today = todayIsoDate();
+      const alerts = [];
+      if (totals.absent > 0) alerts.push(["Absence alerts ready", `${totals.absent} student absence message(s) ready for ${today}.`]);
+      if (totals.late > 0) alerts.push(["Late arrival review", `${totals.late} late arrival(s) recorded today.`]);
+      if (totals.leave > 0) alerts.push(["Leave records", `${totals.leave} student leave record(s) saved today.`]);
+      if (totals.strength === 0) alerts.push(["Student master required", "Upload student master data to activate live dashboard counts."]);
+      if (!alerts.length) alerts.push(["All clear", "No absent or late student recorded today."]);
+      list.innerHTML = alerts.map(([title, text]) => `<li><strong>${title}</strong><span>${text}</span></li>`).join("");
     }
 
     function renderStaffMetric() {
@@ -2378,6 +2483,12 @@
       updateMdmSettingsAccess();
       renderMdm();
       renderMdmStockRegister();
+      updateAdminResetVisibility();
+    }
+
+    function updateAdminResetVisibility() {
+      const panel = document.getElementById("adminResetPanel");
+      if (panel) panel.classList.toggle("hidden", !adminSession);
     }
 
     function hasPageAccess(page) {
@@ -2429,9 +2540,11 @@
 
     function logout() {
       loggedIn = false;
+      adminSession = false;
       activeUser = { role: "guest", teacher: "", classKey: "", pages: [] };
       document.body.classList.add("login-only");
       renderNavAccess();
+      updateAdminResetVisibility();
       document.querySelectorAll(".page").forEach(section => section.classList.add("hidden"));
       document.getElementById("accessSummary").value = "Logged out. Please login to continue.";
     }
@@ -2449,6 +2562,29 @@
       localStorage.removeItem("oavBadiRememberedLogin");
       document.getElementById("accessSummary").value = "This browser data cleared. Online data is safe. Reloading from server...";
       setTimeout(() => location.reload(), 800);
+    }
+
+    async function resetEntireErpData() {
+      if (!adminSession) return;
+      const first = confirm("ADMIN ONLY: This will reset all ERP data for this system. Continue?");
+      if (!first) return;
+      const typed = prompt("Type RESET ERP DATA to confirm full reset.");
+      if (typed !== "RESET ERP DATA") {
+        document.getElementById("adminResetStatus").textContent = "Reset cancelled. No data deleted.";
+        return;
+      }
+      CLOUD_KEYS.forEach(key => localStorage.removeItem(key));
+      localStorage.removeItem(CLOUD_TS_KEY);
+      localStorage.removeItem("oavBadiRememberedLogin");
+      if (location.protocol.startsWith("http")) {
+        await fetch("/api/cloud-state", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ updatedAt: Date.now(), state: {} })
+        });
+      }
+      document.getElementById("adminResetStatus").textContent = "ERP data reset complete. Reloading clean system...";
+      setTimeout(() => location.reload(), 1000);
     }
 
     function currentGroupName() {
@@ -2736,6 +2872,7 @@
       const selected = classData[key] || [];
       students.length = 0;
       selected.forEach(student => students.push(student));
+      document.getElementById("attendanceListCard")?.classList.remove("hidden");
       document.getElementById("whatsappGroup").value = currentGroupName();
       renderStudents(document.getElementById("searchStudent").value);
       renderIndividualOptions();
@@ -2823,6 +2960,16 @@
       }
       document.getElementById("whatsappMessage").value = buildWhatsappMessage();
       document.getElementById("whatsappLink").value = buildWhatsappLink(groupName);
+      renderAbsentWhatsappList();
+    }
+
+    function renderAbsentWhatsappList() {
+      const box = document.getElementById("absentWhatsappList");
+      if (!box) return;
+      const absentStudents = students.filter(student => student[4] === "Absent");
+      box.innerHTML = absentStudents.length
+        ? absentStudents.map(student => `<span class="name-chip">Roll ${Number(student[0])}: ${student[1]} <button class="secondary send-student" data-roll="${student[0]}" type="button">Send WhatsApp</button></span>`).join("")
+        : `<span class="name-chip">No absent student selected for this class/date.</span>`;
     }
 
     function cleanWhatsappPhone(mobile) {
@@ -2908,7 +3055,7 @@
       log.innerHTML = `
         <li>
           <strong>WhatsApp link opened for ${target}</strong>
-          <span>${document.getElementById("messageType").selectedOptions[0].text} prepared at ${now}. WhatsApp/Web me Send dabana hoga.</span>
+          <span>${document.getElementById("messageType").selectedOptions[0].text} prepared at ${now}. Please press Send in WhatsApp or WhatsApp Web.</span>
         </li>
       ` + log.innerHTML;
     }
@@ -2939,6 +3086,7 @@
         .forEach((student, index) => {
           const tr = document.createElement("tr");
           const status = student[4];
+          tr.className = status === "Absent" ? "student-absent" : status === "Leave" ? "student-leave" : "";
           const stats = studentMonthlyStats(student);
           tr.innerHTML = `
             <td>${student[0]}</td>
@@ -3231,8 +3379,9 @@
     function renderTeachers() {
       renderStaffMetric();
       document.getElementById("teacherRows").innerHTML = teachers.length ? teachers.map((teacher, index) => `
-        <tr>
+        <tr class="${teacher[4] === "Leave" ? "teacher-leave" : ""}">
           <td>${teacher[0]}</td>
+          <td>${teacherCodeFromName(teacher[0])}</td>
           <td>${teacher[1]}</td>
           <td>${teacher[2]}</td>
           <td>${teacher[3] || '<span class="status absent">Class not assigned</span>'}</td>
@@ -3241,21 +3390,22 @@
           <td><span class="status leave">Protected</span></td>
           <td><button class="secondary assign-teacher-class" data-index="${index}">Assign Class</button> <button class="secondary assign-admin-principal" data-index="${index}">Assign Admin/Principal</button> <button class="secondary assign-erp-role" data-index="${index}">Assign ERP Role</button> <button class="secondary edit-teacher" data-index="${index}">Edit</button> <button class="secondary reset-teacher-password" data-index="${index}">Reset</button> <button class="secondary delete-teacher" data-index="${index}">Delete</button></td>
         </tr>
-      `).join("") : `<tr><td colspan="8">No teacher data uploaded yet. Import your school teacher CSV/Excel.</td></tr>`;
+      `).join("") : `<tr><td colspan="9">No teacher data uploaded yet. Import your school teacher CSV/Excel.</td></tr>`;
     }
 
     function renderTeacherAttendance() {
       renderStaffMetric();
       document.getElementById("teacherAttendanceRows").innerHTML = teachers.length ? teachers.map((teacher, index) => `
-        <tr>
+        <tr class="${teacher[4] === "Leave" ? "teacher-leave" : ""}">
           <td>${teacher[0]}</td>
+          <td>${teacherCodeFromName(teacher[0])}</td>
           <td>${teacher[1]}</td>
           <td>${teacher[4] === "Present" ? "08:45" : "-"}</td>
           <td>-</td>
           <td><button class="status ${teacher[4] === "Leave" ? "leave" : "present"} teacher-attendance-status" data-index="${index}">${teacher[4] || "Present"}</button></td>
           <td><button class="secondary delete-teacher" data-index="${index}">Delete Teacher</button></td>
         </tr>
-      `).join("") : `<tr><td colspan="6">No teacher data uploaded yet.</td></tr>`;
+      `).join("") : `<tr><td colspan="7">No teacher data uploaded yet.</td></tr>`;
     }
 
     function normalizePersonName(name) {
@@ -3738,7 +3888,7 @@
       document.getElementById("resetStockRegister").disabled = !canEdit;
       document.getElementById("mdmSettingsStatus").textContent = canEdit
         ? "Stock and monthly rates will be used in Attendance page MDM calculation."
-        : "Class Teacher login me stock/price entry disabled hai. Principal/Office Staff MDM tab se save karenge.";
+        : "Stock and price entry is disabled for class teacher login. Principal or authorized office staff can save it from the MDM tab.";
     }
 
     function canEditTimetable() {
@@ -3769,7 +3919,7 @@
       });
       const status = document.getElementById("timeTableStatus");
       if (status && !canEdit) {
-        status.textContent = "Teacher view only: Weekly/Today's Time Table dekh sakte hain. Edit/import access Time Table I/C, Principal/Admin ke paas hai.";
+        status.textContent = "Teacher view only: weekly and today's timetable can be viewed. Edit/import access is available only to Time Table I/C, Principal, or Admin.";
       }
     }
 
@@ -3876,7 +4026,7 @@
 
       if (!data.eligible) {
         document.getElementById("mdmRows").innerHTML = `
-          <tr><td colspan="6">${data.key}: MDM facility available nahi hai.</td></tr>
+          <tr><td colspan="6">${data.key}: MDM facility is not available.</td></tr>
         `;
         document.getElementById("mdmStatus").textContent = `${data.key}: MDM facility not available.`;
         return;
@@ -5055,7 +5205,7 @@
         : "Enter absent teacher codes to calculate arrangement.";
       const todayWorkload = timetableDailyWorkload(rows);
       const workloadText = Object.entries(todayWorkload).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([code, count]) => `${code}: ${count}`).join(" | ") || "No workload data";
-      document.getElementById("timeTableStatus").innerHTML = `Today: ${timetableTodayName()}. Available for arrangement: ${available}. Current day workload: ${workloadText}. Dropdown me low weekly/monthly arrangement wale teachers upar rakhe gaye hain.`;
+      document.getElementById("timeTableStatus").innerHTML = `Today: ${timetableTodayName()}. Available for arrangement: ${available}. Current day workload: ${workloadText}. Teachers with lower weekly/monthly arrangement load are shown first in the dropdown.`;
       document.getElementById("timeTableArrangementRows").innerHTML = arrangements.length
         ? arrangements.map(row => {
             const selectDisabled = canEditTimetable() ? "" : " disabled";
@@ -5315,6 +5465,8 @@
       document.getElementById("bulkRolls").value = "";
       updateBulkPreview();
       document.getElementById("attendanceSubmitStatus").textContent = `${prefix}${document.getElementById("dateFilter").value} saved. Present: ${summary.present}, Absent: ${summary.absent}, Leave: ${summary.leave}, Holiday: ${summary.holiday}, Late: ${summary.late}.`;
+      document.getElementById("attendanceListCard")?.classList.add("hidden");
+      document.getElementById("mdmDailyEntryCard")?.scrollIntoView({ behavior: "smooth", block: "start" });
       saveLocalData();
     }
 
@@ -5518,6 +5670,16 @@
       document.getElementById("toggleLoginPassword").textContent = visible ? "Show Password" : "Hide Password";
     });
 
+    document.querySelectorAll("[data-toggle-password]").forEach(button => {
+      button.addEventListener("click", () => {
+        const input = document.getElementById(button.dataset.togglePassword);
+        if (!input) return;
+        const visible = input.type === "text";
+        input.type = visible ? "password" : "text";
+        button.title = visible ? "Show password" : "Hide password";
+      });
+    });
+
     document.getElementById("forgotLoginPassword").addEventListener("click", () => {
       forgotLoginPassword();
     });
@@ -5543,6 +5705,10 @@
 
     document.getElementById("clearLocalData").addEventListener("click", () => {
       clearThisBrowserData();
+    });
+
+    document.getElementById("resetEntireErp").addEventListener("click", () => {
+      resetEntireErpData();
     });
 
     ["reportType", "reportClass", "reportDate", "reportMonth"].forEach(id => {
