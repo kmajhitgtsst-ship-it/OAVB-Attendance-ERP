@@ -3849,6 +3849,536 @@
         font-weight: 800 !important;
       }
     }
+
+    /* Last word for phone login: full-width readable form, no tiny centered card. */
+    @media (max-width: 1200px), (pointer: coarse) {
+      body.mobile-force.login-only,
+      html.mobile-force body.login-only {
+        width: 100% !important;
+        min-width: 0 !important;
+        overflow-x: hidden !important;
+        background: #eef4f8 !important;
+      }
+
+      body.mobile-force.login-only main,
+      html.mobile-force body.login-only main {
+        width: 100% !important;
+        min-width: 0 !important;
+        padding: 0 0 16px !important;
+        background: #eef4f8 !important;
+      }
+
+      body.mobile-force.login-only .role-panel,
+      html.mobile-force body.login-only .role-panel {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-height: 100svh !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+      }
+
+      body.mobile-force.login-only .login-shell,
+      html.mobile-force body.login-only .login-shell {
+        display: block !important;
+        width: 100% !important;
+        min-height: auto !important;
+        background: transparent !important;
+      }
+
+      body.mobile-force.login-only .login-shell::before,
+      body.mobile-force.login-only .login-shell::after,
+      body.mobile-force.login-only .login-visual::before,
+      html.mobile-force body.login-only .login-shell::before,
+      html.mobile-force body.login-only .login-shell::after,
+      html.mobile-force body.login-only .login-visual::before {
+        display: none !important;
+        content: none !important;
+        background: none !important;
+      }
+
+      body.mobile-force.login-only .login-visual,
+      html.mobile-force body.login-only .login-visual {
+        width: 100% !important;
+        min-height: 270px !important;
+        height: 34svh !important;
+        max-height: 340px !important;
+        border-radius: 0 0 20px 20px !important;
+        background:
+          linear-gradient(180deg, rgba(4, 31, 52, .02), rgba(4, 31, 52, .46)),
+          url("assets/oav-badi-school-login.jpg") center 20% / cover no-repeat,
+          #0b3551 !important;
+        box-shadow: 0 10px 22px rgba(7, 28, 44, .18) !important;
+      }
+
+      body.mobile-force.login-only .login-visual img,
+      html.mobile-force body.login-only .login-visual img {
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: cover !important;
+        object-position: center 20% !important;
+      }
+
+      body.mobile-force.login-only .login-visual::after,
+      html.mobile-force body.login-only .login-visual::after {
+        background: linear-gradient(180deg, rgba(4, 31, 52, .02), rgba(4, 31, 52, .46)) !important;
+      }
+
+      body.mobile-force.login-only .login-caption,
+      html.mobile-force body.login-only .login-caption {
+        left: 14px !important;
+        right: 14px !important;
+        bottom: 16px !important;
+      }
+
+      body.mobile-force.login-only .login-caption strong,
+      html.mobile-force body.login-only .login-caption strong {
+        font-size: 28px !important;
+        line-height: 1.05 !important;
+        font-weight: 950 !important;
+      }
+
+      body.mobile-force.login-only .login-caption span,
+      html.mobile-force body.login-only .login-caption span {
+        font-size: 17px !important;
+        line-height: 1.2 !important;
+        font-weight: 850 !important;
+      }
+
+      body.mobile-force.login-only .login-form,
+      html.mobile-force body.login-only .login-form {
+        position: relative !important;
+        z-index: 5 !important;
+        display: block !important;
+        width: calc(100vw - 18px) !important;
+        max-width: none !important;
+        min-width: 0 !important;
+        margin: -18px 9px 14px !important;
+        padding: 15px 13px 14px !important;
+        border: 1px solid #d6e4ee !important;
+        border-radius: 18px !important;
+        background: #fff !important;
+        box-shadow: 0 14px 30px rgba(15, 35, 50, .18) !important;
+      }
+
+      body.mobile-force.login-only .login-form::before,
+      html.mobile-force body.login-only .login-form::before {
+        display: none !important;
+        content: none !important;
+      }
+
+      body.mobile-force.login-only .login-form::after,
+      html.mobile-force body.login-only .login-form::after {
+        content: "Use your Teacher ID and Password. Contact Admin/Principal for password reset." !important;
+        display: block !important;
+        margin-top: 10px !important;
+        padding: 10px 11px !important;
+        border-radius: 12px !important;
+        background: #0b75af !important;
+        color: #fff !important;
+        font-size: 15px !important;
+        line-height: 1.25 !important;
+        font-weight: 900 !important;
+      }
+
+      body.mobile-force.login-only .login-form .toolbar,
+      html.mobile-force body.login-only .login-form .toolbar {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+      }
+
+      body.mobile-force.login-only .login-form .field,
+      body.mobile-force.login-only .login-form .field[style],
+      html.mobile-force body.login-only .login-form .field,
+      html.mobile-force body.login-only .login-form .field[style] {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+      }
+
+      body.mobile-force.login-only .login-form label,
+      html.mobile-force body.login-only .login-form label {
+        display: block !important;
+        color: #183044 !important;
+        font-size: 18px !important;
+        line-height: 1.1 !important;
+        font-weight: 950 !important;
+        margin: 0 0 5px !important;
+      }
+
+      body.mobile-force.login-only .login-form input,
+      body.mobile-force.login-only .login-form select,
+      html.mobile-force body.login-only .login-form input,
+      html.mobile-force body.login-only .login-form select {
+        width: 100% !important;
+        min-height: 54px !important;
+        height: 54px !important;
+        padding: 9px 12px !important;
+        border: 2px solid #b9d6e8 !important;
+        border-radius: 12px !important;
+        background: #fbfdff !important;
+        color: #10202f !important;
+        font-size: 20px !important;
+        line-height: 1.12 !important;
+        font-weight: 900 !important;
+      }
+
+      body.mobile-force.login-only .password-wrap,
+      html.mobile-force body.login-only .password-wrap {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) 56px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+
+      body.mobile-force.login-only .password-wrap input,
+      html.mobile-force body.login-only .password-wrap input {
+        border-radius: 12px 0 0 12px !important;
+        border-right: 0 !important;
+      }
+
+      body.mobile-force.login-only .password-wrap .password-eye,
+      html.mobile-force body.login-only .password-wrap .password-eye {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 56px !important;
+        min-width: 56px !important;
+        height: 54px !important;
+        min-height: 54px !important;
+        border: 2px solid #b9d6e8 !important;
+        border-left: 0 !important;
+        border-radius: 0 12px 12px 0 !important;
+        background: #eef7ff !important;
+        color: #0b75af !important;
+        padding: 0 !important;
+      }
+
+      body.mobile-force.login-only .password-eye svg,
+      html.mobile-force body.login-only .password-eye svg {
+        width: 28px !important;
+        height: 28px !important;
+      }
+
+      body.mobile-force.login-only #loginButton,
+      html.mobile-force body.login-only #loginButton {
+        width: 100% !important;
+        min-height: 56px !important;
+        height: 56px !important;
+        border-radius: 12px !important;
+        background: #0879bd !important;
+        color: #fff !important;
+        font-size: 20px !important;
+        font-weight: 950 !important;
+        text-transform: uppercase !important;
+      }
+
+      body.mobile-force.login-only .login-form button.secondary,
+      html.mobile-force body.login-only .login-form button.secondary {
+        width: 100% !important;
+        min-height: 48px !important;
+        height: 48px !important;
+        border-radius: 12px !important;
+        font-size: 17px !important;
+        font-weight: 900 !important;
+      }
+
+      body.mobile-force.login-only .login-form .subtle,
+      html.mobile-force body.login-only .login-form .subtle {
+        font-size: 14px !important;
+        line-height: 1.35 !important;
+        font-weight: 800 !important;
+      }
+    }
+
+    /* Show the complete school photo on mobile instead of cropping it. */
+    @media (max-width: 1200px), (pointer: coarse) {
+      body.mobile-force.login-only .login-visual,
+      html.mobile-force body.login-only .login-visual {
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        aspect-ratio: auto !important;
+        background: #10202f !important;
+        border-radius: 0 0 18px 18px !important;
+        overflow: hidden !important;
+      }
+
+      body.mobile-force.login-only .login-visual img,
+      html.mobile-force body.login-only .login-visual img {
+        display: block !important;
+        width: 100% !important;
+        height: auto !important;
+        max-height: none !important;
+        object-fit: contain !important;
+        object-position: center center !important;
+        filter: none !important;
+      }
+
+      body.mobile-force.login-only .login-visual::after,
+      html.mobile-force body.login-only .login-visual::after {
+        background: linear-gradient(180deg, rgba(4, 31, 52, .02), rgba(4, 31, 52, .48)) !important;
+      }
+
+      body.mobile-force.login-only .login-form,
+      html.mobile-force body.login-only .login-form {
+        margin-top: -14px !important;
+      }
+    }
+
+    /* Absolute phone fallback: applies even if mobile-force is not attached. */
+    @media (max-width: 1200px), (pointer: coarse) {
+      body.login-only,
+      html body.login-only {
+        width: 100% !important;
+        min-width: 0 !important;
+        overflow-x: hidden !important;
+        background: #eef4f8 !important;
+        font-size: 20px !important;
+        font-weight: 900 !important;
+      }
+
+      body.login-only main,
+      html body.login-only main {
+        display: block !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        padding: 0 0 18px !important;
+        background: #eef4f8 !important;
+      }
+
+      body.login-only .role-panel,
+      html body.login-only .role-panel {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-height: 100svh !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+      }
+
+      body.login-only .login-shell,
+      html body.login-only .login-shell {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-height: 0 !important;
+        background: transparent !important;
+      }
+
+      body.login-only .login-shell::before,
+      body.login-only .login-shell::after,
+      body.login-only .login-visual::before,
+      html body.login-only .login-shell::before,
+      html body.login-only .login-shell::after,
+      html body.login-only .login-visual::before {
+        display: none !important;
+        content: none !important;
+      }
+
+      body.login-only .login-visual,
+      html body.login-only .login-visual {
+        display: block !important;
+        width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        border-radius: 0 0 18px 18px !important;
+        background: #10202f !important;
+        overflow: hidden !important;
+      }
+
+      body.login-only .login-visual img,
+      html body.login-only .login-visual img {
+        display: block !important;
+        width: 100% !important;
+        height: auto !important;
+        max-height: none !important;
+        object-fit: contain !important;
+        object-position: center center !important;
+        filter: none !important;
+      }
+
+      body.login-only .login-visual::after,
+      html body.login-only .login-visual::after {
+        background: linear-gradient(180deg, rgba(4, 31, 52, .02), rgba(4, 31, 52, .48)) !important;
+      }
+
+      body.login-only .login-caption,
+      html body.login-only .login-caption {
+        left: 14px !important;
+        right: 14px !important;
+        bottom: 14px !important;
+      }
+
+      body.login-only .login-caption strong,
+      html body.login-only .login-caption strong {
+        font-size: 30px !important;
+        line-height: 1.05 !important;
+        font-weight: 950 !important;
+      }
+
+      body.login-only .login-caption span,
+      html body.login-only .login-caption span {
+        font-size: 18px !important;
+        line-height: 1.2 !important;
+        font-weight: 850 !important;
+      }
+
+      body.login-only .login-form,
+      html body.login-only .login-form {
+        position: relative !important;
+        z-index: 5 !important;
+        display: block !important;
+        width: calc(100vw - 16px) !important;
+        max-width: none !important;
+        min-width: 0 !important;
+        margin: -12px 8px 16px !important;
+        padding: 16px 13px 14px !important;
+        border: 1px solid #d6e4ee !important;
+        border-radius: 18px !important;
+        background: #fff !important;
+        box-shadow: 0 14px 30px rgba(15, 35, 50, .18) !important;
+      }
+
+      body.login-only .login-form::before,
+      html body.login-only .login-form::before {
+        display: none !important;
+        content: none !important;
+      }
+
+      body.login-only .login-form::after,
+      html body.login-only .login-form::after {
+        content: "Use your Teacher ID and Password. Contact Admin/Principal for password reset." !important;
+        display: block !important;
+        margin-top: 10px !important;
+        padding: 10px 11px !important;
+        border-radius: 12px !important;
+        background: #0b75af !important;
+        color: #fff !important;
+        font-size: 16px !important;
+        line-height: 1.25 !important;
+        font-weight: 900 !important;
+      }
+
+      body.login-only .login-form .toolbar,
+      html body.login-only .login-form .toolbar {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+      }
+
+      body.login-only .login-form .field,
+      body.login-only .login-form .field[style],
+      html body.login-only .login-form .field,
+      html body.login-only .login-form .field[style] {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+      }
+
+      body.login-only .login-form label,
+      html body.login-only .login-form label {
+        display: block !important;
+        color: #183044 !important;
+        font-size: 19px !important;
+        line-height: 1.1 !important;
+        font-weight: 950 !important;
+        margin: 0 0 5px !important;
+      }
+
+      body.login-only .login-form input,
+      body.login-only .login-form select,
+      html body.login-only .login-form input,
+      html body.login-only .login-form select {
+        width: 100% !important;
+        min-height: 56px !important;
+        height: 56px !important;
+        padding: 10px 12px !important;
+        border: 2px solid #b9d6e8 !important;
+        border-radius: 12px !important;
+        background: #fbfdff !important;
+        color: #10202f !important;
+        font-size: 21px !important;
+        line-height: 1.12 !important;
+        font-weight: 900 !important;
+      }
+
+      body.login-only .password-wrap,
+      html body.login-only .password-wrap {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) 58px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+
+      body.login-only .password-wrap input,
+      html body.login-only .password-wrap input {
+        border-radius: 12px 0 0 12px !important;
+        border-right: 0 !important;
+      }
+
+      body.login-only .password-wrap .password-eye,
+      html body.login-only .password-wrap .password-eye {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 58px !important;
+        min-width: 58px !important;
+        height: 56px !important;
+        min-height: 56px !important;
+        border: 2px solid #b9d6e8 !important;
+        border-left: 0 !important;
+        border-radius: 0 12px 12px 0 !important;
+        background: #eef7ff !important;
+        color: #0b75af !important;
+        padding: 0 !important;
+      }
+
+      body.login-only .password-eye svg,
+      html body.login-only .password-eye svg {
+        width: 30px !important;
+        height: 30px !important;
+      }
+
+      body.login-only #loginButton,
+      html body.login-only #loginButton {
+        width: 100% !important;
+        min-height: 58px !important;
+        height: 58px !important;
+        border-radius: 12px !important;
+        background: #0879bd !important;
+        color: #fff !important;
+        font-size: 21px !important;
+        font-weight: 950 !important;
+        text-transform: uppercase !important;
+      }
+
+      body.login-only .login-form button.secondary,
+      html body.login-only .login-form button.secondary {
+        width: 100% !important;
+        min-height: 50px !important;
+        height: 50px !important;
+        border-radius: 12px !important;
+        font-size: 18px !important;
+        font-weight: 900 !important;
+      }
+
+      body.login-only .login-form .subtle,
+      html body.login-only .login-form .subtle {
+        font-size: 15px !important;
+        line-height: 1.35 !important;
+        font-weight: 800 !important;
+      }
+    }
   </style>
 </head>
 <body class="login-only">
