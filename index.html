@@ -873,30 +873,143 @@
       }
     }
 
+    @media (max-width: 1200px), (pointer: coarse) {
+      html,
+      body {
+        width: 100%;
+        overflow-x: hidden;
+      }
+      body.login-only main {
+        display: block;
+        min-height: auto;
+        height: auto;
+        padding: 0;
+      }
+      body.login-only .role-panel {
+        width: 100%;
+        max-width: none;
+        margin: 0;
+        padding: 10px;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+      body.login-only .login-shell {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        width: 100%;
+      }
+      body.login-only .login-visual {
+        width: 100%;
+        min-height: 150px;
+        max-height: 180px;
+        border-radius: 12px;
+      }
+      body.login-only .login-form {
+        width: 100%;
+      }
+      body.login-only .login-form .toolbar {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+      body.login-only .login-form .field,
+      body.login-only .login-form .field[style] {
+        min-width: 100% !important;
+        width: 100%;
+      }
+      body.login-only .login-form input,
+      body.login-only .login-form select,
+      body.login-only .login-form button {
+        width: 100%;
+        min-height: 56px;
+        font-size: 18px;
+      }
+      body.login-only .login-form label {
+        font-size: 15px;
+        font-weight: 700;
+      }
+      #attendance .attendance-student-table {
+        overflow-x: visible;
+      }
+      #attendance .attendance-student-table table {
+        border-collapse: separate;
+        border-spacing: 0 10px;
+        min-width: 0;
+        width: 100%;
+      }
+      #attendance .attendance-student-table thead,
+      #attendance .attendance-student-table th:nth-child(3),
+      #attendance .attendance-student-table th:nth-child(4),
+      #attendance .attendance-student-table th:nth-child(5),
+      #attendance .attendance-student-table th:nth-child(7),
+      #attendance .attendance-student-table th:nth-child(8),
+      #attendance .attendance-student-table td:nth-child(3),
+      #attendance .attendance-student-table td:nth-child(4),
+      #attendance .attendance-student-table td:nth-child(5),
+      #attendance .attendance-student-table td:nth-child(7),
+      #attendance .attendance-student-table td:nth-child(8) {
+        display: none !important;
+      }
+      #attendance .attendance-student-table tbody tr {
+        display: grid;
+        grid-template-columns: 58px minmax(0, 1fr) 112px;
+        align-items: center;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+        background: #fff;
+      }
+      #attendance .attendance-student-table td {
+        display: block;
+        border-bottom: 0;
+        padding: 16px 8px;
+        font-size: 18px;
+      }
+      #attendance .attendance-student-table td:nth-child(1) {
+        width: auto;
+        color: var(--muted);
+        font-weight: 800;
+      }
+      #attendance .attendance-student-table td:nth-child(2) {
+        min-width: 0;
+        font-weight: 800;
+        line-height: 1.25;
+      }
+      #attendance .status {
+        min-width: 98px;
+        min-height: 46px;
+        padding: 10px 8px;
+        font-size: 16px;
+        text-align: center;
+      }
+    }
+
     @media (max-width: 520px) {
       body.login-only .role-panel {
         padding: 8px;
       }
       .login-visual {
-        min-height: 128px;
-        max-height: 150px;
+        min-height: 150px;
+        max-height: 180px;
       }
       .login-form input,
       .login-form select,
       .login-form button {
-        min-height: 46px;
-        font-size: 16px;
+        min-height: 54px;
+        font-size: 18px;
       }
       #attendance .attendance-student-table tbody tr {
-        grid-template-columns: 52px minmax(0, 1fr) 98px;
+        grid-template-columns: 54px minmax(0, 1fr) 104px;
       }
       #attendance .attendance-student-table td {
-        font-size: 17px;
-        padding: 14px 6px;
+        font-size: 18px;
+        padding: 16px 6px;
       }
       #attendance .status {
-        min-width: 88px;
-        font-size: 15px;
+        min-width: 96px;
+        font-size: 16px;
       }
     }
   </style>
