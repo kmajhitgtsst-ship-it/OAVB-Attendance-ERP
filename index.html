@@ -3,6 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script>
+    (function () {
+      var mobileLike = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ||
+        (window.matchMedia && window.matchMedia("(pointer: coarse)").matches) ||
+        window.innerWidth <= 1200;
+      if (mobileLike) document.documentElement.classList.add("mobile-force");
+    })();
+  </script>
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -1032,6 +1040,178 @@
         min-width: 108px;
         font-size: 17px;
       }
+    }
+
+    html.mobile-force body.login-only {
+      background: #eef3f8 !important;
+      min-width: 0 !important;
+    }
+
+    html.mobile-force body.login-only main {
+      display: block !important;
+      width: 100vw !important;
+      max-width: 100vw !important;
+      min-height: auto !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      overflow-x: hidden !important;
+    }
+
+    html.mobile-force body.login-only .role-panel {
+      width: 100vw !important;
+      max-width: 100vw !important;
+      margin: 0 !important;
+      padding: 18px !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+    }
+
+    html.mobile-force body.login-only .login-shell {
+      display: flex !important;
+      flex-direction: column !important;
+      width: 100% !important;
+      gap: 18px !important;
+    }
+
+    html.mobile-force body.login-only .login-visual {
+      width: 100% !important;
+      min-height: 320px !important;
+      max-height: none !important;
+      border-radius: 14px !important;
+      background-position: center top !important;
+    }
+
+    html.mobile-force body.login-only .login-visual img {
+      display: block !important;
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover !important;
+      object-position: center top !important;
+      filter: none !important;
+    }
+
+    html.mobile-force body.login-only .login-visual::after {
+      background: linear-gradient(180deg, rgba(16, 32, 47, .02), rgba(16, 32, 47, .28)) !important;
+    }
+
+    html.mobile-force body.login-only .login-caption {
+      left: 18px !important;
+      right: 18px !important;
+      bottom: 18px !important;
+    }
+
+    html.mobile-force body.login-only .login-caption strong {
+      font-size: clamp(30px, 7vw, 44px) !important;
+      line-height: 1.05 !important;
+    }
+
+    html.mobile-force body.login-only .login-caption span {
+      font-size: clamp(18px, 4.6vw, 26px) !important;
+      line-height: 1.35 !important;
+    }
+
+    html.mobile-force body.login-only .login-form .toolbar {
+      display: grid !important;
+      grid-template-columns: 1fr !important;
+      gap: 18px !important;
+    }
+
+    html.mobile-force body.login-only .login-form .field,
+    html.mobile-force body.login-only .login-form .field[style] {
+      min-width: 100% !important;
+      width: 100% !important;
+      flex-basis: 100% !important;
+    }
+
+    html.mobile-force body.login-only .login-form label {
+      display: block !important;
+      font-size: clamp(20px, 4.8vw, 30px) !important;
+      font-weight: 800 !important;
+      margin-bottom: 10px !important;
+    }
+
+    html.mobile-force body.login-only .login-form input,
+    html.mobile-force body.login-only .login-form select,
+    html.mobile-force body.login-only .login-form button {
+      width: 100% !important;
+      min-height: 82px !important;
+      font-size: clamp(22px, 5.3vw, 34px) !important;
+      padding: 18px 20px !important;
+      border-radius: 14px !important;
+    }
+
+    html.mobile-force body.login-only .password-wrap .password-eye {
+      width: 82px !important;
+      min-height: 82px !important;
+      flex: 0 0 82px !important;
+      font-size: 32px !important;
+      padding: 0 !important;
+    }
+
+    html.mobile-force body.login-only .login-form .subtle {
+      font-size: clamp(17px, 4vw, 24px) !important;
+      line-height: 1.45 !important;
+    }
+
+    html.mobile-force #attendance header h1 {
+      font-size: clamp(32px, 8vw, 48px) !important;
+    }
+
+    html.mobile-force #attendance .attendance-student-table {
+      overflow-x: visible !important;
+    }
+
+    html.mobile-force #attendance .attendance-student-table table {
+      min-width: 0 !important;
+      width: 100% !important;
+      border-collapse: separate !important;
+      border-spacing: 0 12px !important;
+    }
+
+    html.mobile-force #attendance .attendance-student-table thead,
+    html.mobile-force #attendance .attendance-student-table th:nth-child(3),
+    html.mobile-force #attendance .attendance-student-table th:nth-child(4),
+    html.mobile-force #attendance .attendance-student-table th:nth-child(5),
+    html.mobile-force #attendance .attendance-student-table th:nth-child(7),
+    html.mobile-force #attendance .attendance-student-table th:nth-child(8),
+    html.mobile-force #attendance .attendance-student-table td:nth-child(3),
+    html.mobile-force #attendance .attendance-student-table td:nth-child(4),
+    html.mobile-force #attendance .attendance-student-table td:nth-child(5),
+    html.mobile-force #attendance .attendance-student-table td:nth-child(7),
+    html.mobile-force #attendance .attendance-student-table td:nth-child(8) {
+      display: none !important;
+    }
+
+    html.mobile-force #attendance .attendance-student-table tbody tr {
+      display: grid !important;
+      grid-template-columns: 70px minmax(0, 1fr) 132px !important;
+      align-items: center !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 14px !important;
+      overflow: hidden !important;
+      background: #fff !important;
+    }
+
+    html.mobile-force #attendance .attendance-student-table td {
+      display: block !important;
+      border-bottom: 0 !important;
+      padding: 22px 10px !important;
+      font-size: clamp(21px, 5vw, 30px) !important;
+      line-height: 1.2 !important;
+    }
+
+    html.mobile-force #attendance .attendance-student-table td:nth-child(1),
+    html.mobile-force #attendance .attendance-student-table td:nth-child(2) {
+      font-weight: 800 !important;
+    }
+
+    html.mobile-force #attendance .status {
+      min-width: 120px !important;
+      min-height: 60px !important;
+      padding: 14px 10px !important;
+      font-size: clamp(17px, 4.2vw, 24px) !important;
+      text-align: center !important;
     }
   </style>
 </head>
