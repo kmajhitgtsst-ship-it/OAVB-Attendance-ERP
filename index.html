@@ -677,9 +677,9 @@
         background: #eef3f8;
       }
       body.login-only main {
-        min-height: 100svh;
+        display: block;
+        min-height: auto;
         height: auto;
-        place-items: start stretch;
         align-content: start;
         padding: 0;
       }
@@ -741,22 +741,26 @@
       }
       .login-shell {
         grid-template-columns: 1fr;
-        gap: 10px;
+        gap: 8px;
       }
       .login-visual {
-        min-height: 240px;
+        min-height: 160px;
+        max-height: 190px;
         border-radius: 12px;
       }
       .login-caption {
-        left: 14px;
-        right: 14px;
-        bottom: 14px;
+        left: 12px;
+        right: 12px;
+        bottom: 12px;
       }
       .login-caption strong {
-        font-size: 28px;
+        font-size: 24px;
+      }
+      .login-caption span {
+        font-size: 14px;
       }
       .login-form {
-        gap: 10px;
+        gap: 8px;
       }
       .login-form .toolbar {
         display: grid;
@@ -766,8 +770,8 @@
       .login-form select,
       .login-form button {
         width: 100%;
-        min-height: 52px;
-        font-size: 18px;
+        min-height: 48px;
+        font-size: 17px;
       }
       .login-form label {
         font-size: 15px;
@@ -824,12 +828,27 @@
         display: none;
       }
       #attendance .attendance-student-table table {
+        border-collapse: separate;
+        border-spacing: 0 8px;
         min-width: 0;
         width: 100%;
         font-size: 20px;
       }
+      #attendance .attendance-student-table thead {
+        display: none;
+      }
+      #attendance .attendance-student-table tbody tr {
+        display: grid;
+        grid-template-columns: 58px minmax(0, 1fr) 112px;
+        align-items: center;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        overflow: hidden;
+        background: #fff;
+      }
       #attendance .attendance-student-table th,
       #attendance .attendance-student-table td {
+        border-bottom: 0;
         padding: 16px 8px;
       }
       #attendance .attendance-student-table th:nth-child(1),
@@ -851,6 +870,33 @@
       #attendance .name-chip {
         font-size: 15px;
         padding: 8px 10px;
+      }
+    }
+
+    @media (max-width: 520px) {
+      body.login-only .role-panel {
+        padding: 8px;
+      }
+      .login-visual {
+        min-height: 128px;
+        max-height: 150px;
+      }
+      .login-form input,
+      .login-form select,
+      .login-form button {
+        min-height: 46px;
+        font-size: 16px;
+      }
+      #attendance .attendance-student-table tbody tr {
+        grid-template-columns: 52px minmax(0, 1fr) 98px;
+      }
+      #attendance .attendance-student-table td {
+        font-size: 17px;
+        padding: 14px 6px;
+      }
+      #attendance .status {
+        min-width: 88px;
+        font-size: 15px;
       }
     }
   </style>
@@ -919,7 +965,7 @@
                 <label for="loginPassword">Password</label>
                 <div class="password-wrap">
                   <input id="loginPassword" type="password" placeholder="Password" autocomplete="current-password">
-                  <button class="secondary password-eye" data-toggle-password="loginPassword" type="button" title="Show password">👁</button>
+                  <button class="secondary password-eye" data-toggle-password="loginPassword" type="button" title="Show password">&#128065;</button>
                 </div>
               </div>
               <div class="field">
@@ -931,7 +977,6 @@
                 <input id="accessSummary" value="All classes available" readonly>
               </div>
               <button class="primary" id="loginButton">Login</button>
-              <button class="secondary" id="toggleLoginPassword" type="button">Show Password</button>
               <button class="secondary" id="forgotLoginPassword" type="button">Forgot Password</button>
               <button class="secondary" id="changeLoginPassword" type="button">Change Password</button>
               <button class="secondary" id="resetLoginPassword" type="button">Reset Password</button>
@@ -1505,7 +1550,7 @@
               <label for="stockResetPassword">Password</label>
               <div class="password-wrap">
                 <input id="stockResetPassword" type="password" placeholder="Principal/Admin password">
-                <button class="secondary password-eye" data-toggle-password="stockResetPassword" type="button" title="Show password">👁</button>
+                <button class="secondary password-eye" data-toggle-password="stockResetPassword" type="button" title="Show password">&#128065;</button>
               </div>
             </div>
             <div class="field">
@@ -5780,13 +5825,6 @@
 
     document.getElementById("sideLogoutButton")?.addEventListener("click", () => {
       logout();
-    });
-
-    document.getElementById("toggleLoginPassword").addEventListener("click", () => {
-      const input = document.getElementById("loginPassword");
-      const visible = input.type === "text";
-      input.type = visible ? "password" : "text";
-      document.getElementById("toggleLoginPassword").textContent = visible ? "Show Password" : "Hide Password";
     });
 
     document.querySelectorAll("[data-toggle-password]").forEach(button => {
