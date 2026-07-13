@@ -4379,6 +4379,67 @@
         font-weight: 800 !important;
       }
     }
+
+    /* Mobile dashboard snapshot: keep Percent visible by hiding only Absent column. */
+    @media (max-width: 760px), (pointer: coarse) {
+      body:not(.login-only) #dashboard .table-wrap,
+      html body:not(.login-only) #dashboard .table-wrap {
+        width: 100% !important;
+        overflow-x: hidden !important;
+      }
+
+      body:not(.login-only) #dashboard table,
+      html body:not(.login-only) #dashboard table {
+        width: 100% !important;
+        min-width: 0 !important;
+        table-layout: fixed !important;
+      }
+
+      body:not(.login-only) #dashboard th,
+      body:not(.login-only) #dashboard td,
+      html body:not(.login-only) #dashboard th,
+      html body:not(.login-only) #dashboard td {
+        font-size: 17px !important;
+        line-height: 1.15 !important;
+        font-weight: 950 !important;
+        padding: 10px 8px !important;
+        white-space: normal !important;
+      }
+
+      body:not(.login-only) #dashboard th:nth-child(1),
+      body:not(.login-only) #dashboard td:nth-child(1),
+      html body:not(.login-only) #dashboard th:nth-child(1),
+      html body:not(.login-only) #dashboard td:nth-child(1) {
+        width: 30% !important;
+      }
+
+      body:not(.login-only) #dashboard th:nth-child(2),
+      body:not(.login-only) #dashboard td:nth-child(2),
+      body:not(.login-only) #dashboard th:nth-child(3),
+      body:not(.login-only) #dashboard td:nth-child(3),
+      html body:not(.login-only) #dashboard th:nth-child(2),
+      html body:not(.login-only) #dashboard td:nth-child(2),
+      html body:not(.login-only) #dashboard th:nth-child(3),
+      html body:not(.login-only) #dashboard td:nth-child(3) {
+        width: 21% !important;
+        text-align: center !important;
+      }
+
+      body:not(.login-only) #dashboard th:nth-child(4),
+      body:not(.login-only) #dashboard td:nth-child(4),
+      html body:not(.login-only) #dashboard th:nth-child(4),
+      html body:not(.login-only) #dashboard td:nth-child(4) {
+        display: none !important;
+      }
+
+      body:not(.login-only) #dashboard th:nth-child(5),
+      body:not(.login-only) #dashboard td:nth-child(5),
+      html body:not(.login-only) #dashboard th:nth-child(5),
+      html body:not(.login-only) #dashboard td:nth-child(5) {
+        width: 28% !important;
+        text-align: right !important;
+      }
+    }
   </style>
 </head>
 <body class="login-only">
