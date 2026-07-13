@@ -310,15 +310,29 @@
 
     .password-wrap {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 48px;
-      gap: 6px;
-      align-items: center;
+      grid-template-columns: minmax(0, 1fr) 52px;
+      gap: 8px;
+      align-items: stretch;
     }
 
     .password-eye {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 52px;
+      min-width: 52px;
       min-height: 40px;
-      padding: 8px;
+      padding: 0;
       text-align: center;
+    }
+
+    .password-eye svg {
+      width: 23px;
+      height: 23px;
+      stroke: currentColor;
+      stroke-width: 2.2;
+      fill: none;
+      pointer-events: none;
     }
 
     textarea {
@@ -1609,6 +1623,126 @@
         min-width: 900px !important;
       }
     }
+
+    @media (max-width: 1200px), (pointer: coarse) {
+      body.mobile-force.login-only,
+      html.mobile-force body.login-only {
+        font-size: 22px !important;
+      }
+
+      body.mobile-force.login-only .login-form label,
+      html.mobile-force body.login-only .login-form label {
+        font-size: clamp(22px, 5.8vw, 32px) !important;
+        line-height: 1.2 !important;
+      }
+
+      body.mobile-force.login-only .login-form input,
+      body.mobile-force.login-only .login-form select,
+      body.mobile-force.login-only .login-form button,
+      html.mobile-force body.login-only .login-form input,
+      html.mobile-force body.login-only .login-form select,
+      html.mobile-force body.login-only .login-form button {
+        min-height: 58px !important;
+        font-size: clamp(22px, 5.8vw, 32px) !important;
+        padding: 9px 12px !important;
+      }
+
+      body.mobile-force.login-only .password-wrap,
+      html.mobile-force body.login-only .password-wrap,
+      body.mobile-force:not(.login-only) .password-wrap,
+      html.mobile-force body:not(.login-only) .password-wrap {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) 58px !important;
+        gap: 8px !important;
+        align-items: stretch !important;
+      }
+
+      body.mobile-force.login-only .password-wrap .password-eye,
+      html.mobile-force body.login-only .password-wrap .password-eye,
+      body.mobile-force:not(.login-only) .password-wrap .password-eye,
+      html.mobile-force body:not(.login-only) .password-wrap .password-eye {
+        display: inline-flex !important;
+        width: 58px !important;
+        min-width: 58px !important;
+        max-width: 58px !important;
+        min-height: 58px !important;
+        padding: 0 !important;
+        align-items: center !important;
+        justify-content: center !important;
+      }
+
+      body.mobile-force.login-only .password-eye svg,
+      html.mobile-force body.login-only .password-eye svg,
+      body.mobile-force:not(.login-only) .password-eye svg,
+      html.mobile-force body:not(.login-only) .password-eye svg {
+        width: 30px !important;
+        height: 30px !important;
+      }
+
+      body.mobile-force:not(.login-only),
+      html.mobile-force body:not(.login-only) {
+        font-size: 22px !important;
+      }
+
+      body.mobile-force:not(.login-only) aside,
+      html.mobile-force body:not(.login-only) aside {
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 1000 !important;
+        box-shadow: 0 8px 20px rgba(8, 24, 40, 0.18) !important;
+      }
+
+      body.mobile-force:not(.login-only) .nav-button,
+      html.mobile-force body:not(.login-only) .nav-button,
+      body.mobile-force:not(.login-only) .user-box,
+      html.mobile-force body:not(.login-only) .user-box {
+        font-size: clamp(20px, 5.4vw, 31px) !important;
+        line-height: 1.25 !important;
+      }
+
+      body.mobile-force:not(.login-only) h1,
+      html.mobile-force body:not(.login-only) h1 {
+        font-size: clamp(34px, 8.5vw, 54px) !important;
+      }
+
+      body.mobile-force:not(.login-only) h2,
+      html.mobile-force body:not(.login-only) h2 {
+        font-size: clamp(28px, 7vw, 44px) !important;
+      }
+
+      body.mobile-force:not(.login-only) label,
+      html.mobile-force body:not(.login-only) label,
+      body.mobile-force:not(.login-only) .subtle,
+      body.mobile-force:not(.login-only) p,
+      html.mobile-force body:not(.login-only) .subtle,
+      html.mobile-force body:not(.login-only) p {
+        font-size: clamp(20px, 5.2vw, 30px) !important;
+        line-height: 1.35 !important;
+      }
+
+      body.mobile-force:not(.login-only) input,
+      body.mobile-force:not(.login-only) select,
+      body.mobile-force:not(.login-only) textarea,
+      body.mobile-force:not(.login-only) button,
+      html.mobile-force body:not(.login-only) input,
+      html.mobile-force body:not(.login-only) select,
+      html.mobile-force body:not(.login-only) textarea,
+      html.mobile-force body:not(.login-only) button {
+        min-height: 60px !important;
+        font-size: clamp(21px, 5.5vw, 32px) !important;
+        padding: 10px 14px !important;
+      }
+
+      body.mobile-force:not(.login-only) table,
+      html.mobile-force body:not(.login-only) table,
+      body.mobile-force:not(.login-only) th,
+      body.mobile-force:not(.login-only) td,
+      html.mobile-force body:not(.login-only) th,
+      html.mobile-force body:not(.login-only) td {
+        font-size: clamp(20px, 5.2vw, 30px) !important;
+        line-height: 1.35 !important;
+      }
+    }
   </style>
 </head>
 <body class="login-only">
@@ -1675,7 +1809,12 @@
                 <label for="loginPassword">Password</label>
                 <div class="password-wrap">
                   <input id="loginPassword" type="password" placeholder="Password" autocomplete="current-password">
-                  <button class="secondary password-eye" data-toggle-password="loginPassword" type="button" title="Show password">&#128065;</button>
+                  <button class="secondary password-eye" data-toggle-password="loginPassword" type="button" title="Show password" aria-label="Show password">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                  </button>
                 </div>
               </div>
               <div class="field">
@@ -2260,7 +2399,12 @@
               <label for="stockResetPassword">Password</label>
               <div class="password-wrap">
                 <input id="stockResetPassword" type="password" placeholder="Principal/Admin password">
-                <button class="secondary password-eye" data-toggle-password="stockResetPassword" type="button" title="Show password">&#128065;</button>
+                <button class="secondary password-eye" data-toggle-password="stockResetPassword" type="button" title="Show password" aria-label="Show password">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                </button>
               </div>
             </div>
             <div class="field">
