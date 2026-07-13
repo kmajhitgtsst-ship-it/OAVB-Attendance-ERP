@@ -7,6 +7,9 @@ const PORT = Number(process.env.PORT || 3000);
 const ROOT = __dirname;
 const DATA_DIR = process.env.OAVB_DATA_DIR || (process.env.RENDER ? path.join(os.tmpdir(), "oav-badi-erp-data") : path.join(ROOT, "data"));
 const STATE_FILE = path.join(DATA_DIR, "cloud-state.json");
+const SUPABASE_URL = (process.env.SUPABASE_URL || "").replace(/\/+$/, "");
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+const SUPABASE_CLOUD_KEY = "cloud_state";
 
 function ensureDataFile() {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -33,6 +36,65 @@ function readState() {
 function writeState(payload) {
   ensureDataFile();
   fs.writeFileSync(STATE_FILE, JSON.stringify(payload, null, 2));
+}
+
+function supabaseEnabled() {
+  return Boolean(SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY);
+}
+
+async function supabaseRequest(pathname, options = {}) {
+  if (!supabaseEnabled()) throw new Error("Supabase service key is not configured.");
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/${pathname}`, {
+    ...options,
+    headers: {
+      apikey: SUPABASE_SERVICE_ROLE_KEY,
+      authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      "content-type": "application/json",
+      ...(options.headers || {})
+    }
+  });
+  const text = await response.text();
+  let payload = null;
+  if (text) {
+    try {
+      payload = JSON.parse(text);
+    } catch (error) {
+      payload = text;
+    }
+  }
+  if (!response.ok) {
+    const message = typeof payload === "string" ? payload : (payload?.message || response.statusText);
+    throw new Error(`Supabase ${response.status}: ${message}`);
+  }
+  return payload;
+}
+
+async function readCloudState() {
+  if (!supabaseEnabled()) return readState();
+  const rows = await supabaseRequest(`settings?setting_key=eq.${encodeURIComponent(SUPABASE_CLOUD_KEY)}&select=setting_value`);
+  const value = rows?.[0]?.setting_value;
+  if (!value || typeof value !== "object") return { updatedAt: 0, state: {} };
+  return {
+    updatedAt: Number(value.updatedAt || 0),
+    savedAt: value.savedAt || "",
+    state: value.state || {}
+  };
+}
+
+async function writeCloudState(payload) {
+  if (!supabaseEnabled()) {
+    writeState(payload);
+    return;
+  }
+  await supabaseRequest("settings?on_conflict=setting_key", {
+    method: "POST",
+    headers: { prefer: "resolution=merge-duplicates" },
+    body: JSON.stringify({
+      setting_key: SUPABASE_CLOUD_KEY,
+      setting_value: payload,
+      updated_at: new Date().toISOString()
+    })
+  });
 }
 
 function sendJson(res, status, payload) {
@@ -96,16 +158,21 @@ async function handleApi(req, res) {
   if (req.method === "OPTIONS") return sendJson(res, 204, {});
 
   if (req.method === "GET" && req.url.startsWith("/api/health")) {
-    return sendJson(res, 200, { ok: true, app: "OAV BADI ERP", time: new Date().toISOString() });
+    return sendJson(res, 200, {
+      ok: true,
+      app: "OAV BADI ERP",
+      storage: supabaseEnabled() ? "supabase" : "local-file",
+      time: new Date().toISOString()
+    });
   }
 
   if (req.method === "GET" && req.url.startsWith("/api/cloud-state")) {
-    return sendJson(res, 200, readState());
+    return sendJson(res, 200, await readCloudState());
   }
 
   if (req.method === "POST" && req.url.startsWith("/api/cloud-state")) {
     const body = await readBody(req);
-    const current = readState();
+    const current = await readCloudState();
     const incomingUpdatedAt = Number(body.updatedAt || Date.now());
     if (current.updatedAt && incomingUpdatedAt < current.updatedAt) {
       return sendJson(res, 409, { error: "Server has newer data.", current });
@@ -115,7 +182,7 @@ async function handleApi(req, res) {
       savedAt: new Date().toISOString(),
       state: body.state || {}
     };
-    writeState(payload);
+    await writeCloudState(payload);
     return sendJson(res, 200, { ok: true, updatedAt: payload.updatedAt, savedAt: payload.savedAt });
   }
 
@@ -133,5 +200,5 @@ const server = http.createServer((req, res) => {
 server.listen(PORT, () => {
   ensureDataFile();
   console.log(`OAV BADI ERP running on http://0.0.0.0:${PORT}`);
-  console.log(`Cloud sync data file: ${STATE_FILE}`);
+  console.log(`Cloud sync storage: ${supabaseEnabled() ? "Supabase settings table" : STATE_FILE}`);
 });
