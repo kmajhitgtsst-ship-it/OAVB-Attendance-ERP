@@ -1686,10 +1686,19 @@
 
       body.mobile-force:not(.login-only) aside,
       html.mobile-force body:not(.login-only) aside {
-        position: sticky !important;
+        position: fixed !important;
         top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
         z-index: 1000 !important;
+        max-height: 38vh !important;
+        overflow-y: auto !important;
         box-shadow: 0 8px 20px rgba(8, 24, 40, 0.18) !important;
+      }
+
+      body.mobile-force:not(.login-only) main,
+      html.mobile-force body:not(.login-only) main {
+        padding-top: calc(var(--mobile-panel-height, 280px) + 10px) !important;
       }
 
       body.mobile-force:not(.login-only) .nav-button,
@@ -1749,6 +1758,36 @@
       html.mobile-force body.login-only .login-form {
         align-items: flex-start !important;
         font-size: 24px !important;
+        background: #ffffff !important;
+        border-radius: 18px !important;
+        padding: 14px 12px !important;
+        box-shadow: 0 10px 28px rgba(8, 24, 40, 0.12) !important;
+      }
+
+      body.mobile-force.login-only,
+      html.mobile-force body.login-only {
+        background: linear-gradient(180deg, #eaf3ff 0%, #f8fbff 42%, #eef4f8 100%) !important;
+      }
+
+      body.mobile-force.login-only .role-panel,
+      html.mobile-force body.login-only .role-panel {
+        width: calc(100vw - 12px) !important;
+        margin: 6px !important;
+        border-radius: 20px !important;
+        overflow: hidden !important;
+        border: 1px solid rgba(29, 78, 216, 0.14) !important;
+        box-shadow: 0 16px 34px rgba(8, 24, 40, 0.16) !important;
+      }
+
+      body.mobile-force.login-only .login-shell,
+      html.mobile-force body.login-only .login-shell {
+        gap: 10px !important;
+      }
+
+      body.mobile-force.login-only .login-visual,
+      html.mobile-force body.login-only .login-visual {
+        border-radius: 16px !important;
+        min-height: min(56vh, 440px) !important;
       }
 
       body.mobile-force.login-only .login-form .field,
@@ -1903,6 +1942,33 @@
       html.mobile-force body:not(.login-only) td {
         padding: 20px 16px !important;
       }
+
+      html.mobile-force #attendance .attendance-student-table tbody tr,
+      body.mobile-force #attendance .attendance-student-table tbody tr {
+        grid-template-columns: 44px minmax(0, max-content) 108px !important;
+        justify-content: start !important;
+        column-gap: 10px !important;
+        padding: 10px 12px !important;
+      }
+
+      html.mobile-force #attendance .attendance-student-table td,
+      body.mobile-force #attendance .attendance-student-table td {
+        padding: 12px 4px !important;
+      }
+
+      html.mobile-force #attendance .attendance-student-table td:nth-child(2),
+      body.mobile-force #attendance .attendance-student-table td:nth-child(2) {
+        max-width: 54vw !important;
+        white-space: normal !important;
+        word-break: break-word !important;
+      }
+
+      html.mobile-force #attendance .status,
+      body.mobile-force #attendance .status {
+        min-width: 96px !important;
+        min-height: 46px !important;
+        padding: 8px 8px !important;
+      }
     }
   </style>
 </head>
@@ -1948,11 +2014,11 @@
               <span>Advanced Attendance System<br>Powered By DETH</span>
             </div>
           </div>
-          <div class="login-form">
+          <form class="login-form" id="loginForm" autocomplete="on">
             <div class="toolbar">
               <div class="field">
                 <label for="loginRole">Login Role</label>
-                <select id="loginRole">
+                <select id="loginRole" name="role">
                   <option value="principal">Principal / Admin</option>
                   <option value="teacher">Class Teacher</option>
                   <option value="office">Staff / I/C Role</option>
@@ -1960,16 +2026,16 @@
               </div>
               <div class="field">
                 <label for="loginTeacher">Teacher</label>
-                <select id="loginTeacher"></select>
+                <select id="loginTeacher" name="teacher"></select>
               </div>
               <div class="field">
                 <label for="loginUserId">Login ID</label>
-                <input id="loginUserId" placeholder="admin / principal / teacher@oavb">
+                <input id="loginUserId" name="username" placeholder="admin / principal / teacher@oavb" autocomplete="username">
               </div>
               <div class="field">
                 <label for="loginPassword">Password</label>
                 <div class="password-wrap">
-                  <input id="loginPassword" type="password" placeholder="Password" autocomplete="current-password">
+                  <input id="loginPassword" name="password" type="password" placeholder="Password" autocomplete="current-password">
                   <button class="secondary password-eye" data-toggle-password="loginPassword" type="button" title="Show password" aria-label="Show password">
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                       <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"></path>
@@ -1980,21 +2046,21 @@
               </div>
               <div class="field">
                 <label for="rememberLogin">Auto-save</label>
-                <select id="rememberLogin"><option value="yes">Yes</option><option value="no">No</option></select>
+                <select id="rememberLogin" name="remember"><option value="yes">Yes</option><option value="no">No</option></select>
               </div>
               <div class="field">
                 <label>Access</label>
                 <input id="accessSummary" value="All classes available" readonly>
               </div>
-              <button class="primary" id="loginButton">Login</button>
+              <button class="primary" id="loginButton" type="submit">Login</button>
               <button class="secondary" id="forgotLoginPassword" type="button">Forgot Password</button>
               <button class="secondary" id="changeLoginPassword" type="button">Change Password</button>
               <button class="secondary" id="resetLoginPassword" type="button">Reset Password</button>
               <button class="secondary" id="logoutButton" type="button">Logout</button>
-              <button class="secondary" id="clearLocalData">Clear This Browser Data</button>
+              <button class="secondary" id="clearLocalData" type="button">Clear This Browser Data</button>
             </div>
             <p class="subtle">Added student and teacher details are saved in this browser on this computer.</p>
-          </div>
+          </form>
         </div>
       </section>
 
@@ -3458,6 +3524,7 @@
             ? "Admin login active. Full access and Admin Only Reset enabled."
             : "Logged in with full access.";
       updateAdminResetVisibility();
+      syncMobilePanelHeight();
     }
 
     function classKeysForDashboard() {
@@ -3570,6 +3637,18 @@
       }
     }
 
+    function syncMobilePanelHeight() {
+      const isMobile = document.documentElement.classList.contains("mobile-force") || document.body.classList.contains("mobile-force");
+      if (!isMobile || document.body.classList.contains("login-only")) {
+        document.documentElement.style.removeProperty("--mobile-panel-height");
+        return;
+      }
+      const panel = document.querySelector("aside");
+      if (!panel) return;
+      const height = Math.ceil(panel.getBoundingClientRect().height);
+      document.documentElement.style.setProperty("--mobile-panel-height", `${height}px`);
+    }
+
     function hasPageAccess(page) {
       return activeUser.pages.includes(page);
     }
@@ -3614,6 +3693,7 @@
       if (page === "settings") {
         updateAdminResetVisibility();
       }
+      syncMobilePanelHeight();
     }
 
     function openFirstAllowedPage() {
@@ -3625,6 +3705,7 @@
       adminSession = false;
       activeUser = { role: "guest", teacher: "", classKey: "", pages: [] };
       document.body.classList.add("login-only");
+      document.documentElement.style.removeProperty("--mobile-panel-height");
       renderNavAccess();
       updateAdminResetVisibility();
       document.querySelectorAll(".page").forEach(section => section.classList.add("hidden"));
@@ -6830,8 +6911,14 @@
       applyClassAccess();
     });
 
-    document.getElementById("loginButton").addEventListener("click", () => {
+    document.getElementById("loginForm").addEventListener("submit", event => {
+      event.preventDefault();
       verifyLogin();
+    });
+
+    document.getElementById("loginButton").addEventListener("click", event => {
+      event.preventDefault();
+      document.getElementById("loginForm").requestSubmit();
     });
 
     document.getElementById("logoutButton").addEventListener("click", () => {
@@ -6878,6 +6965,10 @@
     document.getElementById("clearLocalData").addEventListener("click", () => {
       clearThisBrowserData();
     });
+
+    window.addEventListener("resize", syncMobilePanelHeight);
+    window.addEventListener("orientationchange", () => setTimeout(syncMobilePanelHeight, 250));
+    if (window.visualViewport) window.visualViewport.addEventListener("resize", syncMobilePanelHeight);
 
     document.getElementById("resetEntireErp").addEventListener("click", () => {
       resetEntireErpData();
