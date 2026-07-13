@@ -889,7 +889,7 @@
         width: 100%;
         max-width: none;
         margin: 0;
-        padding: 10px;
+        padding: 18px;
         border: 0;
         border-radius: 0;
         box-shadow: none;
@@ -902,9 +902,16 @@
       }
       body.login-only .login-visual {
         width: 100%;
-        min-height: 150px;
-        max-height: 180px;
+        min-height: 220px;
+        max-height: 260px;
         border-radius: 12px;
+      }
+      body.login-only .login-caption strong {
+        font-size: 30px !important;
+      }
+      body.login-only .login-caption span {
+        font-size: 18px !important;
+        line-height: 1.35;
       }
       body.login-only .login-form {
         width: 100%;
@@ -912,7 +919,7 @@
       body.login-only .login-form .toolbar {
         display: grid;
         grid-template-columns: 1fr;
-        gap: 10px;
+        gap: 16px;
       }
       body.login-only .login-form .field,
       body.login-only .login-form .field[style] {
@@ -922,13 +929,27 @@
       body.login-only .login-form input,
       body.login-only .login-form select,
       body.login-only .login-form button {
-        width: 100%;
-        min-height: 56px;
-        font-size: 18px;
+        width: 100% !important;
+        min-height: 72px !important;
+        font-size: 24px !important;
+        padding: 16px 18px !important;
+        border-radius: 12px !important;
       }
       body.login-only .login-form label {
-        font-size: 15px;
-        font-weight: 700;
+        font-size: 20px !important;
+        font-weight: 800;
+        margin-bottom: 8px;
+      }
+      body.login-only .password-wrap .password-eye {
+        min-height: 72px !important;
+        width: 72px !important;
+        flex: 0 0 72px;
+        font-size: 26px !important;
+        padding: 0 !important;
+      }
+      body.login-only .login-form .subtle {
+        font-size: 17px !important;
+        line-height: 1.45;
       }
       #attendance .attendance-student-table {
         overflow-x: visible;
@@ -964,8 +985,8 @@
       #attendance .attendance-student-table td {
         display: block;
         border-bottom: 0;
-        padding: 16px 8px;
-        font-size: 18px;
+        padding: 20px 10px;
+        font-size: 22px;
       }
       #attendance .attendance-student-table td:nth-child(1) {
         width: auto;
@@ -978,38 +999,38 @@
         line-height: 1.25;
       }
       #attendance .status {
-        min-width: 98px;
-        min-height: 46px;
-        padding: 10px 8px;
-        font-size: 16px;
+        min-width: 112px;
+        min-height: 54px;
+        padding: 12px 10px;
+        font-size: 18px;
         text-align: center;
       }
     }
 
     @media (max-width: 520px) {
       body.login-only .role-panel {
-        padding: 8px;
+        padding: 14px;
       }
       .login-visual {
-        min-height: 150px;
-        max-height: 180px;
+        min-height: 190px;
+        max-height: 230px;
       }
       .login-form input,
       .login-form select,
       .login-form button {
-        min-height: 54px;
-        font-size: 18px;
+        min-height: 68px !important;
+        font-size: 22px !important;
       }
       #attendance .attendance-student-table tbody tr {
-        grid-template-columns: 54px minmax(0, 1fr) 104px;
+        grid-template-columns: 62px minmax(0, 1fr) 116px;
       }
       #attendance .attendance-student-table td {
-        font-size: 18px;
-        padding: 16px 6px;
+        font-size: 21px;
+        padding: 18px 8px;
       }
       #attendance .status {
-        min-width: 96px;
-        font-size: 16px;
+        min-width: 108px;
+        font-size: 17px;
       }
     }
   </style>
