@@ -5274,10 +5274,18 @@
             <button class="secondary" id="showWeeklyTimetable">See Whole School Weekly Time Table</button>
             <button class="secondary" id="showTodayTimetable">See Today's Time Table</button>
           </div>
+          <div class="card" style="margin-top: 14px;">
+            <div class="section-title">
+              <h2>Period Time Setup</h2>
+              <button class="secondary" id="savePeriodTimes">Save Period Times</button>
+            </div>
+            <p class="success-note">Set timing for regular class days and morning class days. These timings will show in every timetable header.</p>
+            <div class="toolbar" id="periodTimeRows"></div>
+          </div>
           <div class="table-wrap" id="timeTableEditorPanel" style="margin-top: 14px;">
             <table id="timeTableGrid">
               <thead>
-                <tr><th>Day</th><th>Period 1<br>09:00-09:45</th><th>Period 2<br>09:45-10:30</th><th>Period 3<br>10:45-11:30</th><th>Period 4<br>11:30-12:15</th><th>Period 5<br>01:00-01:45</th><th>Period 6<br>01:45-02:30</th><th>Period 7<br>02:30-03:15</th><th>Period 8<br>03:15-04:00</th></tr>
+                <tr id="timeTableEditorHeader"><th>Day</th><th>Period 1</th><th>Period 2</th><th>Period 3</th><th>Period 4</th><th>Period 5</th><th>Period 6</th><th>Period 7</th><th>Period 8</th></tr>
               </thead>
               <tbody id="timeTableBody">
                 <tr><td>Monday</td><td contenteditable="true">English</td><td contenteditable="true">Math</td><td contenteditable="true">Science</td><td contenteditable="true">Odia</td><td contenteditable="true">Social Science</td><td contenteditable="true">Hindi</td><td contenteditable="true">Library</td><td contenteditable="true">Remedial</td></tr>
@@ -5320,15 +5328,18 @@
           <div class="table-wrap hidden" id="timeTableTodayPanel" style="margin-top: 14px;">
             <h2>Today's Time Table</h2>
             <table>
-              <thead><tr><th>Day</th><th>Class</th><th>Period 1</th><th>Period 2</th><th>Period 3</th><th>Period 4</th><th>Period 5</th><th>Period 6</th><th>Period 7</th><th>Period 8</th></tr></thead>
+              <thead><tr id="timeTableTodayHeader"><th>Day</th><th>Class</th><th>Period 1</th><th>Period 2</th><th>Period 3</th><th>Period 4</th><th>Period 5</th><th>Period 6</th><th>Period 7</th><th>Period 8</th></tr></thead>
               <tbody id="timeTableTodayRows"></tbody>
             </table>
           </div>
           <div class="table-wrap hidden" id="timeTableWeeklyPanel" style="margin-top: 14px;">
-            <h2>Whole School Weekly Time Table</h2>
+            <div class="section-title">
+              <h2>Whole School Weekly Time Table Builder</h2>
+              <button class="primary" id="saveWholeSchoolTimeTable">Save Whole School Time Table</button>
+            </div>
             <p class="success-note">All classes are shown together. Red cells mean the same teacher is allotted in more than one class during the same period.</p>
             <table>
-              <thead><tr><th>Day</th><th>Class</th><th>Period 1</th><th>Period 2</th><th>Period 3</th><th>Period 4</th><th>Period 5</th><th>Period 6</th><th>Period 7</th><th>Period 8</th></tr></thead>
+              <thead><tr id="timeTableRawHeader"><th>Day</th><th>Class</th><th>Period 1</th><th>Period 2</th><th>Period 3</th><th>Period 4</th><th>Period 5</th><th>Period 6</th><th>Period 7</th><th>Period 8</th></tr></thead>
               <tbody id="timeTableRawRows"></tbody>
             </table>
           </div>
@@ -5632,6 +5643,10 @@
     const timetableArrangementSelections = {};
     const savedStockBackups = [];
     const TIMETABLE_PERIOD_COUNT = 8;
+    const timetablePeriodTimes = {
+      normal: ["09:00-09:45", "09:45-10:30", "10:45-11:30", "11:30-12:15", "01:00-01:45", "01:45-02:30", "02:30-03:15", "03:15-04:00"],
+      morning: ["06:30-07:05", "07:05-07:40", "07:40-08:15", "08:15-08:50", "09:05-09:40", "09:40-10:15", "10:15-10:50", "10:50-11:25"]
+    };
     const DEMO_TEACHER_NAMES = new Set([
       "s. mishra", "k. das", "r. sahoo", "m. pradhan", "a. nayak", "p. behera",
       "d. jena", "b. sahoo", "n. patra", "l. mohanty", "p. mohapatra", "s. das"
@@ -5658,6 +5673,7 @@
       localStorage.setItem("oavBadiMdmSettings", JSON.stringify(mdmSettings));
       localStorage.setItem("oavBadiTimetableArrangementRecords", JSON.stringify(timetableArrangementRecords));
       localStorage.setItem("oavBadiTimetableArrangementSelections", JSON.stringify(timetableArrangementSelections));
+      localStorage.setItem("oavBadiTimetablePeriodTimes", JSON.stringify(timetablePeriodTimes));
       if (cloudSyncReady && !cloudApplyingRemote) {
         localStorage.setItem(CLOUD_TS_KEY, String(Date.now()));
         scheduleCloudPush();
@@ -5679,6 +5695,7 @@
       const savedMdmSettings = localStorage.getItem("oavBadiMdmSettings");
       const savedTimetableArrangementRecords = localStorage.getItem("oavBadiTimetableArrangementRecords");
       const savedTimetableArrangementSelections = localStorage.getItem("oavBadiTimetableArrangementSelections");
+      const savedTimetablePeriodTimes = localStorage.getItem("oavBadiTimetablePeriodTimes");
 
       if (savedClassData) {
         const parsed = JSON.parse(savedClassData);
@@ -5708,6 +5725,12 @@
       if (savedImportedTimetableRows) {
         importedTimetableRows.length = 0;
         JSON.parse(savedImportedTimetableRows).forEach(row => importedTimetableRows.push(row));
+      }
+
+      if (savedTimetablePeriodTimes) {
+        const parsedTimes = JSON.parse(savedTimetablePeriodTimes);
+        if (Array.isArray(parsedTimes.normal)) timetablePeriodTimes.normal = parsedTimes.normal.slice(0, TIMETABLE_PERIOD_COUNT);
+        if (Array.isArray(parsedTimes.morning)) timetablePeriodTimes.morning = parsedTimes.morning.slice(0, TIMETABLE_PERIOD_COUNT);
       }
 
       if (savedBackups) {
@@ -7174,7 +7197,7 @@
       const mobile = prompt("Mobile", teacher[2]) || teacher[2];
       const assignedClass = normalizeAssignedClass(prompt("Assigned Class", teacher[3]) || teacher[3]);
       const status = prompt("Status: Present/Leave", teacher[4]) || teacher[4];
-      const subject = prompt("Subject (Example: English, Math, Science, SST)", teacherSubject(teacher)) || teacherSubject(teacher);
+      const subject = prompt("Subjects (comma separated if more than one. Example: English, Math, Science, SST)", teacherSubject(teacher)) || teacherSubject(teacher);
       const oldName = teacher[0];
       teachers[index] = [name, role, mobile, assignedClass, status, subject];
       if (teacherAssignments[oldName]) {
@@ -7191,7 +7214,7 @@
     function assignTeacherSubject(index) {
       const teacher = teachers[index];
       if (!teacher) return;
-      const subject = prompt("Subject for timetable dropdown (Example: English, Math, Science, SST, Odia)", teacherSubject(teacher));
+      const subject = prompt("Subject(s) for timetable dropdown. Use comma if one teacher teaches more than one subject. Example: English, SST, Odia", teacherSubject(teacher));
       if (!subject) {
         document.getElementById("teacherBulkStatus").textContent = "Subject assignment cancelled.";
         return;
@@ -8753,6 +8776,15 @@
       return cleaned.split(/[-,/]/)[0].trim();
     }
 
+    function teacherSubjects(teacher) {
+      const explicit = teacherSubject(teacher);
+      const source = explicit || teacherSubjectFromRole(teacher?.[1]);
+      return String(source || "")
+        .split(/[,;/|]+/)
+        .map(item => item.trim())
+        .filter(Boolean);
+    }
+
     function selectedTimetableClass() {
       return document.getElementById("timeTableClass")?.value || "Class VI-A";
     }
@@ -8795,12 +8827,13 @@
           const role = String(teacher[1] || "").toLowerCase();
           return !role.includes("principal") && !isDemoTeacher(teacher);
         })
-        .map(teacher => {
+        .flatMap(teacher => {
           const code = teacherCodeFromName(teacher[0]);
-          const subject = teacherSubject(teacher) || teacherSubjectFromRole(teacher[1]);
-          if (!code || !subject) return null;
-          const value = `${subject.toUpperCase()} (${code})`;
-          return { value, label: `${value} - ${teacher[0]}` };
+          if (!code) return [];
+          return teacherSubjects(teacher).map(subject => {
+            const value = `${subject.toUpperCase()} (${code})`;
+            return { value, label: `${value} - ${teacher[0]}` };
+          });
         })
         .filter(Boolean);
       const seen = new Set();
@@ -8820,6 +8853,7 @@
     function renderTimeTableEditor(rows = timetableRowsForSelectedClass()) {
       const body = document.getElementById("timeTableBody");
       if (!body) return;
+      renderTimetableHeader("timeTableEditorHeader", false);
       body.innerHTML = rows.map(row => `
         <tr class="${timetableDayCss(row.day)} ${timetableGroupCss(row.className)} ${timetableClassCss(row.className)}">
           <td>${htmlSafe(row.day)}</td>
@@ -8830,6 +8864,34 @@
           }).join("")}
         </tr>
       `).join("");
+    }
+
+    function renderPeriodTimeInputs() {
+      const holder = document.getElementById("periodTimeRows");
+      if (!holder) return;
+      holder.innerHTML = Array.from({ length: TIMETABLE_PERIOD_COUNT }, (_, index) => `
+        <div class="field">
+          <label>Period ${index + 1} Normal</label>
+          <input class="period-time-input" data-mode="normal" data-index="${index}" value="${htmlSafe(timetablePeriodTimes.normal[index] || "")}" placeholder="09:00-09:45">
+        </div>
+        <div class="field">
+          <label>Period ${index + 1} Morning</label>
+          <input class="period-time-input" data-mode="morning" data-index="${index}" value="${htmlSafe(timetablePeriodTimes.morning[index] || "")}" placeholder="06:30-07:05">
+        </div>
+      `).join("");
+    }
+
+    function savePeriodTimes() {
+      document.querySelectorAll(".period-time-input").forEach(input => {
+        const mode = input.dataset.mode;
+        const index = Number(input.dataset.index);
+        if (!timetablePeriodTimes[mode]) timetablePeriodTimes[mode] = [];
+        timetablePeriodTimes[mode][index] = input.value.trim();
+      });
+      saveLocalData();
+      renderTimetableAudit(false);
+      renderTimeTableEditor();
+      document.getElementById("timeTableStatus").textContent = "Period timing saved. Headers updated for normal and morning class days.";
     }
 
     function manualTimetableRowsFromEditor() {
@@ -8851,6 +8913,22 @@
       });
     }
 
+    function wholeSchoolTimetableRowsFromBuilder() {
+      const rows = [...document.querySelectorAll("#timeTableRawRows tr")].map(row => {
+        const day = row.dataset.day || row.children[0]?.textContent.trim() || "";
+        const className = row.dataset.className || row.children[1]?.textContent.trim() || "";
+        const periods = [...row.querySelectorAll("select.whole-timetable-select")].map(select => select.value).slice(0, TIMETABLE_PERIOD_COUNT);
+        return { day, className, periods };
+      }).filter(row => row.day && row.className && row.periods.length);
+      return rows;
+    }
+
+    function activeTimetableRows() {
+      const panel = document.getElementById("timeTableWeeklyPanel");
+      const builderRows = panel && !panel.classList.contains("hidden") ? wholeSchoolTimetableRowsFromBuilder() : [];
+      return builderRows.length ? builderRows : wholeSchoolTimetableRows();
+    }
+
     function saveTimeTableGrid() {
       const className = selectedTimetableClass();
       const rows = manualTimetableRowsFromEditor();
@@ -8867,8 +8945,25 @@
       document.getElementById("timeTableStatus").textContent = `${className} timetable saved. Weekly/Today view and arrangement will use these dropdown values.`;
     }
 
+    function saveWholeSchoolTimeTable() {
+      const rows = wholeSchoolTimetableRowsFromBuilder();
+      if (!rows.length) {
+        document.getElementById("timeTableStatus").textContent = "Open Whole School Weekly Time Table first, then edit dropdown cells.";
+        return;
+      }
+      importedTimetableRows.length = 0;
+      rows.forEach(row => importedTimetableRows.push({
+        day: row.day,
+        className: row.className,
+        periods: row.periods.slice(0, TIMETABLE_PERIOD_COUNT)
+      }));
+      saveLocalData();
+      renderTimetableAudit();
+      document.getElementById("timeTableStatus").textContent = `Whole school timetable saved for ${allTimetableClassNames().length} class group(s). Conflict check updated.`;
+    }
+
     function currentTimetableRows() {
-      return wholeSchoolTimetableRows().map(row => ({
+      return activeTimetableRows().map(row => ({
         ...row,
         periods: row.periods.slice(0, TIMETABLE_PERIOD_COUNT)
       }));
@@ -8935,7 +9030,7 @@
       const fromMaster = realMasterTeachers.map(teacher => {
         const name = teacher[0] || "";
         const code = teacherCodeFromName(name);
-        const subject = teacherSubject(teacher) || teacherSubjectFromRole(teacher[1]);
+        const subject = teacherSubjects(teacher).join(", ");
         return { code, label: code ? `${code} - ${name}${subject ? ` (${subject})` : ""}` : name };
       }).filter(item => item.code);
       const masterCodes = new Set(fromMaster.map(item => item.code));
@@ -8982,7 +9077,7 @@
     function arrangementSubjectLabel(code) {
       const teacher = teachers.find(item => teacherCodeFromName(item[0]) === code);
       if (!teacher) return code;
-      const subject = teacherSubject(teacher) || teacherSubjectFromRole(teacher[1]);
+      const subject = teacherSubjects(teacher)[0] || "";
       return subject ? `${subject.toUpperCase()} (${code})` : code;
     }
 
@@ -9067,19 +9162,36 @@
       return conflictSet;
     }
 
+    function timetablePeriodHeaders() {
+      return Array.from({ length: TIMETABLE_PERIOD_COUNT }, (_, index) => {
+        const normal = timetablePeriodTimes.normal?.[index] || "";
+        const morning = timetablePeriodTimes.morning?.[index] || "";
+        return `Period ${index + 1}${normal ? `<br>${htmlSafe(normal)}` : ""}${morning ? `<br><small>Morning: ${htmlSafe(morning)}</small>` : ""}`;
+      });
+    }
+
+    function renderTimetableHeader(rowId, includeClass = true) {
+      const row = document.getElementById(rowId);
+      if (!row) return;
+      row.innerHTML = `<th>Day</th>${includeClass ? "<th>Class</th>" : ""}${timetablePeriodHeaders().map(label => `<th>${label}</th>`).join("")}`;
+    }
+
     function renderTimetableRows(targetId, rows = currentTimetableRows()) {
       const tbody = document.getElementById(targetId);
       if (!tbody) return;
+      const editable = targetId === "timeTableRawRows";
       const absentCodes = document.getElementById("absentTeacherCodes").value
         .split(",")
         .map(code => code.trim().toUpperCase())
         .filter(Boolean);
       const conflictCells = timetableConflictCellSet(rows);
       tbody.innerHTML = rows.length
-        ? rows.map(row => `<tr class="${timetableDayCss(row.day)} ${timetableGroupCss(row.className)} ${timetableClassCss(row.className)}"><td>${row.day}</td><td>${row.className}</td>${Array.from({ length: TIMETABLE_PERIOD_COUNT }, (_, index) => {
+        ? rows.map(row => `<tr data-day="${htmlSafe(row.day)}" data-class-name="${htmlSafe(row.className)}" class="${timetableDayCss(row.day)} ${timetableGroupCss(row.className)} ${timetableClassCss(row.className)}"><td>${row.day}</td><td>${row.className}</td>${Array.from({ length: TIMETABLE_PERIOD_COUNT }, (_, index) => {
             const cell = decoratedTimetableCell(row, index, rows, absentCodes);
             const conflict = conflictCells.has(`${String(row.day || "").toUpperCase()}|${normalizeTimetableClassName(row.className)}|${index + 1}`);
-            return `<td class="${cell.arranged ? "arranged-cell" : ""} ${conflict ? "conflict-cell" : ""}">${htmlSafe(cell.value)}</td>`;
+            if (!editable) return `<td class="${cell.arranged ? "arranged-cell" : ""} ${conflict ? "conflict-cell" : ""}">${htmlSafe(cell.value)}</td>`;
+            const options = timetableDropdownOptions(row.periods[index] || "").map(option => `<option value="${htmlSafe(option.value)}"${option.value === (row.periods[index] || "") ? " selected" : ""}>${htmlSafe(option.label)}</option>`).join("");
+            return `<td class="${conflict ? "conflict-cell" : ""}"><select class="timetable-cell-select whole-timetable-select" data-day="${htmlSafe(row.day)}" data-class-name="${htmlSafe(row.className)}" data-period="${index}">${options}</select></td>`;
           }).join("")}</tr>`).join("")
         : `<tr><td colspan="10">No imported timetable rows yet.</td></tr>`;
     }
@@ -9090,6 +9202,8 @@
     }
 
     function renderTimetableRaw(rows = currentTimetableRows()) {
+      renderTimetableHeader("timeTableTodayHeader");
+      renderTimetableHeader("timeTableRawHeader");
       renderTimetableRows("timeTableRawRows", rows);
       renderTimetableRows("timeTableTodayRows", todayTimetableRows(rows));
     }
@@ -9728,10 +9842,24 @@
       saveTimeTableGrid();
     });
 
+    document.getElementById("saveWholeSchoolTimeTable").addEventListener("click", () => {
+      saveWholeSchoolTimeTable();
+    });
+
+    document.getElementById("savePeriodTimes").addEventListener("click", () => {
+      savePeriodTimes();
+    });
+
     document.getElementById("timeTableBody").addEventListener("change", event => {
       if (!event.target.matches(".timetable-cell-select")) return;
       renderTimetableAudit(false);
       document.getElementById("timeTableStatus").textContent = "Timetable cell changed. Conflict check updated instantly. Press Save Time Table to store this class timetable.";
+    });
+
+    document.getElementById("timeTableRawRows").addEventListener("change", event => {
+      if (!event.target.matches(".whole-timetable-select")) return;
+      renderTimetableAudit(false);
+      document.getElementById("timeTableStatus").textContent = "Whole-school timetable changed. Conflict check updated instantly. Press Save Whole School Time Table.";
     });
 
     document.getElementById("uploadTimetableCsv").addEventListener("click", () => {
@@ -10126,6 +10254,7 @@
     renderReport();
     populateExamClassOptions();
     renderExamResults();
+    renderPeriodTimeInputs();
     renderTimetableAudit();
     startAutoUpdateCheck();
     startCloudSync();
