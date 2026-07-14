@@ -5970,10 +5970,12 @@
       "oavBadiMdmSettings",
       "oavBadiTimetableArrangementRecords",
       "oavBadiTimetableArrangementSelections",
-      "oavBadiAuditLogs",
-      "oavBadiRememberedLogin"
+      "oavBadiAuditLogs"
     ];
     const CLOUD_TS_KEY = "oavBadiCloudUpdatedAt";
+    const REMEMBERED_LOGIN_KEY = "oavBadiRememberedLogin";
+    const ACTIVE_SESSION_KEY = "oavBadiActiveSession";
+    const PER_DEVICE_KEYS = new Set([REMEMBERED_LOGIN_KEY, ACTIVE_SESSION_KEY]);
     let cloudSyncReady = false;
     let cloudSyncTimer = null;
     let cloudApplyingRemote = false;
@@ -6455,7 +6457,7 @@
     }
 
     function loadRememberedLogin() {
-      const saved = localStorage.getItem("oavBadiRememberedLogin");
+      const saved = localStorage.getItem(REMEMBERED_LOGIN_KEY);
       if (!saved) return;
       const data = JSON.parse(saved);
       document.getElementById("loginRole").value = data.role || "principal";
@@ -6466,6 +6468,45 @@
       if (data.teacher) document.getElementById("loginTeacher").value = data.teacher;
       if (!document.getElementById("loginTeacher").value && data.teacher) {
         fillLoginCredentials();
+      }
+    }
+
+    function saveActiveSession() {
+      const role = document.getElementById("loginRole").value;
+      const teacher = document.getElementById("loginTeacher").value;
+      const userId = document.getElementById("loginUserId").value.trim();
+      sessionStorage.setItem(ACTIVE_SESSION_KEY, JSON.stringify({
+        role,
+        teacher,
+        userId,
+        adminSession,
+        savedAt: Date.now()
+      }));
+    }
+
+    function restoreActiveSession() {
+      const saved = sessionStorage.getItem(ACTIVE_SESSION_KEY);
+      if (!saved) return false;
+      try {
+        const data = JSON.parse(saved);
+        const role = data.role || "principal";
+        const teacher = data.teacher || "";
+        if ((role === "teacher" || role === "office") && teacher && !teachers.some(item => item[0] === teacher)) {
+          sessionStorage.removeItem(ACTIVE_SESSION_KEY);
+          return false;
+        }
+        document.getElementById("loginRole").value = role;
+        populateLoginTeachers();
+        if (teacher) document.getElementById("loginTeacher").value = teacher;
+        document.getElementById("loginUserId").value = data.userId || "";
+        document.getElementById("loginPassword").value = "";
+        loggedIn = true;
+        adminSession = Boolean(data.adminSession);
+        document.body.classList.remove("login-only");
+        return true;
+      } catch (error) {
+        sessionStorage.removeItem(ACTIVE_SESSION_KEY);
+        return false;
       }
     }
 
@@ -6492,11 +6533,12 @@
       );
       adminSession = role !== "teacher" && (loginId === "admin" || staffAdminLogin);
       if (document.getElementById("rememberLogin").value === "yes") {
-        localStorage.setItem("oavBadiRememberedLogin", JSON.stringify({ role, teacher, userId }));
+        localStorage.setItem(REMEMBERED_LOGIN_KEY, JSON.stringify({ role, teacher, userId }));
       } else {
-        localStorage.removeItem("oavBadiRememberedLogin");
+        localStorage.removeItem(REMEMBERED_LOGIN_KEY);
       }
       loggedIn = true;
+      saveActiveSession();
       document.body.classList.remove("login-only");
       applyClassAccess();
       renderNavAccess();
@@ -6715,6 +6757,7 @@
       loggedIn = false;
       adminSession = false;
       activeUser = { role: "guest", teacher: "", classKey: "", pages: [] };
+      sessionStorage.removeItem(ACTIVE_SESSION_KEY);
       document.body.classList.add("login-only");
       document.documentElement.style.removeProperty("--mobile-panel-height");
       renderNavAccess();
@@ -6733,7 +6776,8 @@
       }
       CLOUD_KEYS.forEach(key => localStorage.removeItem(key));
       localStorage.removeItem(CLOUD_TS_KEY);
-      localStorage.removeItem("oavBadiRememberedLogin");
+      localStorage.removeItem(REMEMBERED_LOGIN_KEY);
+      sessionStorage.removeItem(ACTIVE_SESSION_KEY);
       document.getElementById("accessSummary").value = "This browser data cleared. Online data is safe. Reloading from server...";
       setTimeout(() => location.reload(), 800);
     }
@@ -6840,6 +6884,7 @@
 
     function collectCloudState() {
       return CLOUD_KEYS.reduce((state, key) => {
+        if (PER_DEVICE_KEYS.has(key)) return state;
         const value = localStorage.getItem(key);
         if (value !== null) state[key] = value;
         return state;
@@ -6859,7 +6904,7 @@
 
     function applyCloudState(state, updatedAt) {
       cloudApplyingRemote = true;
-      CLOUD_KEYS.forEach(key => {
+      CLOUD_KEYS.filter(key => !PER_DEVICE_KEYS.has(key)).forEach(key => {
         if (Object.prototype.hasOwnProperty.call(state, key)) {
           localStorage.setItem(key, state[key]);
         }
@@ -11094,6 +11139,7 @@
     populateLoginTeachers();
     renderClassGroups();
     loadRememberedLogin();
+    const restoredActiveSession = restoreActiveSession();
     document.getElementById("whatsappLog").dataset.empty = "true";
     document.getElementById("mdmLog").dataset.empty = "true";
     setAttendanceDateToToday();
@@ -11115,6 +11161,15 @@
     renderExamResults();
     renderPeriodTimeInputs();
     renderTimetableAudit();
+    if (restoredActiveSession) {
+      renderNavAccess();
+      openFirstAllowedPage();
+      updateAdminResetVisibility();
+      syncMobilePanelHeight();
+      document.getElementById("accessSummary").value = adminSession
+        ? "Session restored. Admin login active."
+        : "Session restored. You can continue work.";
+    }
     startAutoUpdateCheck();
     startCloudSync();
   </script>
