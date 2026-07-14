@@ -5710,16 +5710,7 @@
     }
 
     function buildMonthRecord(roll, classIndex, sectionIndex) {
-      const record = [];
-      for (let day = 1; day <= 26; day += 1) {
-        let status = "Present";
-        if ((day + roll + classIndex + sectionIndex) % 11 === 0) status = "Absent";
-        if ((day + roll + sectionIndex) % 17 === 0) status = "Leave";
-        if (roll % 9 === 0 && day >= 12 && day <= 14) status = "Absent";
-        if (roll % 13 === 0 && day >= 20 && day <= 23) status = "Absent";
-        record.push(status);
-      }
-      return record;
+      return [];
     }
 
     // Student master must come only from saved/imported school data. Do not auto-create sample students.
@@ -6548,10 +6539,10 @@
     }
 
     function studentMonthlyStats(student) {
-      const record = student[8] || [];
-      const setting = monthSettings[selectedMonthKey()] || { workingDays: record.length, holidays: [] };
-      const workingDays = Number(setting.workingDays) || record.length;
-      const effectiveRecord = record.slice(0, workingDays);
+      const month = selectedMonthKey();
+      const setting = monthSettings[month] || { workingDays: 0, holidays: [] };
+      const effectiveRecord = monthlyStatusesForStudent(month, currentClassKey(), student[0]);
+      const workingDays = effectiveRecord.length || Number(setting.workingDays) || 0;
       const present = effectiveRecord.filter(status => status === "Present").length;
       const absent = effectiveRecord.filter(status => status === "Absent").length;
       const leave = effectiveRecord.filter(status => status === "Leave").length;
@@ -6561,7 +6552,7 @@
         currentStreak = status === "Absent" ? currentStreak + 1 : 0;
         maxConsecutiveAbsent = Math.max(maxConsecutiveAbsent, currentStreak);
       });
-      const presentPercent = workingDays ? Math.round((present / workingDays) * 1000) / 10 : 0;
+      const presentPercent = effectiveRecord.length ? Math.round((present / effectiveRecord.length) * 1000) / 10 : 0;
       return { present, absent, leave, workingDays, presentPercent, maxConsecutiveAbsent, holidays: setting.holidays || [] };
     }
 
@@ -8401,21 +8392,29 @@
         const classStudents = classData[classGroup] || [];
         const records = Object.values(dailyAttendanceRecords).filter(record => record.classGroup === classGroup && record.date.startsWith(month));
         return classStudents.map(student => {
-          const statuses = records.map(record => {
-            const saved = record.students.find(item => item.roll === student[0]);
-            return saved?.status;
-          }).filter(Boolean);
-          const source = statuses.length ? statuses : (student[8] || []).slice(0, monthSettings[month]?.workingDays || 24);
+          const source = monthlyStatusesForStudent(month, classGroup, student[0], records);
           const present = source.filter(status => status === "Present").length;
           const absent = source.filter(status => status === "Absent").length;
           const late = source.filter(status => status === "Late").length;
           const leave = source.filter(status => status === "Leave").length;
           const holiday = source.filter(status => status === "Holiday").length;
-          const total = source.length || 1;
-          const percent = Math.round(((present + late) / total) * 1000) / 10;
-          return [month, classGroup, student[0], student[1], present, absent, late, leave, holiday, `${percent}%`, student[6], student[7]];
+          const percent = source.length ? `${Math.round(((present + late) / source.length) * 1000) / 10}%` : "-";
+          if (!Array.isArray(student[8]) || student[8].length) student[8] = [];
+          return [month, classGroup, student[0], student[1], present, absent, late, leave, holiday, percent, student[6], student[7]];
         });
       });
+    }
+
+    function monthlyStatusesForStudent(month, classGroup, roll, preloadedRecords = null) {
+      const records = preloadedRecords || Object.values(dailyAttendanceRecords)
+        .filter(record => record.classGroup === classGroup && record.date.startsWith(month));
+      return records
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .map(record => {
+          const saved = (record.students || []).find(item => item.roll === roll);
+          return saved?.status || "Present";
+        })
+        .filter(Boolean);
     }
 
     function parentAlertRows(date, classKeys) {
@@ -8431,7 +8430,7 @@
     function lowAttendanceRows(month, classKeys) {
       return monthlySummaryRows(month, classKeys)
         .map(row => ({ row, percent: Number(String(row[9]).replace("%", "")) }))
-        .filter(item => item.percent < 75)
+        .filter(item => Number.isFinite(item.percent) && item.percent < 75)
         .map(item => [...item.row, item.percent < 60 ? "Urgent" : "Monitor"]);
     }
 
