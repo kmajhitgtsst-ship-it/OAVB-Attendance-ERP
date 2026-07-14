@@ -5795,6 +5795,23 @@
             </table>
           </div>
         </div>
+        <div class="card" style="margin-top: 16px;">
+          <div class="section-title">
+            <div>
+              <h2>Audit Log</h2>
+              <p class="subtle">Track who logged in, when, and which important data action was done.</p>
+            </div>
+            <button class="secondary" id="downloadAuditLog">Download Audit Log Excel</button>
+          </div>
+          <div class="table-wrap" style="margin-top: 14px;">
+            <table>
+              <thead>
+                <tr><th>Time</th><th>User</th><th>Role</th><th>Login ID</th><th>Page</th><th>Action</th><th>Details</th></tr>
+              </thead>
+              <tbody id="auditLogRows"></tbody>
+            </table>
+          </div>
+        </div>
       </section>
 
       <section id="modules" class="page hidden">
@@ -5947,6 +5964,7 @@
       "oavBadiMdmSettings",
       "oavBadiTimetableArrangementRecords",
       "oavBadiTimetableArrangementSelections",
+      "oavBadiAuditLogs",
       "oavBadiRememberedLogin"
     ];
     const CLOUD_TS_KEY = "oavBadiCloudUpdatedAt";
@@ -5985,6 +6003,7 @@
     const importedTimetableRows = [];
     const timetableArrangementRecords = [];
     const timetableArrangementSelections = {};
+    const auditLogs = [];
     const savedStockBackups = [];
     const TIMETABLE_PERIOD_COUNT = 8;
     const timetablePeriodTimes = {
@@ -6018,6 +6037,7 @@
       localStorage.setItem("oavBadiMdmSettings", JSON.stringify(mdmSettings));
       localStorage.setItem("oavBadiTimetableArrangementRecords", JSON.stringify(timetableArrangementRecords));
       localStorage.setItem("oavBadiTimetableArrangementSelections", JSON.stringify(timetableArrangementSelections));
+      localStorage.setItem("oavBadiAuditLogs", JSON.stringify(auditLogs));
       localStorage.setItem("oavBadiTimetablePeriodTimes", JSON.stringify(timetablePeriodTimes));
       if (cloudSyncReady && !cloudApplyingRemote) {
         localStorage.setItem(CLOUD_TS_KEY, String(Date.now()));
@@ -6040,6 +6060,7 @@
       const savedMdmSettings = localStorage.getItem("oavBadiMdmSettings");
       const savedTimetableArrangementRecords = localStorage.getItem("oavBadiTimetableArrangementRecords");
       const savedTimetableArrangementSelections = localStorage.getItem("oavBadiTimetableArrangementSelections");
+      const savedAuditLogs = localStorage.getItem("oavBadiAuditLogs");
       const savedTimetablePeriodTimes = localStorage.getItem("oavBadiTimetablePeriodTimes");
 
       if (savedClassData) {
@@ -6114,6 +6135,11 @@
         Object.assign(timetableArrangementSelections, JSON.parse(savedTimetableArrangementSelections));
       }
 
+      if (savedAuditLogs) {
+        auditLogs.length = 0;
+        JSON.parse(savedAuditLogs).forEach(log => auditLogs.push(log));
+      }
+
       syncTeacherAssignmentsFromMaster();
     }
 
@@ -6153,6 +6179,49 @@
       }
       const [className, section] = key.split("-");
       return { className, section };
+    }
+
+    function currentPageName() {
+      return document.querySelector(".nav-button.active")?.textContent?.trim() || "";
+    }
+
+    function currentAuditUser() {
+      const loginId = document.getElementById("loginUserId")?.value?.trim() || "";
+      const teacher = activeUser.teacher || document.getElementById("loginTeacher")?.value || "";
+      const role = adminSession ? "Admin" : (activeUser.role || document.getElementById("loginRole")?.value || "Guest");
+      return { loginId, teacher, role };
+    }
+
+    function formatAuditTime(iso) {
+      if (!iso) return "";
+      const date = new Date(iso);
+      if (Number.isNaN(date.getTime())) return iso;
+      return date.toLocaleString("en-IN", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit"
+      });
+    }
+
+    function addAuditLog(action, details = "", extra = {}) {
+      const user = currentAuditUser();
+      auditLogs.unshift({
+        id: `AUD-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        time: new Date().toISOString(),
+        user: user.teacher || user.loginId || "Unknown user",
+        loginId: user.loginId,
+        role: user.role,
+        page: extra.page || currentPageName(),
+        action,
+        details,
+        recordDate: extra.recordDate || "",
+        classGroup: extra.classGroup || ""
+      });
+      auditLogs.splice(500);
+      renderAuditLog();
     }
 
     function setClassSelector(classId, sectionId, key) {
@@ -6433,6 +6502,8 @@
           : adminSession
             ? "Admin login active. Full access and Admin Only Reset enabled."
             : "Logged in with full access.";
+      addAuditLog("Login", "Successful login", { page: "Login" });
+      saveLocalData();
       updateAdminResetVisibility();
       syncMobilePanelHeight();
     }
@@ -6633,6 +6704,8 @@
     }
 
     function logout() {
+      addAuditLog("Logout", "User logged out", { page: currentPageName() || "ERP" });
+      saveLocalData();
       loggedIn = false;
       adminSession = false;
       activeUser = { role: "guest", teacher: "", classKey: "", pages: [] };
@@ -6684,6 +6757,7 @@
           student[5] = "";
         });
       });
+      addAuditLog("Admin Reset", "Operational attendance, MDM, exam result, and arrangement data reset. Master data, timetable, stock, and prices kept safe.", { page: "Settings" });
       attendanceSubmitted = false;
       [
         "oavBadiDailyAttendanceRecords",
@@ -6953,6 +7027,7 @@
     function saveDailyAttendanceRecord() {
       const key = currentClassKey();
       const date = document.getElementById("dateFilter").value;
+      const summary = attendanceSummary();
       dailyAttendanceRecords[attendanceRecordKey(date, key)] = {
         date,
         classGroup: key,
@@ -6968,6 +7043,11 @@
           hostel: student[2] || ""
         }))
       };
+      addAuditLog(
+        "Student Attendance Saved",
+        `Present ${summary.present}, Absent ${summary.absent}, Leave ${summary.leave}, Holiday ${summary.holiday}, Late ${summary.late}.`,
+        { classGroup: key, recordDate: date }
+      );
       renderRecentData();
     }
 
@@ -7004,6 +7084,11 @@
         if (student[8]) student[8][selectedMonthIndex()] = "Present";
       });
       document.getElementById("bulkRolls").value = "";
+      addAuditLog(
+        "Student Attendance Reset",
+        `${key} attendance reset. MDM entries removed: ${removedMdm}. Students set Present for fresh entry.`,
+        { classGroup: key, recordDate: date }
+      );
       saveLocalData();
       renderRecentData();
       loadClassStudents();
@@ -7608,6 +7693,9 @@
     }
 
     function saveTeacherAttendance() {
+      const present = teachers.filter(teacher => (teacher[4] || "Present") === "Present").length;
+      const leave = teachers.filter(teacher => (teacher[4] || "Present") === "Leave").length;
+      addAuditLog("Staff Attendance Saved", `Present ${present}, Leave ${leave}.`, { recordDate: todayIsoDate(), page: "Staff Attendance" });
       saveLocalData();
       renderTeachers();
       renderTeacherAttendance();
@@ -7963,6 +8051,11 @@
         appendMdmStockEntry();
         resetStockEntryQuantities();
       }
+      addAuditLog(
+        shouldAddStock ? "MDM Stock Saved" : "MDM Stock Save Checked",
+        shouldAddStock ? `Stock entry saved for ${entry.date}.` : "No stock quantity entered; ledger was not changed.",
+        { page: "MDM", recordDate: entry.date }
+      );
       saveLocalData();
       renderMdm();
       renderMdmStockRegister();
@@ -7976,6 +8069,7 @@
       readMdmSettingsFromForm();
       const month = (document.getElementById("mdmStockDate").value || todayIsoDate()).slice(0, 7);
       mdmSettings.priceMonth = month;
+      addAuditLog("MDM Monthly Price Saved", `${monthLabel(month)} stock price/rates fixed.`, { page: "MDM", recordDate: month });
       saveLocalData();
       renderMdm();
       renderMdmStockRegister();
@@ -8285,6 +8379,7 @@
       const data = mdmCurrentData();
       if (!data.attendanceSaved) {
         resetMdmRecordForAttendance(data.date, data.key);
+        addAuditLog("MDM Save Blocked", "MDM not saved because Student Attendance was not submitted or was reset.", { classGroup: data.key, recordDate: data.date, page: "MDM" });
         saveLocalData();
         renderRecentData();
         document.getElementById("mdmStatus").textContent = `${data.key} ${data.date}: MDM save blocked. Submit Student Attendance first; reset state keeps MDM zero.`;
@@ -8328,6 +8423,7 @@
           <span>${record.date}: ${record.menu}. Rice ${record.riceKg} kg, ${record.protein} ${record.proteinQty}, Fruits ${record.fruitQty || 0}, Ragi Laddu ${record.ladduQty || 0}, cost Rs.${record.totalCost}.</span>
         </li>
       ` + log.innerHTML;
+      addAuditLog("MDM Entry Saved", `${record.served} meal(s), ${record.menu}, total cost Rs.${record.totalCost}.`, { classGroup: record.classGroup, recordDate: record.date, page: "MDM" });
       saveLocalData();
       renderRecentData();
       renderMdmGroupSummary();
@@ -9060,6 +9156,7 @@
         ? report.rows.map(row => `<tr>${row.map(cell => `<td>${cell ?? ""}</td>`).join("")}</tr>`).join("")
         : `<tr><td colspan="${report.headers.length}">No data available for this report.</td></tr>`;
       document.getElementById("reportStatus").textContent = `${report.title}: ${report.rows.length} row(s) ready.`;
+      renderAuditLog();
     }
 
     function downloadReportExcel(type = document.getElementById("reportType").value) {
@@ -9071,6 +9168,43 @@
         ...report.rows
       ]);
       renderReport(type);
+    }
+
+    function renderAuditLog() {
+      const body = document.getElementById("auditLogRows");
+      if (!body) return;
+      const rows = auditLogs.slice(0, 100);
+      body.innerHTML = rows.length
+        ? rows.map(log => `
+          <tr>
+            <td>${formatAuditTime(log.time)}</td>
+            <td>${log.user || ""}</td>
+            <td>${log.role || ""}</td>
+            <td>${log.loginId || ""}</td>
+            <td>${log.page || ""}</td>
+            <td>${log.action || ""}</td>
+            <td>${log.details || ""}</td>
+          </tr>
+        `).join("")
+        : `<tr><td colspan="7">No audit log recorded yet. New login/save/reset actions will appear here.</td></tr>`;
+    }
+
+    function downloadAuditLogExcel() {
+      downloadExcel("oav-badi-audit-log.xls", [
+        ["OAV BADI ERP Audit Log"],
+        ["Time", "User", "Role", "Login ID", "Page", "Action", "Class", "Record Date", "Details"],
+        ...auditLogs.map(log => [
+          formatAuditTime(log.time),
+          log.user || "",
+          log.role || "",
+          log.loginId || "",
+          log.page || "",
+          log.action || "",
+          log.classGroup || "",
+          log.recordDate || "",
+          log.details || ""
+        ])
+      ]);
     }
 
     const examSubjects = ["English", "Odia", "Hindi", "Sanskrit", "Mathematics", "Science", "Social Science", "ICT"];
@@ -9389,6 +9523,7 @@
         if (!timetablePeriodTimes[mode]) timetablePeriodTimes[mode] = [];
         timetablePeriodTimes[mode][index] = input.value.trim();
       });
+      addAuditLog("Time Table Period Timing Saved", "Regular and morning period timings updated.", { page: "Time Table" });
       saveLocalData();
       renderTimetableAudit(false);
       renderTimeTableEditor();
@@ -9447,6 +9582,7 @@
         if (sameTimetableClass(importedTimetableRows[index].className, className)) importedTimetableRows.splice(index, 1);
       }
       importedTimetableRows.push(...rows);
+      addAuditLog("Class Time Table Saved", `${className} weekly timetable saved.`, { page: "Time Table", classGroup: className });
       saveLocalData();
       renderTimetableAudit();
       document.getElementById("timeTableStatus").textContent = `${className} timetable saved. Weekly/Today view and arrangement will use these dropdown values.`;
@@ -9465,6 +9601,7 @@
         className: row.className,
         periods: row.periods.slice(0, TIMETABLE_PERIOD_COUNT)
       }));
+      addAuditLog("Whole School Time Table Saved", `${rows.length} day/class row(s) saved for ${allTimetableClassNames().length} class group(s).`, { page: "Time Table" });
       saveLocalData();
       renderTimetableAudit();
       document.getElementById("timeTableStatus").textContent = `Whole school timetable saved for ${allTimetableClassNames().length} class group(s). Conflict check updated.`;
@@ -9863,6 +10000,7 @@
         else timetableArrangementRecords.push(record);
         timetableArrangementSelections[key] = selected;
       });
+      addAuditLog("Daily Arrangement Saved", `${rows.length} arrangement row(s) saved.`, { page: "Time Table", recordDate: arrangementDate() });
       saveLocalData();
       renderTimetableAudit();
       document.getElementById("timeTableStatus").textContent = `${rows.length} daily arrangement row(s) saved. Weekly/monthly balance updated.`;
@@ -10114,6 +10252,7 @@
       monthSettings[month] = { workingDays, holidays };
       document.getElementById("workingDays").value = workingDays;
       document.getElementById("workingDayStatus").textContent = `${monthLabel(month)} working days saved: ${workingDays}${holidays.length ? `, holidays: ${holidays.join(", ")}` : ""}.`;
+      addAuditLog("Settings Saved", `${monthLabel(month)} working days ${workingDays}${holidays.length ? `, holidays ${holidays.join(", ")}` : ""}.`, { page: "Settings", recordDate: month });
       saveLocalData();
       renderStudents(document.getElementById("searchStudent").value);
       refreshWhatsappMessage();
@@ -10392,6 +10531,10 @@
     document.getElementById("downloadMdmReport").addEventListener("click", () => {
       document.getElementById("reportType").value = "mdm";
       downloadReportExcel("mdm");
+    });
+
+    document.getElementById("downloadAuditLog").addEventListener("click", () => {
+      downloadAuditLogExcel();
     });
 
     document.getElementById("timeTableWeek").addEventListener("change", () => {
