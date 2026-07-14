@@ -589,6 +589,25 @@
       color: #991b1b;
       font-weight: 700;
     }
+    .timetable-cell-select {
+      width: 100%;
+      min-width: 150px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 8px 10px;
+      background: #fff;
+      color: #0f172a;
+      font-weight: 650;
+    }
+    .teacher-subject-badge {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 5px 8px;
+      background: #e0f2fe;
+      color: #075985;
+      font-weight: 700;
+      font-size: 12px;
+    }
     .mini-summary {
       display: flex;
       flex-wrap: wrap;
@@ -4932,7 +4951,7 @@
         </header>
         <div class="card table-wrap">
           <table>
-            <thead><tr><th>Name</th><th>Code</th><th>Role</th><th>In</th><th>Out</th><th>Status</th><th>Action</th></tr></thead>
+            <thead><tr><th>Name</th><th>Code</th><th>Role</th><th>Subject</th><th>In</th><th>Out</th><th>Status</th><th>Action</th></tr></thead>
             <tbody id="teacherAttendanceRows"></tbody>
           </table>
         </div>
@@ -4951,7 +4970,7 @@
           <div class="toolbar">
             <div class="field wide-field">
               <label for="teacherBulkText">Paste rows from template or compact format</label>
-              <textarea id="teacherBulkText" placeholder="Template format: Employee ID, Teacher Name, Role, Subject, Mobile, Email, Assigned Class...&#10;Compact format: S. Mishra,TGT Science,+91 9876543200,Class VI-A"></textarea>
+              <textarea id="teacherBulkText" placeholder="Template format: Employee ID, Teacher Name, Role, Subject, Mobile, Email, Assigned Class...&#10;Compact format: S. Mishra,TGT Science,+91 9876543200,Class VI-A,Science"></textarea>
             </div>
             <button class="primary" id="importTeachers">Import Teachers</button>
             <button class="secondary" id="clearDemoTeachers">Clear Demo Teachers</button>
@@ -4960,7 +4979,7 @@
           <p class="success-note" id="teacherBulkStatus">Imported teachers will appear below.</p>
           <div class="table-wrap" style="margin-top: 14px;">
             <table>
-              <thead><tr><th>Name</th><th>Code</th><th>Role</th><th>Mobile</th><th>Assigned Class</th><th>Status</th><th>Login ID</th><th>Password</th><th>Action</th></tr></thead>
+              <thead><tr><th>Name</th><th>Code</th><th>Role</th><th>Subject</th><th>Mobile</th><th>Assigned Class</th><th>Status</th><th>Login ID</th><th>Password</th><th>Action</th></tr></thead>
               <tbody id="teacherRows"></tbody>
             </table>
           </div>
@@ -5192,7 +5211,7 @@
             <h1>Time Table</h1>
             <p class="subtle">Class-wise weekly period planning for teachers and subjects.</p>
           </div>
-          <button class="primary">Save Time Table</button>
+          <button class="primary" id="saveTimeTableGrid">Save Time Table</button>
         </header>
         <div class="card">
           <div class="toolbar">
@@ -5236,7 +5255,7 @@
             <button class="secondary" id="showWeeklyTimetable">See Weekly Time Table</button>
             <button class="secondary" id="showTodayTimetable">See Today's Time Table</button>
           </div>
-          <div class="table-wrap hidden" id="timeTableEditorPanel" style="margin-top: 14px;">
+          <div class="table-wrap" id="timeTableEditorPanel" style="margin-top: 14px;">
             <table id="timeTableGrid">
               <thead>
                 <tr><th>Day</th><th>Period 1<br>09:00-09:45</th><th>Period 2<br>09:45-10:30</th><th>Period 3<br>10:45-11:30</th><th>Period 4<br>11:30-12:15</th><th>Period 5<br>01:00-01:45</th><th>Period 6<br>01:45-02:30</th><th>Period 7<br>02:30-03:15</th><th>Period 8<br>03:15-04:00</th></tr>
@@ -6902,6 +6921,7 @@
         return {
           name: row[1],
           role: row[2] || "Teacher",
+          subject: row[3] || "",
           mobile: row[4] || "+91 9000000000",
           assignedClass: normalizeAssignedClass(row[6]),
           status: row[9] || "Present"
@@ -6913,6 +6933,7 @@
         role: row[1] || "Teacher",
         mobile: row[2] || "+91 9000000000",
         assignedClass: normalizeAssignedClass(row[3]),
+        subject: row[4] || "",
         status: "Present"
       };
     }
@@ -7041,14 +7062,15 @@
           <td>${teacher[0]}</td>
           <td>${teacherCodeFromName(teacher[0])}</td>
           <td>${teacher[1]}</td>
+          <td>${teacherSubject(teacher) ? `<span class="teacher-subject-badge">${htmlSafe(teacherSubject(teacher))}</span>` : '<span class="status leave">Not assigned</span>'}</td>
           <td>${teacher[2]}</td>
           <td>${teacher[3] || '<span class="status absent">Class not assigned</span>'}</td>
           <td><span class="status ${teacher[4] === "Leave" ? "leave" : "present"}">${teacher[4]}</span></td>
           <td>${teacherLoginId(teacher[0])}</td>
           <td><span class="status leave">Protected</span></td>
-          <td><button class="secondary assign-teacher-class" data-index="${index}">Assign Class</button> <button class="secondary assign-admin-principal" data-index="${index}">Assign Admin/Principal</button> <button class="secondary assign-erp-role" data-index="${index}">Assign ERP Role</button> <button class="secondary edit-teacher" data-index="${index}">Edit</button> <button class="secondary reset-teacher-password" data-index="${index}">Reset</button> <button class="secondary delete-teacher" data-index="${index}">Delete</button></td>
+          <td><button class="secondary assign-teacher-subject" data-index="${index}">Assign Subject</button> <button class="secondary assign-teacher-class" data-index="${index}">Assign Class</button> <button class="secondary assign-admin-principal" data-index="${index}">Assign Admin/Principal</button> <button class="secondary assign-erp-role" data-index="${index}">Assign ERP Role</button> <button class="secondary edit-teacher" data-index="${index}">Edit</button> <button class="secondary reset-teacher-password" data-index="${index}">Reset</button> <button class="secondary delete-teacher" data-index="${index}">Delete</button></td>
         </tr>
-      `).join("") : `<tr><td colspan="9">No teacher data uploaded yet. Import your school teacher CSV/Excel.</td></tr>`;
+      `).join("") : `<tr><td colspan="10">No teacher data uploaded yet. Import your school teacher CSV/Excel.</td></tr>`;
     }
 
     function renderTeacherAttendance() {
@@ -7058,12 +7080,13 @@
           <td>${teacher[0]}</td>
           <td>${teacherCodeFromName(teacher[0])}</td>
           <td>${teacher[1]}</td>
+          <td>${teacherSubject(teacher) ? `<span class="teacher-subject-badge">${htmlSafe(teacherSubject(teacher))}</span>` : '<span class="status leave">Not assigned</span>'}</td>
           <td>${teacher[4] === "Present" ? "08:45" : "-"}</td>
           <td>-</td>
           <td><button class="status ${teacher[4] === "Leave" ? "leave" : "present"} teacher-attendance-status" data-index="${index}">${teacher[4] || "Present"}</button></td>
-          <td><button class="secondary delete-teacher" data-index="${index}">Delete Teacher</button></td>
+          <td><button class="secondary assign-teacher-subject" data-index="${index}">Assign Subject</button> <button class="secondary delete-teacher" data-index="${index}">Delete Teacher</button></td>
         </tr>
-      `).join("") : `<tr><td colspan="7">No teacher data uploaded yet.</td></tr>`;
+      `).join("") : `<tr><td colspan="8">No teacher data uploaded yet.</td></tr>`;
     }
 
     function normalizePersonName(name) {
@@ -7130,8 +7153,9 @@
       const mobile = prompt("Mobile", teacher[2]) || teacher[2];
       const assignedClass = normalizeAssignedClass(prompt("Assigned Class", teacher[3]) || teacher[3]);
       const status = prompt("Status: Present/Leave", teacher[4]) || teacher[4];
+      const subject = prompt("Subject (Example: English, Math, Science, SST)", teacherSubject(teacher)) || teacherSubject(teacher);
       const oldName = teacher[0];
-      teachers[index] = [name, role, mobile, assignedClass, status];
+      teachers[index] = [name, role, mobile, assignedClass, status, subject];
       if (teacherAssignments[oldName]) {
         delete teacherAssignments[oldName];
       }
@@ -7141,6 +7165,23 @@
       renderTeachers();
       renderClassGroups();
       document.getElementById("teacherBulkStatus").textContent = `${name} updated.`;
+    }
+
+    function assignTeacherSubject(index) {
+      const teacher = teachers[index];
+      if (!teacher) return;
+      const subject = prompt("Subject for timetable dropdown (Example: English, Math, Science, SST, Odia)", teacherSubject(teacher));
+      if (!subject) {
+        document.getElementById("teacherBulkStatus").textContent = "Subject assignment cancelled.";
+        return;
+      }
+      teacher[5] = subject.trim();
+      saveLocalData();
+      renderTeachers();
+      renderTeacherAttendance();
+      renderTimeTableEditor();
+      renderTimetableAudit();
+      document.getElementById("teacherBulkStatus").textContent = `${teacher[0]} subject set as ${teacher[5]}. Time Table dropdown updated.`;
     }
 
     function assignTeacherClass(index) {
@@ -7252,7 +7293,8 @@
           teacherData.role,
           teacherData.mobile,
           teacherData.assignedClass,
-          teacherData.status === "Active" ? "Present" : teacherData.status
+          teacherData.status === "Active" ? "Present" : teacherData.status,
+          teacherData.subject || existing?.[5] || ""
         ];
         if (existing) {
           teachers[teachers.indexOf(existing)] = nextTeacher;
@@ -8678,6 +8720,112 @@
       reader.readAsText(file);
     }
 
+    function teacherSubject(teacher) {
+      return String(teacher?.[5] || "").trim();
+    }
+
+    function teacherSubjectFromRole(role) {
+      const cleaned = String(role || "")
+        .replace(/\b(TGT|PGT|PRT|TEACHER|PRINCIPAL|ADMIN|AND|I\/C|IC)\b/gi, "")
+        .replace(/\s+/g, " ")
+        .trim();
+      return cleaned.split(/[-,/]/)[0].trim();
+    }
+
+    function selectedTimetableClass() {
+      return document.getElementById("timeTableClass")?.value || "Class VI-A";
+    }
+
+    function sameTimetableClass(a, b) {
+      return normalizeTimetableClassName(a) === normalizeTimetableClassName(b);
+    }
+
+    function defaultTimetableRowsForClass(className = selectedTimetableClass()) {
+      return [
+        { day: "Monday", className, periods: ["English", "Math", "Science", "Odia", "Social Science", "Hindi", "Library", "Remedial"] },
+        { day: "Tuesday", className, periods: ["Math", "English", "Odia", "Science", "Social Science", "Computer", "Games", "Remedial"] },
+        { day: "Wednesday", className, periods: ["Science", "Math", "English", "Hindi", "Odia", "Art", "Remedial", "Library"] },
+        { day: "Thursday", className, periods: ["Odia", "Science", "Math", "Social Science", "English", "Computer", "Club", "Remedial"] },
+        { day: "Friday", className, periods: ["English", "Social Science", "Science", "Math", "Hindi", "Odia", "Library", "Club"] },
+        { day: "Saturday", className, periods: ["Test", "Remedial", "Activity", "House Meeting", "-", "-", "-", "-"] }
+      ];
+    }
+
+    function timetableRowsForSelectedClass() {
+      const selected = selectedTimetableClass();
+      const savedRows = importedTimetableRows.filter(row => sameTimetableClass(row.className, selected));
+      return savedRows.length ? savedRows : defaultTimetableRowsForClass(selected);
+    }
+
+    function timetableDropdownOptions(currentValue = "") {
+      const fixed = ["", "-", "Assembly", "Library", "Remedial", "Games", "Art", "Club", "Activity", "Test", "House Meeting", "Computer", "Self Study"];
+      const teacherItems = teachers
+        .filter(teacher => {
+          const role = String(teacher[1] || "").toLowerCase();
+          return !role.includes("principal") && !isDemoTeacher(teacher);
+        })
+        .map(teacher => {
+          const code = teacherCodeFromName(teacher[0]);
+          const subject = teacherSubject(teacher) || teacherSubjectFromRole(teacher[1]);
+          if (!code || !subject) return null;
+          const value = `${subject.toUpperCase()} (${code})`;
+          return { value, label: `${value} - ${teacher[0]}` };
+        })
+        .filter(Boolean);
+      const seen = new Set();
+      const options = fixed.map(value => ({ value, label: value || "Blank" }));
+      teacherItems.forEach(item => options.push(item));
+      if (currentValue && !options.some(item => item.value === currentValue)) {
+        options.unshift({ value: currentValue, label: currentValue });
+      }
+      return options.filter(item => {
+        const key = item.value || "__blank";
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    }
+
+    function renderTimeTableEditor(rows = timetableRowsForSelectedClass()) {
+      const body = document.getElementById("timeTableBody");
+      if (!body) return;
+      body.innerHTML = rows.map(row => `
+        <tr class="${timetableDayCss(row.day)} ${timetableGroupCss(row.className)} ${timetableClassCss(row.className)}">
+          <td>${htmlSafe(row.day)}</td>
+          ${Array.from({ length: TIMETABLE_PERIOD_COUNT }, (_, index) => {
+            const value = row.periods[index] || "";
+            const options = timetableDropdownOptions(value).map(option => `<option value="${htmlSafe(option.value)}"${option.value === value ? " selected" : ""}>${htmlSafe(option.label)}</option>`).join("");
+            return `<td><select class="timetable-cell-select" data-day="${htmlSafe(row.day)}" data-period="${index}">${options}</select></td>`;
+          }).join("")}
+        </tr>
+      `).join("");
+    }
+
+    function manualTimetableRowsFromEditor() {
+      const className = selectedTimetableClass();
+      return [...document.querySelectorAll("#timeTableBody tr")].map(row => {
+        const day = row.children[0]?.textContent.trim() || "";
+        const periods = [...row.querySelectorAll("select.timetable-cell-select")].map(select => select.value).slice(0, TIMETABLE_PERIOD_COUNT);
+        return { day, className, periods };
+      }).filter(row => row.day);
+    }
+
+    function saveTimeTableGrid() {
+      const className = selectedTimetableClass();
+      const rows = manualTimetableRowsFromEditor();
+      if (!rows.length) {
+        document.getElementById("timeTableStatus").textContent = "No timetable row found to save.";
+        return;
+      }
+      for (let index = importedTimetableRows.length - 1; index >= 0; index -= 1) {
+        if (sameTimetableClass(importedTimetableRows[index].className, className)) importedTimetableRows.splice(index, 1);
+      }
+      importedTimetableRows.push(...rows);
+      saveLocalData();
+      renderTimetableAudit();
+      document.getElementById("timeTableStatus").textContent = `${className} timetable saved. Weekly/Today view and arrangement will use these dropdown values.`;
+    }
+
     function currentTimetableRows() {
       if (importedTimetableRows.length) {
         return importedTimetableRows.map(row => ({
@@ -8685,10 +8833,7 @@
           periods: row.periods.slice(0, TIMETABLE_PERIOD_COUNT)
         }));
       }
-      return [...document.querySelectorAll("#timeTableBody tr")].map(row => {
-        const cells = [...row.children].map(cell => cell.textContent.trim());
-        return { day: cells[0], className: document.getElementById("timeTableClass").value, periods: cells.slice(1, 1 + TIMETABLE_PERIOD_COUNT) };
-      });
+      return manualTimetableRowsFromEditor().length ? manualTimetableRowsFromEditor() : defaultTimetableRowsForClass();
     }
 
     function normalizeTimetableClassName(value) {
@@ -8752,7 +8897,8 @@
       const fromMaster = realMasterTeachers.map(teacher => {
         const name = teacher[0] || "";
         const code = teacherCodeFromName(name);
-        return { code, label: code ? `${code} - ${name}` : name };
+        const subject = teacherSubject(teacher) || teacherSubjectFromRole(teacher[1]);
+        return { code, label: code ? `${code} - ${name}${subject ? ` (${subject})` : ""}` : name };
       }).filter(item => item.code);
       const masterCodes = new Set(fromMaster.map(item => item.code));
       const fromTimetable = timetableAllCodes(rows)
@@ -8798,8 +8944,7 @@
     function arrangementSubjectLabel(code) {
       const teacher = teachers.find(item => teacherCodeFromName(item[0]) === code);
       if (!teacher) return code;
-      const roleText = String(teacher[1] || "").replace(/\b(TGT|PGT|PRT|TEACHER|AND|ADMIN|I\/C|IC)\b/gi, "").trim();
-      const subject = roleText.split(/[-,]/)[0].trim();
+      const subject = teacherSubject(teacher) || teacherSubjectFromRole(teacher[1]);
       return subject ? `${subject.toUpperCase()} (${code})` : code;
     }
 
@@ -9004,6 +9149,7 @@
     }
 
     function renderTimetableAudit() {
+      renderTimeTableEditor();
       const rows = currentTimetableRows();
       renderTimetableArrangement(rows);
       renderTimetableRaw(rows);
@@ -9505,6 +9651,20 @@
       updateDateDayLabels();
     });
 
+    document.getElementById("timeTableClass").addEventListener("change", () => {
+      renderTimeTableEditor();
+      renderTimetableAudit();
+    });
+
+    document.getElementById("saveTimeTableGrid").addEventListener("click", () => {
+      saveTimeTableGrid();
+    });
+
+    document.getElementById("timeTableBody").addEventListener("change", event => {
+      if (!event.target.matches(".timetable-cell-select")) return;
+      document.getElementById("timeTableStatus").textContent = "Timetable cell changed. Press Save Time Table to store this class timetable.";
+    });
+
     document.getElementById("uploadTimetableCsv").addEventListener("click", () => {
       importTimetableCsvFile();
     });
@@ -9826,6 +9986,11 @@
     document.addEventListener("click", event => {
       if (!event.target.matches(".assign-teacher-class")) return;
       assignTeacherClass(Number(event.target.dataset.index));
+    });
+
+    document.addEventListener("click", event => {
+      if (!event.target.matches(".assign-teacher-subject")) return;
+      assignTeacherSubject(Number(event.target.dataset.index));
     });
 
     document.addEventListener("click", event => {
