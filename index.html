@@ -5914,6 +5914,27 @@
       return teacherPasswords[name];
     }
 
+    function erpRoleTokensFromText(text) {
+      const value = String(text || "").toLowerCase();
+      const roles = [];
+      if (/\bmdm\b/.test(value)) roles.push("MDM I/C");
+      if (/time\s*table|timetable/.test(value)) roles.push("Time Table I/C");
+      if (/academic/.test(value)) roles.push("Academic I/C");
+      if (/exam/.test(value)) roles.push("Exam I/C");
+      return [...new Set(roles)];
+    }
+
+    function mergeTeacherErpRoles(existingRole, requestedRoleText) {
+      const requestedRoles = erpRoleTokensFromText(requestedRoleText);
+      if (!requestedRoles.length) return "";
+      const baseRoles = String(existingRole || "")
+        .split(",")
+        .map(role => role.trim())
+        .filter(Boolean)
+        .filter(role => erpRoleTokensFromText(role).length === 0);
+      return [...new Set([...baseRoles, ...requestedRoles])].join(", ");
+    }
+
     function adminPrincipalLoginOk(role, userId, password) {
       const id = String(userId || "").toLowerCase();
       if (role === "principal" && id === "admin" && password === ADMIN_PASSWORD) return true;
@@ -7297,36 +7318,27 @@
         document.getElementById("teacherBulkStatus").textContent = "Please type Admin or Principal.";
         return;
       }
-      teacher[1] = normalized === "admin" ? "ADMIN" : "PRINCIPAL";
+      const existingIcRoles = erpRoleTokensFromText(teacher[1]);
+      teacher[1] = [normalized === "admin" ? "ADMIN" : "PRINCIPAL", ...existingIcRoles].join(", ");
       if (!teacherPasswords[teacher[0]]) teacherPasswords[teacher[0]] = DEFAULT_TEACHER_PASSWORD;
       saveLocalData();
       renderTeachers();
       renderTeacherAttendance();
+      populateLoginTeachers();
       document.getElementById("teacherBulkStatus").textContent = `${teacher[0]} assigned as ${teacher[1]}. Login ID: ${teacherLoginId(teacher[0])}. Password protected.`;
     }
 
     function assignErpRole(index) {
       const teacher = teachers[index];
       if (!teacher) return;
-      const role = prompt("Assign ERP Role: MDM I/C, Time Table I/C, Academic I/C, Exam I/C", teacher[1] || "MDM I/C");
+      const role = prompt("Assign ERP Role(s): MDM I/C, Time Table I/C, Academic I/C, Exam I/C. Multiple roles allowed with comma.", erpRoleTokensFromText(teacher[1]).join(", ") || "MDM I/C");
       if (!role) return;
-      const normalized = role.trim().toLowerCase();
-      const allowed = {
-        "mdm i/c": "MDM I/C",
-        "mdm ic": "MDM I/C",
-        "time table i/c": "Time Table I/C",
-        "time table ic": "Time Table I/C",
-        "timetable i/c": "Time Table I/C",
-        "academic i/c": "Academic I/C",
-        "academic ic": "Academic I/C",
-        "exam i/c": "Exam I/C",
-        "exam ic": "Exam I/C"
-      };
-      if (!allowed[normalized]) {
-        document.getElementById("teacherBulkStatus").textContent = "Use one role: MDM I/C, Time Table I/C, Academic I/C, Exam I/C.";
+      const mergedRole = mergeTeacherErpRoles(teacher[1], role);
+      if (!mergedRole) {
+        document.getElementById("teacherBulkStatus").textContent = "Use role names like: MDM I/C, Time Table I/C, Academic I/C, Exam I/C.";
         return;
       }
-      teacher[1] = allowed[normalized];
+      teacher[1] = mergedRole;
       if (!teacherPasswords[teacher[0]]) teacherPasswords[teacher[0]] = DEFAULT_TEACHER_PASSWORD;
       saveLocalData();
       renderTeachers();
@@ -7676,10 +7688,21 @@
     }
 
     function canEditTimetable() {
-      if (activeUser.role === "principal") return true;
+      const loginRole = String(activeUser.role || "").toLowerCase();
+      if (loginRole === "principal" || loginRole === "admin") return true;
       const staff = teachers.find(teacher => teacher[0] === activeUser.teacher);
       const staffRole = String(staff?.[1] || "").toLowerCase();
-      return /principal|admin|time\s*table|timetable/.test(staffRole);
+      return /\bprincipal\b|\badmin\b|time\s*table\s*i\/?c|time\s*table|timetable/.test(staffRole);
+    }
+
+    function requireTimetableEditAccess() {
+      if (canEditTimetable()) return true;
+      const status = document.getElementById("timeTableStatus");
+      if (status) {
+        status.textContent = "Read-only view: timetable editing is allowed only for Admin, Principal, or Time Table I/C.";
+      }
+      updateTimetableAccess();
+      return false;
     }
 
     function updateTimetableAccess() {
@@ -7693,17 +7716,27 @@
         "uploadTimetableCsv",
         "importTimetableCsv",
         "loadTimetableTemplate",
-        "downloadTimetableTemplate",
         "clearTimetableImport",
         "generateArrangement",
-        "saveDailyArrangement"
+        "saveDailyArrangement",
+        "saveTimeTableGrid",
+        "saveWholeSchoolTimeTable",
+        "resetWholeSchoolTimeTable",
+        "savePeriodTimes"
       ].forEach(id => {
         const element = document.getElementById(id);
         if (element) element.disabled = !canEdit;
       });
+      document.querySelectorAll(
+        "#timetable .timetable-cell-select, #timetable .whole-timetable-select, #timetable .period-time-input, #timetable .arrangement-select"
+      ).forEach(element => {
+        element.disabled = !canEdit;
+      });
       const status = document.getElementById("timeTableStatus");
       if (status && !canEdit) {
-        status.textContent = "Teacher view only: weekly and today's timetable can be viewed. Edit/import access is available only to Time Table I/C, Principal, or Admin.";
+        status.textContent = "Teacher/staff view only: weekly and today's timetable can be viewed. Edit/import/save/reset access is available only to Admin, Principal, or Time Table I/C.";
+      } else if (status && /^Teacher\/staff view only|^Teacher view only|^Read-only view/.test(status.textContent || "")) {
+        status.textContent = "Time Table edit access enabled for Admin, Principal, or Time Table I/C.";
       }
     }
 
@@ -8763,6 +8796,7 @@
     }
 
     function importTimetableCsv() {
+      if (!requireTimetableEditAccess()) return;
       const rows = document.getElementById("timeTableCsvText").value
         .split(/\r?\n/)
         .map(line => splitSimpleCsvLine(line))
@@ -8783,6 +8817,7 @@
     }
 
     function importTimetableCsvFile() {
+      if (!requireTimetableEditAccess()) return;
       const file = document.getElementById("timeTableCsvFile").files[0];
       if (!file) {
         document.getElementById("timeTableStatus").textContent = "Please choose a timetable CSV file first.";
@@ -8932,6 +8967,7 @@
     }
 
     function savePeriodTimes() {
+      if (!requireTimetableEditAccess()) return;
       document.querySelectorAll(".period-time-input").forEach(input => {
         const mode = input.dataset.mode;
         const index = Number(input.dataset.index);
@@ -8985,6 +9021,7 @@
     }
 
     function saveTimeTableGrid() {
+      if (!requireTimetableEditAccess()) return;
       const className = selectedTimetableClass();
       const rows = manualTimetableRowsFromEditor();
       if (!rows.length) {
@@ -9001,6 +9038,7 @@
     }
 
     function saveWholeSchoolTimeTable() {
+      if (!requireTimetableEditAccess()) return;
       const rows = wholeSchoolTimetableRowsFromBuilder();
       if (!rows.length) {
         document.getElementById("timeTableStatus").textContent = "Open Whole School Weekly Time Table first, then edit dropdown cells.";
@@ -9263,6 +9301,7 @@
       const tbody = document.getElementById(targetId);
       if (!tbody) return;
       const editable = targetId === "timeTableRawRows";
+      const selectDisabled = canEditTimetable() ? "" : " disabled";
       const absentCodes = document.getElementById("absentTeacherCodes").value
         .split(",")
         .map(code => code.trim().toUpperCase())
@@ -9274,7 +9313,7 @@
             const conflict = conflictCells.has(`${String(row.day || "").toUpperCase()}|${normalizeTimetableClassName(row.className)}|${index + 1}`);
             if (!editable) return `<td class="${cell.arranged ? "arranged-cell" : ""} ${conflict ? "conflict-cell" : ""}">${htmlSafe(cell.value)}</td>`;
             const options = timetableDropdownOptions(row.periods[index] || "").map(option => `<option value="${htmlSafe(option.value)}"${option.value === (row.periods[index] || "") ? " selected" : ""}>${htmlSafe(option.label)}</option>`).join("");
-            return `<td class="${conflict ? "conflict-cell" : ""}"><select class="timetable-cell-select whole-timetable-select" data-day="${htmlSafe(row.day)}" data-class-name="${htmlSafe(row.className)}" data-period="${index}">${options}</select></td>`;
+            return `<td class="${conflict ? "conflict-cell" : ""}"><select class="timetable-cell-select whole-timetable-select" data-day="${htmlSafe(row.day)}" data-class-name="${htmlSafe(row.className)}" data-period="${index}"${selectDisabled}>${options}</select></td>`;
           }).join("")}</tr>`).join("")
         : `<tr><td colspan="10">No imported timetable rows yet.</td></tr>`;
     }
@@ -9382,6 +9421,7 @@
     }
 
     function saveDailyArrangement() {
+      if (!requireTimetableEditAccess()) return;
       const rows = renderTimetableArrangement();
       if (!rows.length) {
         document.getElementById("timeTableStatus").textContent = "No daily arrangement available to save. Enter absent teacher code first.";
@@ -9444,6 +9484,7 @@
     }
 
     function resetWholeSchoolTimeTable() {
+      if (!requireTimetableEditAccess()) return;
       if (!confirm("Reset whole school timetable? Teacher master, subject assignment, and attendance data will remain safe.")) return;
       importedTimetableRows.length = 0;
       Object.keys(timetableArrangementSelections).forEach(key => delete timetableArrangementSelections[key]);
@@ -9483,6 +9524,7 @@
     }
 
     function loadTimetableTemplate() {
+      if (!requireTimetableEditAccess()) return;
       document.getElementById("timeTableCsvText").value = timetableTemplateCsvText();
       document.getElementById("timeTableStatus").textContent = "PDF-style CSV template loaded. Fill subject/teacher code cells like MATH (TM), then import.";
     }
@@ -9980,12 +10022,14 @@
 
     document.getElementById("timeTableBody").addEventListener("change", event => {
       if (!event.target.matches(".timetable-cell-select")) return;
+      if (!requireTimetableEditAccess()) return;
       renderTimetableAudit(false);
       document.getElementById("timeTableStatus").textContent = "Timetable cell changed. Conflict check updated instantly. Press Save Time Table to store this class timetable.";
     });
 
     document.getElementById("timeTableRawRows").addEventListener("change", event => {
       if (!event.target.matches(".whole-timetable-select")) return;
+      if (!requireTimetableEditAccess()) return;
       renderTimetableAudit(false);
       document.getElementById("timeTableStatus").textContent = "Whole-school timetable changed. Conflict check updated instantly. Press Save Whole School Time Table.";
     });
@@ -9999,6 +10043,7 @@
     });
 
     document.getElementById("clearTimetableImport").addEventListener("click", () => {
+      if (!requireTimetableEditAccess()) return;
       importedTimetableRows.length = 0;
       document.getElementById("timeTableCsvText").value = "";
       document.getElementById("timeTableCsvFile").value = "";
@@ -10008,11 +10053,13 @@
     });
 
     document.getElementById("generateArrangement").addEventListener("click", () => {
+      if (!requireTimetableEditAccess()) return;
       renderTimetableAudit();
     });
 
     document.getElementById("timeTableArrangementRows").addEventListener("change", event => {
       if (event.target.classList.contains("arrangement-select")) {
+        if (!requireTimetableEditAccess()) return;
         handleArrangementSelectChange(event.target);
       }
     });
