@@ -589,6 +589,25 @@
       color: #991b1b;
       font-weight: 700;
     }
+    td.conflict-cell {
+      background: #fecaca !important;
+      color: #7f1d1d;
+      font-weight: 800;
+      box-shadow: inset 0 0 0 2px #dc2626;
+    }
+    .conflict-note {
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      background: #fef2f2;
+      color: #991b1b;
+      padding: 10px 12px;
+      font-weight: 700;
+    }
+    .conflict-note.clear {
+      border-color: #bbf7d0;
+      background: #f0fdf4;
+      color: #166534;
+    }
     .timetable-cell-select {
       width: 100%;
       min-width: 150px;
@@ -5252,7 +5271,7 @@
             <button class="secondary" id="clearTimetableImport">Clear Imported Timetable</button>
           </div>
           <div class="toolbar" style="margin-top: 10px;">
-            <button class="secondary" id="showWeeklyTimetable">See Weekly Time Table</button>
+            <button class="secondary" id="showWeeklyTimetable">See Whole School Weekly Time Table</button>
             <button class="secondary" id="showTodayTimetable">See Today's Time Table</button>
           </div>
           <div class="table-wrap" id="timeTableEditorPanel" style="margin-top: 14px;">
@@ -5292,6 +5311,7 @@
           </div>
           <div class="table-wrap" style="margin-top: 14px;">
             <h2>Conflict / Compliance</h2>
+            <p class="conflict-note clear" id="timeTableConflictStatus">No conflict found yet.</p>
             <table>
               <thead><tr><th>Day</th><th>Period</th><th>Teacher Code</th><th>Classes</th><th>Status</th></tr></thead>
               <tbody id="timeTableConflictRows"></tbody>
@@ -5305,7 +5325,8 @@
             </table>
           </div>
           <div class="table-wrap hidden" id="timeTableWeeklyPanel" style="margin-top: 14px;">
-            <h2>Imported Raw Timetable</h2>
+            <h2>Whole School Weekly Time Table</h2>
+            <p class="success-note">All classes are shown together. Red cells mean the same teacher is allotted in more than one class during the same period.</p>
             <table>
               <thead><tr><th>Day</th><th>Class</th><th>Period 1</th><th>Period 2</th><th>Period 3</th><th>Period 4</th><th>Period 5</th><th>Period 6</th><th>Period 7</th><th>Period 8</th></tr></thead>
               <tbody id="timeTableRawRows"></tbody>
@@ -8751,6 +8772,16 @@
       ];
     }
 
+    function blankTimetableRowsForClass(className) {
+      return ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+        .map(day => ({ day, className, periods: Array(TIMETABLE_PERIOD_COUNT).fill("") }));
+    }
+
+    function allTimetableClassNames() {
+      const select = document.getElementById("timeTableClass");
+      return select ? [...select.options].map(option => option.value) : [selectedTimetableClass()];
+    }
+
     function timetableRowsForSelectedClass() {
       const selected = selectedTimetableClass();
       const savedRows = importedTimetableRows.filter(row => sameTimetableClass(row.className, selected));
@@ -8810,6 +8841,16 @@
       }).filter(row => row.day);
     }
 
+    function wholeSchoolTimetableRows() {
+      const selected = selectedTimetableClass();
+      const editorRows = manualTimetableRowsFromEditor();
+      return allTimetableClassNames().flatMap(className => {
+        if (sameTimetableClass(className, selected) && editorRows.length) return editorRows;
+        const savedRows = importedTimetableRows.filter(row => sameTimetableClass(row.className, className));
+        return savedRows.length ? savedRows : blankTimetableRowsForClass(className);
+      });
+    }
+
     function saveTimeTableGrid() {
       const className = selectedTimetableClass();
       const rows = manualTimetableRowsFromEditor();
@@ -8827,13 +8868,10 @@
     }
 
     function currentTimetableRows() {
-      if (importedTimetableRows.length) {
-        return importedTimetableRows.map(row => ({
-          ...row,
-          periods: row.periods.slice(0, TIMETABLE_PERIOD_COUNT)
-        }));
-      }
-      return manualTimetableRowsFromEditor().length ? manualTimetableRowsFromEditor() : defaultTimetableRowsForClass();
+      return wholeSchoolTimetableRows().map(row => ({
+        ...row,
+        periods: row.periods.slice(0, TIMETABLE_PERIOD_COUNT)
+      }));
     }
 
     function normalizeTimetableClassName(value) {
@@ -9000,6 +9038,35 @@
       return { value: `${value} + ${additions.join(" + ")}`, arranged: true };
     }
 
+    function timetableConflictDetails(rows = currentTimetableRows()) {
+      const slotMap = new Map();
+      rows.forEach(row => row.periods.forEach((cell, periodIndex) => {
+        extractTeacherCodes(cell).forEach(code => {
+          const key = `${String(row.day || "").toUpperCase()}|${periodIndex + 1}|${code}`;
+          if (!slotMap.has(key)) slotMap.set(key, []);
+          slotMap.get(key).push({ day: row.day, className: row.className, period: periodIndex + 1, code });
+        });
+      }));
+      return [...slotMap.values()]
+        .filter(items => new Set(items.map(item => normalizeTimetableClassName(item.className))).size > 1)
+        .map(items => ({
+          day: items[0].day,
+          period: items[0].period,
+          code: items[0].code,
+          classes: [...new Set(items.map(item => item.className))].join(", ")
+        }));
+    }
+
+    function timetableConflictCellSet(rows = currentTimetableRows()) {
+      const conflictSet = new Set();
+      timetableConflictDetails(rows).forEach(conflict => {
+        String(conflict.classes || "").split(",").map(item => item.trim()).filter(Boolean).forEach(className => {
+          conflictSet.add(`${String(conflict.day || "").toUpperCase()}|${normalizeTimetableClassName(className)}|${conflict.period}`);
+        });
+      });
+      return conflictSet;
+    }
+
     function renderTimetableRows(targetId, rows = currentTimetableRows()) {
       const tbody = document.getElementById(targetId);
       if (!tbody) return;
@@ -9007,10 +9074,12 @@
         .split(",")
         .map(code => code.trim().toUpperCase())
         .filter(Boolean);
+      const conflictCells = timetableConflictCellSet(rows);
       tbody.innerHTML = rows.length
         ? rows.map(row => `<tr class="${timetableDayCss(row.day)} ${timetableGroupCss(row.className)} ${timetableClassCss(row.className)}"><td>${row.day}</td><td>${row.className}</td>${Array.from({ length: TIMETABLE_PERIOD_COUNT }, (_, index) => {
             const cell = decoratedTimetableCell(row, index, rows, absentCodes);
-            return `<td class="${cell.arranged ? "arranged-cell" : ""}">${htmlSafe(cell.value)}</td>`;
+            const conflict = conflictCells.has(`${String(row.day || "").toUpperCase()}|${normalizeTimetableClassName(row.className)}|${index + 1}`);
+            return `<td class="${cell.arranged ? "arranged-cell" : ""} ${conflict ? "conflict-cell" : ""}">${htmlSafe(cell.value)}</td>`;
           }).join("")}</tr>`).join("")
         : `<tr><td colspan="10">No imported timetable rows yet.</td></tr>`;
     }
@@ -9038,15 +9107,14 @@
     }
 
     function renderTimetableConflicts(rows = currentTimetableRows()) {
-      const conflicts = [];
-      rows.forEach(row => row.periods.forEach((cell, periodIndex) => {
-        extractTeacherCodes(cell).forEach(code => {
-          const sameSlot = rows.filter(item => item.day === row.day && extractTeacherCodes(item.periods[periodIndex]).includes(code));
-          if (sameSlot.length > 1 && !conflicts.some(item => item.day === row.day && item.period === periodIndex + 1 && item.code === code)) {
-            conflicts.push({ day: row.day, period: periodIndex + 1, code, classes: sameSlot.map(item => item.className).join(", ") });
-          }
-        });
-      }));
+      const conflicts = timetableConflictDetails(rows);
+      const status = document.getElementById("timeTableConflictStatus");
+      if (status) {
+        status.className = `conflict-note ${conflicts.length ? "" : "clear"}`;
+        status.textContent = conflicts.length
+          ? `${conflicts.length} conflict(s) found. Red cells show teacher overlap in the same day and period.`
+          : "No conflict found in the whole-school weekly timetable.";
+      }
       document.getElementById("timeTableConflictRows").innerHTML = conflicts.length
         ? conflicts.map(item => `<tr><td>${item.day}</td><td>${item.period}</td><td>${item.code}</td><td>${item.classes}</td><td>Conflict</td></tr>`).join("")
         : `<tr><td colspan="5">No teacher double-booking conflict found.</td></tr>`;
@@ -9148,8 +9216,8 @@
       document.getElementById("timeTableStatus").textContent = `${rows.length} daily arrangement row(s) saved. Weekly/monthly balance updated.`;
     }
 
-    function renderTimetableAudit() {
-      renderTimeTableEditor();
+    function renderTimetableAudit(refreshEditor = true) {
+      if (refreshEditor) renderTimeTableEditor();
       const rows = currentTimetableRows();
       renderTimetableArrangement(rows);
       renderTimetableRaw(rows);
@@ -9662,7 +9730,8 @@
 
     document.getElementById("timeTableBody").addEventListener("change", event => {
       if (!event.target.matches(".timetable-cell-select")) return;
-      document.getElementById("timeTableStatus").textContent = "Timetable cell changed. Press Save Time Table to store this class timetable.";
+      renderTimetableAudit(false);
+      document.getElementById("timeTableStatus").textContent = "Timetable cell changed. Conflict check updated instantly. Press Save Time Table to store this class timetable.";
     });
 
     document.getElementById("uploadTimetableCsv").addEventListener("click", () => {
