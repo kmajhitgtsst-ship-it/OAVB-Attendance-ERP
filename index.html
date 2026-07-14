@@ -381,6 +381,7 @@
     tr.student-absent td { background: #fff0f0; }
     tr.student-leave td { background: #fff4e5; }
     tr.teacher-leave td { background: #ffe2e2; }
+    tr.teacher-half-leave td { background: #fff4d6; }
     tr.total-row td {
       background: #eef4ff;
       font-weight: 800;
@@ -4993,6 +4994,10 @@
                   <label for="studentRoll">Roll No.</label>
                   <input id="studentRoll" type="number" min="1" max="99" value="41">
                 </div>
+                <div class="field">
+                  <label for="studentAdmissionNo">Admission No.</label>
+                  <input id="studentAdmissionNo" placeholder="Admission number">
+                </div>
               </div>
               <div class="toolbar">
                 <div class="field">
@@ -5071,7 +5076,7 @@
           <div class="table-wrap">
             <table>
               <thead>
-                <tr><th>Roll</th><th>Name</th><th>Guardian</th><th>Mobile</th><th>Hostel</th><th>Status</th><th>Action</th></tr>
+                <tr><th>Admission No.</th><th>Roll</th><th>Name</th><th>Guardian</th><th>Mobile</th><th>Hostel</th><th>Status</th><th>Action</th></tr>
               </thead>
               <tbody id="masterRows"></tbody>
             </table>
@@ -5148,7 +5153,7 @@
           <div class="table-wrap attendance-student-table">
             <table>
               <thead>
-                <tr><th>Roll</th><th>Student</th><th>Guardian</th><th>Hostel</th><th>In Time</th><th>Status</th><th>Remark</th><th>Action</th></tr>
+                <tr><th>Roll / Admission</th><th>Student</th><th>Guardian</th><th>Hostel</th><th>In Time</th><th>Status</th><th>Remark</th><th>Action</th></tr>
               </thead>
               <tbody id="studentRows"></tbody>
             </table>
@@ -5922,6 +5927,7 @@
       Leave: "leave",
       Holiday: "holiday"
     };
+    const TEACHER_ATTENDANCE_STATUSES = ["Present", "Leave", "Half Day Leave - 1st Half", "Half Day Leave - 2nd Half"];
 
     let attendanceSubmitted = false;
 
@@ -7321,7 +7327,7 @@
           tr.className = status === "Absent" ? "student-absent" : status === "Leave" ? "student-leave" : "";
           const stats = studentMonthlyStats(student);
           tr.innerHTML = `
-            <td>${student[0]}</td>
+            <td><strong>${student[0]}</strong><br><span class="subtle">Adm: ${studentAdmissionNo(student) || "-"}</span></td>
             <td>${student[1]}</td>
             <td>${student[6]}<br><span class="subtle">${student[7]}</span></td>
             <td>${student[2]}</td>
@@ -7341,6 +7347,26 @@
       )).join("");
     }
 
+    function studentAdmissionNo(student) {
+      return String(student?.[9] || "").trim();
+    }
+
+    function setStudentAdmissionNo(student, admissionNo) {
+      student[9] = String(admissionNo || "").trim();
+    }
+
+    function updateStudentRollReferences(classGroup, oldRoll, newRoll) {
+      Object.keys(dailyAttendanceRecords).forEach(recordKey => {
+        if (!recordKey.endsWith(`|${classGroup}`)) return;
+        (dailyAttendanceRecords[recordKey].students || []).forEach(item => {
+          if (item.roll === oldRoll) item.roll = newRoll;
+        });
+      });
+      mdmRecords.forEach(record => {
+        if (record.classGroup === classGroup && record.roll === oldRoll) record.roll = newRoll;
+      });
+    }
+
     function renderStudentMaster() {
       updateLinkedSectionState("masterClass", "masterSection");
       const key = classKeyFrom("masterClass", "masterSection");
@@ -7349,6 +7375,7 @@
       document.getElementById("masterClassCount").textContent = `${selected.length} students available.`;
       document.getElementById("masterRows").innerHTML = selected.map(student => `
         <tr>
+          <td>${studentAdmissionNo(student) || "-"}</td>
           <td>${student[0]}</td>
           <td>${student[1]}</td>
           <td>${student[6]}</td>
@@ -7365,19 +7392,36 @@
       const selected = classData[key] || [];
       const student = selected.find(item => item[0] === roll);
       if (!student) return;
+      const oldRoll = student[0];
+      const nextRollRaw = prompt("Roll No.", Number(student[0]));
+      if (nextRollRaw === null) return;
+      const nextRoll = String(Number(nextRollRaw || student[0])).padStart(2, "0");
+      if (Number.isNaN(Number(nextRollRaw)) || Number(nextRollRaw) <= 0) {
+        document.getElementById("studentMasterStatus").textContent = "Invalid roll number.";
+        return;
+      }
+      if (nextRoll !== oldRoll && selected.some(item => item[0] === nextRoll)) {
+        document.getElementById("studentMasterStatus").textContent = `Roll ${Number(nextRoll)} already exists in ${key}.`;
+        return;
+      }
+      const admissionNo = prompt("Admission No.", studentAdmissionNo(student)) || studentAdmissionNo(student);
       const name = prompt("Student name", student[1]);
       if (!name) return;
       const guardian = prompt("Guardian name", student[6]) || student[6];
       const mobile = prompt("Mobile", student[7]) || student[7];
       const hostel = prompt("Hostel Yes/No", student[2]) || student[2];
+      student[0] = nextRoll;
+      setStudentAdmissionNo(student, admissionNo);
       student[1] = name;
       student[6] = guardian;
       student[7] = mobile;
       student[2] = hostel;
+      if (nextRoll !== oldRoll) updateStudentRollReferences(key, oldRoll, nextRoll);
+      selected.sort((a, b) => Number(a[0]) - Number(b[0]));
       saveLocalData();
       renderStudentMaster();
       loadClassStudents();
-      document.getElementById("studentMasterStatus").textContent = `Roll ${Number(roll)} saved.`;
+      document.getElementById("studentMasterStatus").textContent = `Admission ${studentAdmissionNo(student) || "-"}, Roll ${Number(nextRoll)} saved.`;
     }
 
     function deleteStudent(roll) {
@@ -7402,6 +7446,7 @@
       const key = classKeyFrom("masterClass", "masterSection");
       const selected = classData[key] || [];
       const roll = String(Number(document.getElementById("studentRoll").value || selected.length + 1)).padStart(2, "0");
+      const admissionNo = document.getElementById("studentAdmissionNo").value.trim();
       const name = document.getElementById("studentName").value.trim();
       const guardian = document.getElementById("guardianName").value.trim() || "Guardian";
       const mobile = document.getElementById("guardianMobile").value.trim() || "+91 9000000000";
@@ -7417,10 +7462,11 @@
         return;
       }
 
-      selected.push([roll, name, hostel, "08:55", "Present", "", guardian, mobile, buildMonthRecord(Number(roll), 1, 1)]);
+      selected.push([roll, name, hostel, "08:55", "Present", "", guardian, mobile, buildMonthRecord(Number(roll), 1, 1), admissionNo]);
       selected.sort((a, b) => Number(a[0]) - Number(b[0]));
       classData[key] = selected;
       document.getElementById("studentName").value = "";
+      document.getElementById("studentAdmissionNo").value = "";
       document.getElementById("guardianName").value = "";
       document.getElementById("guardianMobile").value = "";
       document.getElementById("studentRoll").value = Math.min(99, Number(roll) + 1);
@@ -7450,6 +7496,7 @@
     function compactStudentFromRow(row) {
       if (isStudentTemplateRow(row)) {
         return {
+          admissionNo: row[0],
           roll: row[1],
           name: row[2],
           className: row[3],
@@ -7461,6 +7508,7 @@
       }
 
       return {
+        admissionNo: "",
         roll: row[0],
         name: row[1],
         className: row[2],
@@ -7524,7 +7572,8 @@
           "",
           row[2] || "Guardian",
           row[3] || "+91 9000000000",
-          existing?.[8] || buildMonthRecord(Number(roll), 1, 1)
+          existing?.[8] || buildMonthRecord(Number(roll), 1, 1),
+          existing?.[9] || ""
         ];
         if (existing) {
           selected[selected.indexOf(existing)] = nextStudent;
@@ -7591,7 +7640,8 @@
           "",
           studentData.guardian,
           studentData.mobile,
-          existing?.[8] || buildMonthRecord(Number(roll), 1, 1)
+          existing?.[8] || buildMonthRecord(Number(roll), 1, 1),
+          studentData.admissionNo || existing?.[9] || ""
         ];
         if (existing) {
           selected[selected.indexOf(existing)] = nextStudent;
@@ -7613,14 +7663,14 @@
     function renderTeachers() {
       renderStaffMetric();
       document.getElementById("teacherRows").innerHTML = teachers.length ? teachers.map((teacher, index) => `
-        <tr class="${teacher[4] === "Leave" ? "teacher-leave" : ""}">
+        <tr class="${teacherRowClass(teacher)}">
           <td>${teacher[0]}</td>
           <td>${teacherCodeFromName(teacher[0])}</td>
           <td>${teacher[1]}</td>
           <td>${teacherSubject(teacher) ? `<span class="teacher-subject-badge">${htmlSafe(teacherSubject(teacher))}</span>` : '<span class="status leave">Not assigned</span>'}</td>
           <td>${teacher[2]}</td>
           <td>${teacher[3] || '<span class="status absent">Class not assigned</span>'}</td>
-          <td><span class="status ${teacher[4] === "Leave" ? "leave" : "present"}">${teacher[4]}</span></td>
+          <td><span class="status ${teacherStatusClass(teacher)}">${teacherAttendanceStatus(teacher)}</span></td>
           <td>${teacherLoginId(teacher[0])}</td>
           <td><span class="status leave">Protected</span></td>
           <td><button class="secondary assign-teacher-subject" data-index="${index}">Assign Subject</button> <button class="secondary assign-teacher-class" data-index="${index}">Assign Class</button> <button class="secondary assign-admin-principal" data-index="${index}">Assign Admin/Principal</button> <button class="secondary assign-erp-role" data-index="${index}">Assign ERP Role</button> <button class="secondary edit-teacher" data-index="${index}">Edit</button> <button class="secondary reset-teacher-password" data-index="${index}">Reset</button> <button class="secondary delete-teacher" data-index="${index}">Delete</button></td>
@@ -7628,17 +7678,52 @@
       `).join("") : `<tr><td colspan="10">No teacher data uploaded yet. Import your school teacher CSV/Excel.</td></tr>`;
     }
 
+    function teacherAttendanceStatus(teacher) {
+      const status = teacher?.[4] || "Present";
+      return TEACHER_ATTENDANCE_STATUSES.includes(status) ? status : (status === "Absent" ? "Leave" : "Present");
+    }
+
+    function teacherStatusClass(teacher) {
+      const status = teacherAttendanceStatus(teacher);
+      if (status === "Present") return "present";
+      return status === "Leave" ? "leave" : "late";
+    }
+
+    function teacherRowClass(teacher) {
+      const status = teacherAttendanceStatus(teacher);
+      if (status === "Leave") return "teacher-leave";
+      return status.includes("Half Day") ? "teacher-half-leave" : "";
+    }
+
+    function teacherInTime(teacher) {
+      const status = teacherAttendanceStatus(teacher);
+      return status === "Leave" ? "-" : "08:45";
+    }
+
+    function teacherOutTime(teacher) {
+      const status = teacherAttendanceStatus(teacher);
+      if (status === "Leave") return "-";
+      if (status.includes("1st Half")) return "After Period 4";
+      if (status.includes("2nd Half")) return "Before Period 5";
+      return "-";
+    }
+
+    function nextTeacherAttendanceStatus(current) {
+      const index = TEACHER_ATTENDANCE_STATUSES.indexOf(current);
+      return TEACHER_ATTENDANCE_STATUSES[(index + 1) % TEACHER_ATTENDANCE_STATUSES.length];
+    }
+
     function renderTeacherAttendance() {
       renderStaffMetric();
       document.getElementById("teacherAttendanceRows").innerHTML = teachers.length ? teachers.map((teacher, index) => `
-        <tr class="${teacher[4] === "Leave" ? "teacher-leave" : ""}">
+        <tr class="${teacherRowClass(teacher)}">
           <td>${teacher[0]}</td>
           <td>${teacherCodeFromName(teacher[0])}</td>
           <td>${teacher[1]}</td>
           <td>${teacherSubject(teacher) ? `<span class="teacher-subject-badge">${htmlSafe(teacherSubject(teacher))}</span>` : '<span class="status leave">Not assigned</span>'}</td>
-          <td>${teacher[4] === "Present" ? "08:45" : "-"}</td>
-          <td>-</td>
-          <td><button class="status ${teacher[4] === "Leave" ? "leave" : "present"} teacher-attendance-status" data-index="${index}">${teacher[4] || "Present"}</button></td>
+          <td>${teacherInTime(teacher)}</td>
+          <td>${teacherOutTime(teacher)}</td>
+          <td><button class="status ${teacherStatusClass(teacher)} teacher-attendance-status" data-index="${index}">${teacherAttendanceStatus(teacher)}</button></td>
           <td><button class="secondary assign-teacher-subject" data-index="${index}">Assign Subject</button> <button class="secondary assign-erp-role" data-index="${index}">Assign ERP Role</button> <button class="secondary delete-teacher" data-index="${index}">Delete Teacher</button></td>
         </tr>
       `).join("") : `<tr><td colspan="8">No teacher data uploaded yet.</td></tr>`;
@@ -7693,9 +7778,11 @@
     }
 
     function saveTeacherAttendance() {
-      const present = teachers.filter(teacher => (teacher[4] || "Present") === "Present").length;
-      const leave = teachers.filter(teacher => (teacher[4] || "Present") === "Leave").length;
-      addAuditLog("Staff Attendance Saved", `Present ${present}, Leave ${leave}.`, { recordDate: todayIsoDate(), page: "Staff Attendance" });
+      const present = teachers.filter(teacher => teacherAttendanceStatus(teacher) === "Present").length;
+      const leave = teachers.filter(teacher => teacherAttendanceStatus(teacher) === "Leave").length;
+      const firstHalf = teachers.filter(teacher => teacherAttendanceStatus(teacher).includes("1st Half")).length;
+      const secondHalf = teachers.filter(teacher => teacherAttendanceStatus(teacher).includes("2nd Half")).length;
+      addAuditLog("Staff Attendance Saved", `Present ${present}, Leave ${leave}, 1st Half ${firstHalf}, 2nd Half ${secondHalf}.`, { recordDate: todayIsoDate(), page: "Staff Attendance" });
       saveLocalData();
       renderTeachers();
       renderTeacherAttendance();
@@ -7710,7 +7797,7 @@
       const role = prompt("Role", teacher[1]) || teacher[1];
       const mobile = prompt("Mobile", teacher[2]) || teacher[2];
       const assignedClass = normalizeAssignedClass(prompt("Assigned Class", teacher[3]) || teacher[3]);
-      const status = prompt("Status: Present/Leave", teacher[4]) || teacher[4];
+      const status = prompt("Status: Present / Leave / Half Day Leave - 1st Half / Half Day Leave - 2nd Half", teacherAttendanceStatus(teacher)) || teacherAttendanceStatus(teacher);
       const subject = prompt("Subjects (comma separated if more than one. Example: English, Math, Science, SST)", teacherSubject(teacher)) || teacherSubject(teacher);
       const oldName = teacher[0];
       teachers[index] = [name, mergeTeacherRoleForUpdate(teacher[1], role), mobile, assignedClass, status, subject];
@@ -9689,6 +9776,47 @@
       return [...map.values()].sort((a, b) => a.code.localeCompare(b.code));
     }
 
+    function teacherAbsentPeriods(teacher) {
+      const status = teacherAttendanceStatus(teacher);
+      if (status === "Leave") return new Set([1, 2, 3, 4, 5, 6, 7, 8]);
+      if (status.includes("1st Half")) return new Set([1, 2, 3, 4]);
+      if (status.includes("2nd Half")) return new Set([5, 6, 7, 8]);
+      return new Set();
+    }
+
+    function timetableAbsenceMap() {
+      const map = new Map();
+      const addPeriods = (code, periods) => {
+        if (!code || !periods.size) return;
+        if (!map.has(code)) map.set(code, new Set());
+        periods.forEach(period => map.get(code).add(period));
+      };
+      const manualCodes = (document.getElementById("absentTeacherCodes")?.value || "")
+        .split(",")
+        .map(code => code.trim().toUpperCase())
+        .filter(Boolean);
+      manualCodes.forEach(code => addPeriods(code, new Set([1, 2, 3, 4, 5, 6, 7, 8])));
+      teachers.forEach(teacher => addPeriods(teacherCodeFromName(teacher[0]), teacherAbsentPeriods(teacher)));
+      return map;
+    }
+
+    function absentCodesForPeriod(absenceMap, periodIndex) {
+      const period = Number(periodIndex) + 1;
+      return [...absenceMap.entries()]
+        .filter(([, periods]) => periods.has(period))
+        .map(([code]) => code);
+    }
+
+    function allAbsentCodes(absenceMap) {
+      return [...absenceMap.keys()];
+    }
+
+    function absenceText(absenceMap) {
+      const entries = [...absenceMap.entries()];
+      if (!entries.length) return "Enter absent teacher codes or mark teacher leave in Staff Attendance.";
+      return entries.map(([code, periods]) => `${code}: P${[...periods].sort((a, b) => a - b).join(",")}`).join(" | ");
+    }
+
     function arrangementDate() {
       return todayIsoDate();
     }
@@ -9766,13 +9894,14 @@
         .sort((a, b) => a.score - b.score || a.plannedToday - b.plannedToday || a.todayArrangement - b.todayArrangement || a.todayPeriods - b.todayPeriods || a.code.localeCompare(b.code));
     }
 
-    function decoratedTimetableCell(row, periodIndex, rows, absentCodes) {
+    function decoratedTimetableCell(row, periodIndex, rows, absenceMap) {
       const value = row.periods[periodIndex] || "";
-      const missing = extractTeacherCodes(value).filter(code => absentCodes.includes(code));
+      const periodAbsentCodes = absentCodesForPeriod(absenceMap, periodIndex);
+      const missing = extractTeacherCodes(value).filter(code => periodAbsentCodes.includes(code));
       if (!missing.length) return { value, arranged: false };
       const additions = missing.map(code => {
         const item = { date: arrangementDate(), day: row.day, className: row.className, period: periodIndex + 1, absent: code };
-        const selected = timetableArrangementSelections[arrangementKey(item)] || rankedArrangementOptions(rows, row.day, periodIndex, absentCodes)[0]?.code || "Manual";
+        const selected = timetableArrangementSelections[arrangementKey(item)] || rankedArrangementOptions(rows, row.day, periodIndex, periodAbsentCodes)[0]?.code || "Manual";
         return arrangementSubjectLabel(selected);
       });
       return { value: `${value} + ${additions.join(" + ")}`, arranged: true };
@@ -9854,14 +9983,11 @@
       if (!tbody) return;
       const editable = targetId === "timeTableRawRows";
       const selectDisabled = canEditTimetable() ? "" : " disabled";
-      const absentCodes = document.getElementById("absentTeacherCodes").value
-        .split(",")
-        .map(code => code.trim().toUpperCase())
-        .filter(Boolean);
+      const absenceMap = timetableAbsenceMap();
       const conflictCells = timetableConflictCellSet(rows);
       tbody.innerHTML = rows.length
         ? rows.map(row => `<tr data-day="${htmlSafe(row.day)}" data-class-name="${htmlSafe(row.className)}" class="${timetableDayCss(row.day)} ${timetableGroupCss(row.className)} ${timetableClassCss(row.className)}"><td>${row.day}</td><td>${row.className}</td>${Array.from({ length: TIMETABLE_PERIOD_COUNT }, (_, index) => {
-            const cell = decoratedTimetableCell(row, index, rows, absentCodes);
+            const cell = decoratedTimetableCell(row, index, rows, absenceMap);
             const conflict = conflictCells.has(`${String(row.day || "").toUpperCase()}|${normalizeTimetableClassName(row.className)}|${index + 1}`);
             if (!editable) return `<td class="${cell.arranged ? "arranged-cell" : ""} ${conflict ? "conflict-cell" : ""}">${htmlSafe(cell.value)}</td>`;
             const options = timetableDropdownOptions(row.periods[index] || "").map(option => `<option value="${htmlSafe(option.value)}"${option.value === (row.periods[index] || "") ? " selected" : ""}>${htmlSafe(option.label)}</option>`).join("");
@@ -9909,16 +10035,15 @@
     }
 
     function renderTimetableArrangement(rows = currentTimetableRows()) {
-      const absentCodes = document.getElementById("absentTeacherCodes").value
-        .split(",")
-        .map(code => code.trim().toUpperCase())
-        .filter(Boolean);
+      const absenceMap = timetableAbsenceMap();
+      const allAbsent = allAbsentCodes(absenceMap);
       const teacherOptions = teacherOptionPool(rows);
       const arrangements = [];
       const plannedCounts = {};
       const todayRows = todayTimetableRows(rows);
       const arrangementRows = todayRows.length ? todayRows : rows;
       arrangementRows.forEach(row => row.periods.forEach((cell, periodIndex) => {
+        const absentCodes = absentCodesForPeriod(absenceMap, periodIndex);
         const cellCodes = extractTeacherCodes(cell);
         const missing = cellCodes.filter(code => absentCodes.includes(code));
         if (!missing.length) return;
@@ -9934,12 +10059,12 @@
           arrangements.push({ ...item, original: cell, best, selected, options, load: `${selectedCounts.week} W / ${selectedCounts.month} M` });
         });
       }));
-      const available = absentCodes.length
-        ? teacherOptions.map(item => item.code).filter(code => !absentCodes.includes(code)).join(", ") || "No teacher code available"
-        : "Enter absent teacher codes to calculate arrangement.";
+      const available = allAbsent.length
+        ? teacherOptions.map(item => item.code).filter(code => !allAbsent.includes(code)).join(", ") || "No teacher code available"
+        : "Enter absent teacher codes or mark teacher leave in Staff Attendance.";
       const todayWorkload = timetableDailyWorkload(rows);
       const workloadText = Object.entries(todayWorkload).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([code, count]) => `${code}: ${count}`).join(" | ") || "No workload data";
-      document.getElementById("timeTableStatus").innerHTML = `Today: ${timetableTodayName()}. Available for arrangement: ${available}. Current day workload: ${workloadText}. Teachers with lower weekly/monthly arrangement load are shown first in the dropdown.`;
+      document.getElementById("timeTableStatus").innerHTML = `Today: ${timetableTodayName()}. Absent/half-day period map: ${htmlSafe(absenceText(absenceMap))}. Available for arrangement: ${available}. Current day workload: ${workloadText}. Teachers with lower weekly/monthly arrangement load are shown first in the dropdown.`;
       document.getElementById("timeTableArrangementRows").innerHTML = arrangements.length
         ? arrangements.map(row => {
             const selectDisabled = canEditTimetable() ? "" : " disabled";
@@ -10902,10 +11027,11 @@
       if (!event.target.matches(".teacher-attendance-status")) return;
       const teacher = teachers[Number(event.target.dataset.index)];
       if (!teacher) return;
-      teacher[4] = teacher[4] === "Present" ? "Leave" : "Present";
+      teacher[4] = nextTeacherAttendanceStatus(teacherAttendanceStatus(teacher));
       saveLocalData();
       renderTeacherAttendance();
       renderTeachers();
+      renderTimetableAudit(false);
     });
 
     document.addEventListener("click", event => {
