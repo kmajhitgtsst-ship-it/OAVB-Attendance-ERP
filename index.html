@@ -5935,6 +5935,22 @@
       return [...new Set([...baseRoles, ...requestedRoles])].join(", ");
     }
 
+    function mergeTeacherRoleForUpdate(existingRole, incomingRole) {
+      const existingBaseRoles = String(existingRole || "")
+        .split(",")
+        .map(role => role.trim())
+        .filter(Boolean)
+        .filter(role => erpRoleTokensFromText(role).length === 0);
+      const incomingBaseRoles = String(incomingRole || "")
+        .split(",")
+        .map(role => role.trim())
+        .filter(Boolean)
+        .filter(role => erpRoleTokensFromText(role).length === 0);
+      const baseRoles = incomingBaseRoles.length ? incomingBaseRoles : (existingBaseRoles.length ? existingBaseRoles : ["Teacher"]);
+      const icRoles = [...erpRoleTokensFromText(existingRole), ...erpRoleTokensFromText(incomingRole)];
+      return [...new Set([...baseRoles, ...icRoles])].join(", ");
+    }
+
     function adminPrincipalLoginOk(role, userId, password) {
       const id = String(userId || "").toLowerCase();
       if (role === "principal" && id === "admin" && password === ADMIN_PASSWORD) return true;
@@ -7189,7 +7205,7 @@
           <td>${teacher[4] === "Present" ? "08:45" : "-"}</td>
           <td>-</td>
           <td><button class="status ${teacher[4] === "Leave" ? "leave" : "present"} teacher-attendance-status" data-index="${index}">${teacher[4] || "Present"}</button></td>
-          <td><button class="secondary assign-teacher-subject" data-index="${index}">Assign Subject</button> <button class="secondary delete-teacher" data-index="${index}">Delete Teacher</button></td>
+          <td><button class="secondary assign-teacher-subject" data-index="${index}">Assign Subject</button> <button class="secondary assign-erp-role" data-index="${index}">Assign ERP Role</button> <button class="secondary delete-teacher" data-index="${index}">Delete Teacher</button></td>
         </tr>
       `).join("") : `<tr><td colspan="8">No teacher data uploaded yet.</td></tr>`;
     }
@@ -7260,7 +7276,7 @@
       const status = prompt("Status: Present/Leave", teacher[4]) || teacher[4];
       const subject = prompt("Subjects (comma separated if more than one. Example: English, Math, Science, SST)", teacherSubject(teacher)) || teacherSubject(teacher);
       const oldName = teacher[0];
-      teachers[index] = [name, role, mobile, assignedClass, status, subject];
+      teachers[index] = [name, mergeTeacherRoleForUpdate(teacher[1], role), mobile, assignedClass, status, subject];
       if (teacherAssignments[oldName]) {
         delete teacherAssignments[oldName];
       }
@@ -7325,6 +7341,11 @@
       renderTeachers();
       renderTeacherAttendance();
       populateLoginTeachers();
+      if (loggedIn) {
+        applyClassAccess();
+        renderNavAccess();
+        updateTimetableAccess();
+      }
       document.getElementById("teacherBulkStatus").textContent = `${teacher[0]} assigned as ${teacher[1]}. Login ID: ${teacherLoginId(teacher[0])}. Password protected.`;
     }
 
@@ -7344,6 +7365,11 @@
       renderTeachers();
       renderTeacherAttendance();
       populateLoginTeachers();
+      if (loggedIn) {
+        applyClassAccess();
+        renderNavAccess();
+        updateTimetableAccess();
+      }
       document.getElementById("teacherBulkStatus").textContent = `${teacher[0]} assigned as ${teacher[1]}. Login ID: ${teacherLoginId(teacher[0])}. Password protected.`;
     }
 
@@ -7386,7 +7412,7 @@
         const existing = teachers.find(teacher => teacher[0].toLowerCase() === teacherData.name.toLowerCase());
         const nextTeacher = [
           teacherData.name,
-          teacherData.role,
+          mergeTeacherRoleForUpdate(existing?.[1], teacherData.role),
           teacherData.mobile,
           teacherData.assignedClass,
           teacherData.status === "Active" ? "Present" : teacherData.status,
