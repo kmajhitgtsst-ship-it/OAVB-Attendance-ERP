@@ -4441,6 +4441,302 @@
       }
     }
 
+    /* Premium dashboard shell matching the OAV command-center reference. */
+    body:not(.login-only) {
+      background: #eef5fb;
+    }
+
+    body:not(.login-only) aside {
+      background:
+        radial-gradient(circle at 85% 78%, rgba(20, 184, 166, .22), transparent 18%),
+        radial-gradient(circle at 18% 82%, rgba(37, 99, 235, .22), transparent 20%),
+        linear-gradient(180deg, #061c3a 0%, #082d58 48%, #061d3d 100%);
+      border-radius: 0 18px 18px 0;
+      box-shadow: 12px 0 28px rgba(15, 23, 42, .12);
+    }
+
+    body:not(.login-only) .brand {
+      padding: 10px 8px 20px;
+    }
+
+    body:not(.login-only) .brand-logo {
+      width: 60px;
+      height: 60px;
+      border-radius: 16px;
+      box-shadow: 0 10px 22px rgba(0, 0, 0, .18);
+    }
+
+    body:not(.login-only) .brand strong {
+      color: #fff;
+      font-size: 23px;
+      font-weight: 900;
+    }
+
+    body:not(.login-only) .nav-button {
+      border-radius: 12px;
+      font-weight: 800;
+      padding: 13px 14px;
+    }
+
+    body:not(.login-only) .nav-button.active {
+      background: linear-gradient(135deg, #2563eb 0%, #1656d8 100%);
+      color: #fff;
+      box-shadow: 0 12px 24px rgba(37, 99, 235, .28);
+    }
+
+    body:not(.login-only) .user-box {
+      margin-top: auto;
+      color: #e7f1ff;
+      border-top: 1px solid rgba(255,255,255,.17);
+      padding: 16px 8px 0;
+      font-weight: 700;
+    }
+
+    .dashboard-page {
+      max-width: 1480px;
+      margin: 0 auto;
+      padding-bottom: 28px;
+    }
+
+    .dashboard-topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .dashboard-menu {
+      width: 48px;
+      height: 48px;
+      border-radius: 16px;
+      border: 0;
+      background: linear-gradient(135deg, #2563eb, #0ea5e9);
+      color: #fff;
+      font-size: 22px;
+      font-weight: 900;
+      box-shadow: 0 12px 24px rgba(37, 99, 235, .22);
+    }
+
+    .dashboard-profile {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #0f2544;
+      font-weight: 800;
+    }
+
+    .dashboard-profile small {
+      display: block;
+      color: #64748b;
+      font-weight: 800;
+    }
+
+    .dashboard-avatar {
+      width: 44px;
+      height: 44px;
+      display: inline-grid;
+      place-items: center;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #e8f1ff, #c7ddff);
+      color: #1d4ed8;
+      font-weight: 950;
+      box-shadow: inset 0 0 0 1px #dbeafe;
+    }
+
+    .dashboard-bell {
+      width: 28px;
+      height: 28px;
+      display: inline-grid;
+      place-items: center;
+      border-radius: 50%;
+      background: #ef4444;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 950;
+    }
+
+    .dashboard-hero {
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .dashboard-hero h1 {
+      color: #071d3c;
+      font-size: 30px;
+      font-weight: 950;
+    }
+
+    .dashboard-actions {
+      align-items: center;
+    }
+
+    .date-chip {
+      border: 1px solid #cbd8ea;
+      border-radius: 10px;
+      padding: 12px 16px;
+      background: #fff;
+      color: #0f2544;
+      font-weight: 850;
+      box-shadow: 0 8px 18px rgba(15, 23, 42, .05);
+    }
+
+    .dash-export {
+      background: linear-gradient(135deg, #2563eb, #1354d9);
+    }
+
+    .dash-sync {
+      background: linear-gradient(135deg, #2563eb, #7c3aed);
+    }
+
+    .dashboard-stats {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 22px;
+      margin-bottom: 24px;
+    }
+
+    .dashboard-page .dashboard-card,
+    .dashboard-page .metric-card {
+      border: 1px solid #dce7f4;
+      border-radius: 16px;
+      background: rgba(255,255,255,.94);
+      box-shadow: 0 12px 28px rgba(15, 23, 42, .08);
+    }
+
+    .metric-card {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      min-height: 118px;
+    }
+
+    .metric-card .metric-icon {
+      width: 64px;
+      height: 64px;
+      display: inline-grid;
+      place-items: center;
+      border-radius: 17px;
+      color: #fff;
+      font-size: 18px;
+      font-weight: 950;
+      letter-spacing: 0;
+      flex: 0 0 auto;
+    }
+
+    .metric-card.blue .metric-icon { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+    .metric-card.green .metric-icon { background: linear-gradient(135deg, #22c55e, #16a34a); }
+    .metric-card.orange .metric-icon { background: linear-gradient(135deg, #f59e0b, #f97316); }
+    .metric-card.purple .metric-icon { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
+
+    .metric-card span:not(.metric-icon) {
+      color: #344767;
+      font-weight: 850;
+      font-size: 15px;
+    }
+
+    .metric-card strong {
+      color: #0b2445;
+      display: block;
+      font-size: 30px;
+      line-height: 1.1;
+      margin: 4px 0;
+    }
+
+    .metric-card small {
+      color: #667899;
+      font-weight: 750;
+    }
+
+    .section-icon {
+      display: inline-grid;
+      place-items: center;
+      width: 26px;
+      height: 26px;
+      margin-right: 8px;
+      border-radius: 8px;
+      background: #eaf2ff;
+      color: #2563eb;
+      font-size: 11px;
+      font-weight: 950;
+      vertical-align: middle;
+    }
+
+    .dashboard-page table th {
+      background: #f6f9ff;
+      color: #344767;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .dashboard-page table td {
+      font-weight: 750;
+    }
+
+    .dashboard-page .total-row {
+      background: #eaf2ff;
+      color: #1455d9;
+      font-weight: 950;
+    }
+
+    .priority-card .list li {
+      border: 1px solid #d5f2df;
+      border-left: 5px solid #22c55e;
+      border-radius: 14px;
+      background: #f0fff5;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 8px 18px rgba(16, 185, 129, .08);
+    }
+
+    .priority-card .list strong {
+      color: #0f5132;
+      font-size: 16px;
+    }
+
+    @media (max-width: 1200px), (pointer: coarse) {
+      body.mobile-force:not(.login-only) aside,
+      html.mobile-force body:not(.login-only) aside {
+        position: sticky !important;
+        top: 0 !important;
+        width: 100% !important;
+        max-height: 210px !important;
+        border-radius: 0 0 22px 22px !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        z-index: 90 !important;
+      }
+
+      html.mobile-force body:not(.login-only) main {
+        padding-top: 18px !important;
+      }
+
+      html.mobile-force body:not(.login-only) nav {
+        display: flex !important;
+        gap: 12px !important;
+        overflow-x: auto !important;
+        padding-bottom: 8px !important;
+      }
+
+      html.mobile-force body:not(.login-only) .nav-button {
+        flex: 0 0 auto !important;
+        min-width: 178px !important;
+        font-size: 19px !important;
+        border-radius: 999px !important;
+      }
+
+      html.mobile-force body:not(.login-only) .dashboard-topbar {
+        display: none !important;
+      }
+
+      html.mobile-force body:not(.login-only) .dashboard-stats {
+        grid-template-columns: 1fr !important;
+      }
+
+      html.mobile-force body:not(.login-only) .metric-card {
+        min-height: 96px !important;
+      }
+    }
+
     /* Mobile dashboard snapshot: keep Percent visible by hiding only Absent column. */
     @media (max-width: 760px), (pointer: coarse) {
       body:not(.login-only) #dashboard .table-wrap,
@@ -4595,28 +4891,37 @@
         </div>
       </section>
 
-      <section id="dashboard" class="page">
-        <header>
+      <section id="dashboard" class="page dashboard-page">
+        <div class="dashboard-topbar">
+          <button class="dashboard-menu" type="button" aria-label="Menu">☰</button>
+          <div class="dashboard-profile">
+            <span class="dashboard-bell">3</span>
+            <span class="dashboard-avatar" id="dashboardAvatar">K</span>
+            <span><strong id="dashboardUserName">Kailash Majhi</strong><small id="dashboardUserRole">Admin</small></span>
+          </div>
+        </div>
+        <header class="dashboard-hero">
           <div>
             <h1>Attendance Command Center</h1>
-            <p class="subtle">Live overview for students, teachers, late arrivals, and parent alerts.</p>
+            <p class="subtle">Live overview of students, teachers, and records at your fingertips.</p>
           </div>
-          <div class="actions">
-            <button class="secondary" id="exportToday">Export Today</button>
-            <button class="primary">Sync Biometric</button>
+          <div class="actions dashboard-actions">
+            <span class="date-chip" id="dashboardDateTime">Today</span>
+            <button class="primary dash-export" id="exportToday">Export Today</button>
+            <button class="primary dash-sync">Sync Biometrics</button>
           </div>
         </header>
 
-        <div class="grid stats">
-          <div class="card metric good"><span>Students Present</span><strong id="presentCount">0</strong></div>
-          <div class="card metric bad"><span>Absent Today</span><strong id="absentCount">0</strong></div>
-          <div class="card metric warn"><span>Late Arrivals</span><strong id="lateCount">0</strong></div>
-          <div class="card metric info"><span>Staff Present</span><strong id="staffPresentCount">0/0</strong></div>
+        <div class="grid stats dashboard-stats">
+          <div class="card metric metric-card blue"><span class="metric-icon">ST</span><div><span>Total Students</span><strong id="presentCount">0</strong><small>All enrolled students</small></div></div>
+          <div class="card metric metric-card green"><span class="metric-icon">AB</span><div><span>Absent Today</span><strong id="absentCount">0</strong><small>No students absent</small></div></div>
+          <div class="card metric metric-card orange"><span class="metric-icon">LA</span><div><span>Late Arrivals</span><strong id="lateCount">0</strong><small>No late arrivals</small></div></div>
+          <div class="card metric metric-card purple"><span class="metric-icon">SF</span><div><span>Staff Present</span><strong id="staffPresentCount">0/0</strong><small>All staff present</small></div></div>
         </div>
 
-        <div class="card" style="margin-bottom: 18px;">
+        <div class="card dashboard-card" style="margin-bottom: 18px;">
           <div class="section-title">
-            <h2>Last Saved Data</h2>
+            <h2><span class="section-icon">LD</span> Last Saved Data</h2>
             <button class="secondary" id="refreshRecentData">Refresh</button>
           </div>
           <div class="table-wrap">
@@ -4630,9 +4935,9 @@
         </div>
 
         <div class="grid two-col">
-          <div class="card">
+          <div class="card dashboard-card">
             <div class="section-title">
-              <h2>Class Attendance Snapshot</h2>
+              <h2><span class="section-icon">CA</span> Class Attendance Snapshot</h2>
               <button class="secondary">View all</button>
             </div>
             <div class="table-wrap">
@@ -4644,9 +4949,9 @@
               </table>
             </div>
           </div>
-          <div class="card">
+          <div class="card dashboard-card priority-card">
             <div class="section-title">
-              <h2>Priority Alerts</h2>
+              <h2><span class="section-icon">PA</span> Priority Alerts</h2>
             </div>
             <ul class="list" id="priorityAlertList">
               <li><strong>SMS queue ready</strong><span>18 parent absence alerts pending approval.</span></li>
@@ -6142,6 +6447,7 @@
 
     function renderDashboardSnapshot() {
       renderStaffMetric();
+      renderDashboardHeader();
       const today = todayIsoDate();
       const totals = { strength: 0, present: 0, absent: 0, late: 0, leave: 0, holiday: 0 };
       const rows = classKeysForDashboard().map(key => {
@@ -6167,10 +6473,31 @@
       const totalPercent = totals.strength ? Math.round((totals.present / totals.strength) * 1000) / 10 : 0;
       rows.push(`<tr class="total-row"><td>Total</td><td>${totals.strength}</td><td>${totals.present}</td><td>${totals.absent}</td><td>${totalPercent}%</td></tr>`);
       document.getElementById("dashboardClassRows").innerHTML = rows.join("");
-      document.getElementById("presentCount").textContent = totals.present;
+      document.getElementById("presentCount").textContent = totals.strength;
       document.getElementById("absentCount").textContent = totals.absent;
       document.getElementById("lateCount").textContent = totals.late;
       renderPriorityAlerts(totals);
+    }
+
+    function renderDashboardHeader() {
+      const dateEl = document.getElementById("dashboardDateTime");
+      if (dateEl) {
+        dateEl.textContent = new Date().toLocaleString("en-IN", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit"
+        });
+      }
+      const name = activeUser.teacher || (adminSession ? "Admin" : activeUser.role === "principal" ? "Principal" : "OAV Badi");
+      const role = adminSession ? "Admin" : (activeUser.role || "User");
+      const nameEl = document.getElementById("dashboardUserName");
+      const roleEl = document.getElementById("dashboardUserRole");
+      const avatarEl = document.getElementById("dashboardAvatar");
+      if (nameEl) nameEl.textContent = name;
+      if (roleEl) roleEl.textContent = role.charAt(0).toUpperCase() + role.slice(1);
+      if (avatarEl) avatarEl.textContent = String(name || "O").trim().charAt(0).toUpperCase();
     }
 
     function renderPriorityAlerts(totals) {
@@ -6644,11 +6971,32 @@
       renderRecentData();
     }
 
+    function resetMdmRecordForAttendance(date, classGroup) {
+      let removed = 0;
+      for (let index = mdmRecords.length - 1; index >= 0; index -= 1) {
+        const record = mdmRecords[index];
+        if (record.date === date && record.classGroup === classGroup) {
+          mdmRecords.splice(index, 1);
+          removed += 1;
+        }
+      }
+      const mdmDate = document.getElementById("mdmDate");
+      const eggRolls = document.getElementById("mdmEggRolls");
+      if (mdmDate && mdmDate.value === date && classKeyFrom("mdmClass", "mdmSection") === classGroup) {
+        if (eggRolls) eggRolls.value = "";
+        renderMdm();
+      }
+      renderMdmGroupSummary();
+      renderMdmStockRegister();
+      return removed;
+    }
+
     function resetAttendanceEntry() {
       const key = currentClassKey();
       const date = document.getElementById("dateFilter").value;
       if (!confirm(`Reset attendance entry for ${key} on ${date}?`)) return;
       delete dailyAttendanceRecords[attendanceRecordKey(date, key)];
+      const removedMdm = resetMdmRecordForAttendance(date, key);
       (classData[key] || []).forEach(student => {
         student[3] = "08:55";
         student[4] = "Present";
@@ -6660,7 +7008,8 @@
       renderRecentData();
       loadClassStudents();
       syncMdmWithAttendanceFilters();
-      document.getElementById("attendanceSubmitStatus").textContent = `${key} ${date}: reset complete. All students set Present.`;
+      renderMdm();
+      document.getElementById("attendanceSubmitStatus").textContent = `${key} ${date}: reset complete. Attendance and MDM entry reset to zero. All students set Present for fresh entry.${removedMdm ? " Previous MDM saved entry removed." : ""}`;
     }
 
     function loadClassStudents() {
@@ -7799,10 +8148,28 @@
       const key = classKeyFrom("mdmClass", "mdmSection");
       const date = document.getElementById("mdmDate").value;
       const selected = classData[key] || [];
+      const attendanceRecord = dailyAttendanceRecords[attendanceRecordKey(date, key)] || null;
+      const attendanceStudents = attendanceRecord
+        ? selected.map(student => {
+            const saved = (attendanceRecord.students || []).find(item => item.roll === student[0]);
+            if (!saved) return student;
+            const clone = [...student];
+            clone[3] = saved.inTime || clone[3] || "08:55";
+            clone[4] = saved.status || "Present";
+            clone[5] = saved.remark || "";
+            clone[6] = saved.guardian || clone[6] || "";
+            clone[7] = saved.mobile || clone[7] || "";
+            return clone;
+          })
+        : selected.map(student => {
+            const clone = [...student];
+            clone[4] = "Not Saved";
+            return clone;
+          });
       const category = mdmCategoryForClass(key);
       const rule = mdmRuleForDate(date);
       const eligible = category === "Junior" || category === "Senior";
-      const mealStudents = eligible ? selected.filter(student => student[4] === "Present" || student[4] === "Late") : [];
+      const mealStudents = eligible && attendanceRecord ? attendanceStudents.filter(student => student[4] === "Present" || student[4] === "Late") : [];
       const served = mealStudents.length;
       const rates = {
         oil: Number(document.getElementById("mdmOilRate").value || 0),
@@ -7846,12 +8213,12 @@
       };
       costs.total = costs.oil + costs.vegetable + costs.protein + costs.fruit + costs.laddu + costs.fuel + costs.spice;
       const stock = mdmStockTotals();
-      return { key, date, selected, category, eligible, rule, served, used, rates, costs, stock, eggCount, fruitCount, eggStudents, fruitStudents, rollSelection, proteinRate };
+      return { key, date, selected: attendanceStudents, category, eligible, attendanceSaved: Boolean(attendanceRecord), rule, served, used, rates, costs, stock, eggCount, fruitCount, eggStudents, fruitStudents, rollSelection, proteinRate };
     }
 
     function renderMdm() {
       const data = mdmCurrentData();
-      document.getElementById("mdmEligible").textContent = data.eligible ? data.selected.length : 0;
+      document.getElementById("mdmEligible").textContent = data.eligible && data.attendanceSaved ? data.selected.length : 0;
       document.getElementById("mdmServed").textContent = data.served;
       document.getElementById("mdmRiceUsed").textContent = `${data.used.rice.toFixed(2)} kg`;
       document.getElementById("mdmCategory").textContent = data.category;
@@ -7872,6 +8239,21 @@
           <tr><td colspan="6">${data.key}: MDM facility is not available.</td></tr>
         `;
         document.getElementById("mdmStatus").textContent = `${data.key}: MDM facility not available.`;
+        return;
+      }
+
+      if (!data.attendanceSaved) {
+        document.getElementById("mdmRows").innerHTML = `
+          <tr><td>Rice</td><td>0.150 kg</td><td>0.00 kg</td><td>Govt stock</td><td>0.00</td><td>${data.stock.rice.toFixed(2)} kg</td></tr>
+          <tr><td>${data.rule.protein}</td><td>${data.rule.proteinPerStudent}${data.rule.proteinUnit}</td><td>0 ${data.rule.proteinUnit}</td><td>-</td><td>0.00</td><td>-</td></tr>
+          <tr><td>Oil</td><td>0.0075 kg</td><td>0.000 kg</td><td>${data.rates.oil}</td><td>0.00</td><td>${data.stock.oil.toFixed(3)} kg</td></tr>
+          <tr><td>Vegetables</td><td>0.100 kg</td><td>0.00 kg</td><td>${data.rates.vegetable}</td><td>0.00</td><td>${data.stock.vegetable.toFixed(2)} kg</td></tr>
+          <tr><td>Fuel</td><td>Rs.${data.rates.fuel.toFixed(2)}</td><td>Rs.0.00</td><td>per student</td><td>0.00</td><td>Rs.${data.stock.fuel.toFixed(2)}</td></tr>
+          <tr><td>Salt/Spices/Etc</td><td>Rs.${data.rates.spice.toFixed(2)}</td><td>Rs.0.00</td><td>per student</td><td>0.00</td><td>Rs.${data.stock.spice.toFixed(2)}</td></tr>
+          <tr><td>Total</td><td>-</td><td>-</td><td>-</td><td>0.00</td><td>-</td></tr>
+        `;
+        document.getElementById("mdmStatus").textContent = `${data.key} ${data.date}: attendance is not submitted or was reset. MDM will stay zero until attendance is submitted successfully.`;
+        renderMdmReference();
         return;
       }
 
@@ -7901,6 +8283,13 @@
     function saveMdmEntry() {
       renderMdm();
       const data = mdmCurrentData();
+      if (!data.attendanceSaved) {
+        resetMdmRecordForAttendance(data.date, data.key);
+        saveLocalData();
+        renderRecentData();
+        document.getElementById("mdmStatus").textContent = `${data.key} ${data.date}: MDM save blocked. Submit Student Attendance first; reset state keeps MDM zero.`;
+        return;
+      }
       const itemDetails = mdmItemPriceDetails(data);
       const record = {
         date: data.date,
