@@ -425,8 +425,10 @@
     @media print {
       @page { size: A4; margin: 8mm; }
       body * { visibility: hidden; }
-      #eggTokenSheet, #eggTokenSheet * { visibility: visible; }
-      #eggTokenSheet {
+      #eggTokenSheet, #eggTokenSheet *,
+      #timeTableWeeklyPanel, #timeTableWeeklyPanel * { visibility: visible; }
+      #eggTokenSheet,
+      #timeTableWeeklyPanel {
         border: 2px solid #111;
         left: 0;
         margin: 0;
@@ -438,6 +440,16 @@
       .egg-token {
         break-inside: avoid;
         min-height: 72px;
+      }
+      #timeTableWeeklyPanel {
+        border: 0;
+        padding: 0;
+      }
+      #timeTableWeeklyPanel select {
+        appearance: none;
+        border: 0;
+        font-weight: 700;
+        width: 100%;
       }
     }
 
@@ -626,6 +638,17 @@
       color: #075985;
       font-weight: 700;
       font-size: 12px;
+    }
+    .time-mode-tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 10px 0;
+    }
+    .time-mode-tabs button.active {
+      background: var(--blue);
+      color: white;
+      border-color: var(--blue);
     }
     .mini-summary {
       display: flex;
@@ -5279,10 +5302,14 @@
               <h2>Period Time Setup</h2>
               <button class="secondary" id="savePeriodTimes">Save Period Times</button>
             </div>
-            <p class="success-note">Set timing for regular class days and morning class days. These timings will show in every timetable header.</p>
+            <div class="time-mode-tabs">
+              <button class="secondary active" id="regularTimeTab">Regular</button>
+              <button class="secondary" id="morningTimeTab">Morning</button>
+            </div>
+            <p class="success-note">Set timing separately for Regular and Morning class days. The selected mode timing will show in timetable headers.</p>
             <div class="toolbar" id="periodTimeRows"></div>
           </div>
-          <div class="table-wrap" id="timeTableEditorPanel" style="margin-top: 14px;">
+          <div class="table-wrap hidden" id="timeTableEditorPanel" style="margin-top: 14px;">
             <table id="timeTableGrid">
               <thead>
                 <tr id="timeTableEditorHeader"><th>Day</th><th>Period 1</th><th>Period 2</th><th>Period 3</th><th>Period 4</th><th>Period 5</th><th>Period 6</th><th>Period 7</th><th>Period 8</th></tr>
@@ -5325,6 +5352,13 @@
               <tbody id="timeTableConflictRows"></tbody>
             </table>
           </div>
+          <div class="table-wrap" style="margin-top: 14px;">
+            <h2>Subject Wise Period Count</h2>
+            <table>
+              <thead><tr><th>Subject</th><th>Teacher Code</th><th>Total Weekly Periods</th><th>Classes</th></tr></thead>
+              <tbody id="subjectPeriodRows"></tbody>
+            </table>
+          </div>
           <div class="table-wrap hidden" id="timeTableTodayPanel" style="margin-top: 14px;">
             <h2>Today's Time Table</h2>
             <table>
@@ -5335,7 +5369,12 @@
           <div class="table-wrap hidden" id="timeTableWeeklyPanel" style="margin-top: 14px;">
             <div class="section-title">
               <h2>Whole School Weekly Time Table Builder</h2>
-              <button class="primary" id="saveWholeSchoolTimeTable">Save Whole School Time Table</button>
+              <div class="toolbar">
+                <button class="primary" id="saveWholeSchoolTimeTable">Save Whole School Time Table</button>
+                <button class="secondary" id="resetWholeSchoolTimeTable">Reset Time Table</button>
+                <button class="secondary" id="printWholeSchoolTimeTable">A4 Print / PDF</button>
+                <button class="secondary" id="downloadWholeSchoolTimeTableExcel">Excel Download</button>
+              </div>
             </div>
             <p class="success-note">All classes are shown together. Red cells mean the same teacher is allotted in more than one class during the same period.</p>
             <table>
@@ -5657,6 +5696,7 @@
     let activeUser = { role: "guest", teacher: "", classKey: "", pages: [] };
     let loggedIn = false;
     let adminSession = false;
+    let activeTimetableTimeMode = "normal";
 
     function saveLocalData() {
       localStorage.setItem("oavBadiClassData", JSON.stringify(classData));
@@ -8804,8 +8844,12 @@
       ];
     }
 
+    function timetableDays() {
+      return ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    }
+
     function blankTimetableRowsForClass(className) {
-      return ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+      return timetableDays()
         .map(day => ({ day, className, periods: Array(TIMETABLE_PERIOD_COUNT).fill("") }));
     }
 
@@ -8869,16 +8913,22 @@
     function renderPeriodTimeInputs() {
       const holder = document.getElementById("periodTimeRows");
       if (!holder) return;
+      const mode = activeTimetableTimeMode;
       holder.innerHTML = Array.from({ length: TIMETABLE_PERIOD_COUNT }, (_, index) => `
         <div class="field">
-          <label>Period ${index + 1} Normal</label>
-          <input class="period-time-input" data-mode="normal" data-index="${index}" value="${htmlSafe(timetablePeriodTimes.normal[index] || "")}" placeholder="09:00-09:45">
-        </div>
-        <div class="field">
-          <label>Period ${index + 1} Morning</label>
-          <input class="period-time-input" data-mode="morning" data-index="${index}" value="${htmlSafe(timetablePeriodTimes.morning[index] || "")}" placeholder="06:30-07:05">
+          <label>Period ${index + 1} ${mode === "morning" ? "Morning" : "Regular"}</label>
+          <input class="period-time-input" data-mode="${mode}" data-index="${index}" value="${htmlSafe(timetablePeriodTimes[mode][index] || "")}" placeholder="${mode === "morning" ? "06:30-07:05" : "09:00-09:45"}">
         </div>
       `).join("");
+    }
+
+    function setTimetableTimeMode(mode) {
+      activeTimetableTimeMode = mode === "morning" ? "morning" : "normal";
+      document.getElementById("regularTimeTab")?.classList.toggle("active", activeTimetableTimeMode === "normal");
+      document.getElementById("morningTimeTab")?.classList.toggle("active", activeTimetableTimeMode === "morning");
+      renderPeriodTimeInputs();
+      renderTimetableAudit(false);
+      renderTimeTableEditor();
     }
 
     function savePeriodTimes() {
@@ -8906,11 +8956,16 @@
     function wholeSchoolTimetableRows() {
       const selected = selectedTimetableClass();
       const editorRows = manualTimetableRowsFromEditor();
-      return allTimetableClassNames().flatMap(className => {
-        if (sameTimetableClass(className, selected) && editorRows.length) return editorRows;
-        const savedRows = importedTimetableRows.filter(row => sameTimetableClass(row.className, className));
-        return savedRows.length ? savedRows : blankTimetableRowsForClass(className);
-      });
+      const classes = allTimetableClassNames();
+      const findRow = (className, day) => {
+        if (sameTimetableClass(className, selected) && editorRows.length) {
+          const editorRow = editorRows.find(row => String(row.day || "").toUpperCase() === day.toUpperCase());
+          if (editorRow) return editorRow;
+        }
+        const savedRow = importedTimetableRows.find(row => sameTimetableClass(row.className, className) && String(row.day || "").toUpperCase() === day.toUpperCase());
+        return savedRow || { day, className, periods: Array(TIMETABLE_PERIOD_COUNT).fill("") };
+      };
+      return timetableDays().flatMap(day => classes.map(className => findRow(className, day)));
     }
 
     function wholeSchoolTimetableRowsFromBuilder() {
@@ -9152,6 +9207,34 @@
         }));
     }
 
+    function subjectPeriodSummary(rows = currentTimetableRows()) {
+      const map = new Map();
+      rows.forEach(row => row.periods.forEach(cell => {
+        const text = String(cell || "").trim();
+        const match = text.match(/^(.+?)\s*\(([A-Z0-9]+)\)/i);
+        if (!match) return;
+        const subject = match[1].trim().toUpperCase();
+        const code = match[2].trim().toUpperCase();
+        const key = `${subject}|${code}`;
+        if (!map.has(key)) map.set(key, { subject, code, count: 0, classes: new Set() });
+        const item = map.get(key);
+        item.count += 1;
+        item.classes.add(row.className);
+      }));
+      return [...map.values()]
+        .map(item => ({ ...item, classes: [...item.classes].join(", ") }))
+        .sort((a, b) => a.subject.localeCompare(b.subject) || a.code.localeCompare(b.code));
+    }
+
+    function renderSubjectPeriodSummary(rows = currentTimetableRows()) {
+      const body = document.getElementById("subjectPeriodRows");
+      if (!body) return;
+      const summary = subjectPeriodSummary(rows);
+      body.innerHTML = summary.length
+        ? summary.map(item => `<tr><td>${htmlSafe(item.subject)}</td><td>${htmlSafe(item.code)}</td><td>${item.count}</td><td>${htmlSafe(item.classes)}</td></tr>`).join("")
+        : `<tr><td colspan="4">No subject-teacher period found yet.</td></tr>`;
+    }
+
     function timetableConflictCellSet(rows = currentTimetableRows()) {
       const conflictSet = new Set();
       timetableConflictDetails(rows).forEach(conflict => {
@@ -9164,9 +9247,9 @@
 
     function timetablePeriodHeaders() {
       return Array.from({ length: TIMETABLE_PERIOD_COUNT }, (_, index) => {
-        const normal = timetablePeriodTimes.normal?.[index] || "";
-        const morning = timetablePeriodTimes.morning?.[index] || "";
-        return `Period ${index + 1}${normal ? `<br>${htmlSafe(normal)}` : ""}${morning ? `<br><small>Morning: ${htmlSafe(morning)}</small>` : ""}`;
+        const label = activeTimetableTimeMode === "morning" ? "Morning" : "Regular";
+        const time = timetablePeriodTimes[activeTimetableTimeMode]?.[index] || "";
+        return `Period ${index + 1}${time ? `<br>${htmlSafe(time)}` : ""}<br><small>${label}</small>`;
       });
     }
 
@@ -9337,21 +9420,46 @@
       renderTimetableRaw(rows);
       renderTimetableWorkload(rows);
       renderTimetableConflicts(rows);
+      renderSubjectPeriodSummary(rows);
       updateTimetableAccess();
     }
 
     function downloadTimetableExcel() {
       const rows = currentTimetableRows();
       const arrangement = renderTimetableArrangement(rows);
+      const subjectSummary = subjectPeriodSummary(rows);
       downloadExcel("time-table-audit-arrangement.xls", [
         ["TIME TABLE RAW"],
         ["Day", "Class", ...Array.from({ length: TIMETABLE_PERIOD_COUNT }, (_, index) => `Period ${index + 1}`)],
         ...rows.map(row => [row.day, row.className, ...row.periods]),
         [""],
+        ["SUBJECT WISE PERIOD COUNT"],
+        ["Subject", "Teacher Code", "Total Weekly Periods", "Classes"],
+        ...subjectSummary.map(item => [item.subject, item.code, item.count, item.classes]),
+        [""],
         ["DAILY ARRANGEMENT"],
         ["Day", "Class", "Period", "Absent", "Original", "Best Suggestion", "Selected Duty", "Weekly/Monthly Load"],
         ...arrangement.map(row => [row.day, row.className, row.period, row.absent, row.original, row.best, row.selected, row.load])
       ]);
+    }
+
+    function resetWholeSchoolTimeTable() {
+      if (!confirm("Reset whole school timetable? Teacher master, subject assignment, and attendance data will remain safe.")) return;
+      importedTimetableRows.length = 0;
+      Object.keys(timetableArrangementSelections).forEach(key => delete timetableArrangementSelections[key]);
+      saveLocalData();
+      renderTimetableAudit();
+      document.getElementById("timeTableStatus").textContent = "Whole school timetable reset. Teacher and subject data are safe.";
+    }
+
+    function printWholeSchoolTimeTable() {
+      document.getElementById("timeTableWeeklyPanel").classList.remove("hidden");
+      renderTimetableAudit(false);
+      window.print();
+    }
+
+    function downloadWholeSchoolTimeTableExcel() {
+      downloadTimetableExcel();
     }
 
     function timetableCsvTemplateRows() {
@@ -9846,8 +9954,28 @@
       saveWholeSchoolTimeTable();
     });
 
+    document.getElementById("resetWholeSchoolTimeTable").addEventListener("click", () => {
+      resetWholeSchoolTimeTable();
+    });
+
+    document.getElementById("printWholeSchoolTimeTable").addEventListener("click", () => {
+      printWholeSchoolTimeTable();
+    });
+
+    document.getElementById("downloadWholeSchoolTimeTableExcel").addEventListener("click", () => {
+      downloadWholeSchoolTimeTableExcel();
+    });
+
     document.getElementById("savePeriodTimes").addEventListener("click", () => {
       savePeriodTimes();
+    });
+
+    document.getElementById("regularTimeTab").addEventListener("click", () => {
+      setTimetableTimeMode("normal");
+    });
+
+    document.getElementById("morningTimeTab").addEventListener("click", () => {
+      setTimetableTimeMode("morning");
     });
 
     document.getElementById("timeTableBody").addEventListener("change", event => {
