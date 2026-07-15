@@ -7093,6 +7093,18 @@
     function applySavedAttendanceForDate(key = currentClassKey(), date = document.getElementById("dateFilter").value) {
       const selected = classData[key] || [];
       const record = dailyAttendanceRecords[attendanceRecordKey(date, key)];
+      if (isAttendanceHolidayDate(date)) {
+        selected.forEach(student => {
+          student[3] = "-";
+          student[4] = "Holiday";
+          student[5] = "Holiday as per Settings";
+          if (student[8]) student[8][selectedMonthIndex()] = "Leave";
+        });
+        attendanceSubmitted = false;
+        document.getElementById("attendanceSubmitStatus").textContent = attendanceHolidayMessage(date);
+        return;
+      }
+
       if (record) {
         const byRoll = new Map(record.students.map(item => [item.roll, item]));
         selected.forEach(student => {
@@ -10843,11 +10855,39 @@
     function syncWorkingMonthFromDate() {
       const monthInput = document.getElementById("workingMonth");
       if (monthInput) {
-        monthInput.value = selectedMonthKey();
+        loadWorkingDaySettings(selectedMonthKey());
       }
     }
 
-    function saveWorkingDaySettings() {
+    function defaultMonthSetting(month) {
+      const previousMonth = Object.keys(monthSettings)
+        .filter(key => key < month)
+        .sort()
+        .pop();
+      const base = monthSettings[previousMonth] || monthSettings["2026-07"] || { workingDays: 24, holidays: [] };
+      return {
+        workingDays: Number(base.workingDays) || 24,
+        holidays: Array.isArray(base.holidays) ? [...base.holidays] : []
+      };
+    }
+
+    function ensureMonthSetting(month = selectedMonthKey()) {
+      if (!monthSettings[month]) {
+        monthSettings[month] = defaultMonthSetting(month);
+      }
+      return monthSettings[month];
+    }
+
+    function loadWorkingDaySettings(month = selectedMonthKey()) {
+      const setting = ensureMonthSetting(month);
+      document.getElementById("workingMonth").value = month;
+      document.getElementById("workingDays").value = setting.workingDays;
+      document.getElementById("holidayDates").value = (setting.holidays || []).join(",");
+      document.getElementById("workingDayStatus").textContent = `${monthLabel(month)} working days: ${setting.workingDays}${setting.holidays?.length ? `, holidays: ${setting.holidays.join(", ")}` : ""}. Month settings auto-loaded and saved.`;
+      saveLocalData();
+    }
+
+    function saveWorkingDaySettings({ silent = false } = {}) {
       const month = document.getElementById("workingMonth").value || selectedMonthKey();
       const workingDays = Math.max(1, Math.min(31, Number(document.getElementById("workingDays").value) || 1));
       const holidays = document.getElementById("holidayDates").value
@@ -10857,9 +10897,11 @@
       monthSettings[month] = { workingDays, holidays };
       document.getElementById("workingDays").value = workingDays;
       document.getElementById("workingDayStatus").textContent = `${monthLabel(month)} working days saved: ${workingDays}${holidays.length ? `, holidays: ${holidays.join(", ")}` : ""}.`;
-      addAuditLog("Settings Saved", `${monthLabel(month)} working days ${workingDays}${holidays.length ? `, holidays ${holidays.join(", ")}` : ""}.`, { page: "Settings", recordDate: month });
+      if (!silent) {
+        addAuditLog("Settings Saved", `${monthLabel(month)} working days ${workingDays}${holidays.length ? `, holidays ${holidays.join(", ")}` : ""}.`, { page: "Settings", recordDate: month });
+      }
       saveLocalData();
-      renderStudents(document.getElementById("searchStudent").value);
+      loadClassStudents();
       refreshWhatsappMessage();
       blockAttendanceIfHoliday();
     }
@@ -11471,9 +11513,15 @@
     });
 
     document.getElementById("workingMonth").addEventListener("change", () => {
-      const setting = monthSettings[document.getElementById("workingMonth").value] || { workingDays: 24, holidays: [] };
-      document.getElementById("workingDays").value = setting.workingDays;
-      document.getElementById("holidayDates").value = setting.holidays.join(",");
+      loadWorkingDaySettings(document.getElementById("workingMonth").value);
+      loadClassStudents();
+      blockAttendanceIfHoliday();
+    });
+
+    ["workingDays", "holidayDates"].forEach(id => {
+      document.getElementById(id).addEventListener("change", () => {
+        saveWorkingDaySettings({ silent: true });
+      });
     });
 
     document.getElementById("refreshWhatsapp").addEventListener("click", () => {
