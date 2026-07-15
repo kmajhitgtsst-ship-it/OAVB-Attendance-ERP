@@ -7242,6 +7242,35 @@
       return Math.max(0, Math.min(30, day - 1));
     }
 
+    function holidayDatesForMonth(monthKey) {
+      return (monthSettings[monthKey]?.holidays || [])
+        .map(day => Number(String(day).trim()))
+        .filter(day => Number.isInteger(day) && day >= 1 && day <= 31)
+        .map(day => String(day).padStart(2, "0"));
+    }
+
+    function isAttendanceHolidayDate(dateText = document.getElementById("dateFilter").value) {
+      const date = normalizeAttendanceDate(dateText);
+      const month = date.slice(0, 7);
+      const day = date.slice(-2);
+      return holidayDatesForMonth(month).includes(day);
+    }
+
+    function attendanceHolidayMessage(dateText = document.getElementById("dateFilter").value) {
+      const date = normalizeAttendanceDate(dateText);
+      return `${date} is marked as Holiday in Settings. Attendance entry is blocked until this date is removed from Settings > Holiday Dates.`;
+    }
+
+    function blockAttendanceIfHoliday(dateText = document.getElementById("dateFilter").value, statusId = "attendanceSubmitStatus") {
+      if (!isAttendanceHolidayDate(dateText)) return false;
+      const message = attendanceHolidayMessage(dateText);
+      const status = document.getElementById(statusId);
+      if (status) status.textContent = message;
+      const uploadStatus = document.getElementById("attendanceUploadStatus");
+      if (uploadStatus && statusId !== "attendanceUploadStatus") uploadStatus.textContent = message;
+      return true;
+    }
+
     function attendanceSummary() {
       return {
         present: students.filter(student => student[4] === "Present").length,
@@ -10593,6 +10622,7 @@
     }
 
     function applyBulkAttendance() {
+      if (blockAttendanceIfHoliday()) return 0;
       const status = document.getElementById("bulkStatus").value;
       const { selectedStudents } = parseRollSelection(document.getElementById("bulkRolls").value);
       selectedStudents.forEach(student => {
@@ -10613,6 +10643,7 @@
     }
 
     function submitAttendance() {
+      if (blockAttendanceIfHoliday()) return;
       const hasBulkInput = document.getElementById("bulkRolls").value.trim().length > 0;
       let changedCount = 0;
       if (hasBulkInput) {
@@ -10759,6 +10790,10 @@
         const selected = classData[key];
         const roll = String(Number(data.roll)).padStart(2, "0");
         const date = normalizeAttendanceDate(data.date);
+        if (isAttendanceHolidayDate(date)) {
+          skipped += 1;
+          return;
+        }
         if (!selected || Number.isNaN(Number(data.roll))) {
           skipped += 1;
           return;
@@ -10802,7 +10837,7 @@
       syncMdmWithAttendanceFilters();
       saveLocalData();
       document.getElementById("attendanceUploadStatus").textContent = `${updated} attendance row(s) imported and saved. ${skipped} row(s) skipped.`;
-      document.getElementById("attendanceSubmitStatus").textContent = `${updated} CSV attendance row(s) imported. Current class/date screen refreshed.`;
+      document.getElementById("attendanceSubmitStatus").textContent = `${updated} CSV attendance row(s) imported. ${skipped ? "Holiday/invalid row(s) skipped. " : ""}Current class/date screen refreshed.`;
     }
 
     function syncWorkingMonthFromDate() {
@@ -10826,6 +10861,7 @@
       saveLocalData();
       renderStudents(document.getElementById("searchStudent").value);
       refreshWhatsappMessage();
+      blockAttendanceIfHoliday();
     }
 
     document.querySelectorAll(".nav-button").forEach(button => {
@@ -10836,6 +10872,7 @@
 
     document.addEventListener("click", event => {
       if (!event.target.matches(".status[data-index]")) return;
+      if (blockAttendanceIfHoliday()) return;
       const cycle = ["Present", "Absent", "Leave", "Holiday", "Late"];
       const student = students[event.target.dataset.index];
       student[4] = cycle[(cycle.indexOf(student[4]) + 1) % cycle.length];
@@ -10861,6 +10898,7 @@
       syncMdmWithAttendanceFilters();
       updateDateDayLabels();
       updateBulkPreview();
+      blockAttendanceIfHoliday();
     });
 
     document.getElementById("classFilter").addEventListener("change", () => {
@@ -11385,6 +11423,7 @@
     });
 
     document.getElementById("markAllPresent").addEventListener("click", () => {
+      if (blockAttendanceIfHoliday()) return;
       students.forEach(student => {
         student[3] = student[3] === "-" ? "08:55" : student[3];
         student[4] = "Present";
