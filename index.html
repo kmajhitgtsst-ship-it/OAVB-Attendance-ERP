@@ -4798,6 +4798,146 @@
         text-align: right !important;
       }
     }
+
+    .mobile-zoom-controls {
+      display: none;
+    }
+
+    @media (max-width: 1200px), (pointer: coarse) {
+      html {
+        --mobile-ui-scale: 0.9;
+      }
+
+      body.mobile-force .mobile-zoom-controls,
+      html.mobile-force body .mobile-zoom-controls {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr 1.2fr;
+        gap: 8px;
+        align-items: center;
+        margin: 10px 0 14px;
+        padding: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      body.mobile-force .mobile-zoom-controls button,
+      html.mobile-force body .mobile-zoom-controls button {
+        min-height: 40px !important;
+        padding: 6px 10px !important;
+        border-radius: 10px !important;
+        font-size: 15px !important;
+        font-weight: 900 !important;
+        line-height: 1 !important;
+      }
+
+      body.mobile-force .mobile-zoom-controls span,
+      html.mobile-force body .mobile-zoom-controls span {
+        min-width: 54px;
+        color: #ffffff;
+        font-size: 15px !important;
+        font-weight: 900 !important;
+        text-align: center;
+      }
+
+      body.mobile-force.login-only,
+      html.mobile-force body.login-only,
+      body.mobile-force:not(.login-only),
+      html.mobile-force body:not(.login-only) {
+        font-size: calc(20px * var(--mobile-ui-scale)) !important;
+      }
+
+      body.mobile-force.login-only label,
+      html.mobile-force body.login-only label,
+      body.mobile-force.login-only .subtle,
+      html.mobile-force body.login-only .subtle,
+      body.mobile-force.login-only .login-note,
+      html.mobile-force body.login-only .login-note,
+      body.mobile-force:not(.login-only) label,
+      html.mobile-force body:not(.login-only) label,
+      body.mobile-force:not(.login-only) p,
+      html.mobile-force body:not(.login-only) p,
+      body.mobile-force:not(.login-only) small,
+      html.mobile-force body:not(.login-only) small,
+      body.mobile-force:not(.login-only) .subtle,
+      html.mobile-force body:not(.login-only) .subtle,
+      body.mobile-force:not(.login-only) th,
+      html.mobile-force body:not(.login-only) th,
+      body.mobile-force:not(.login-only) td,
+      html.mobile-force body:not(.login-only) td,
+      body.mobile-force:not(.login-only) .status,
+      html.mobile-force body:not(.login-only) .status,
+      body.mobile-force:not(.login-only) .pill,
+      html.mobile-force body:not(.login-only) .pill {
+        font-size: calc(17px * var(--mobile-ui-scale)) !important;
+        line-height: 1.35 !important;
+      }
+
+      body.mobile-force.login-only input,
+      html.mobile-force body.login-only input,
+      body.mobile-force.login-only select,
+      html.mobile-force body.login-only select,
+      body.mobile-force.login-only button:not(.mobile-zoom-controls button),
+      html.mobile-force body.login-only button:not(.mobile-zoom-controls button),
+      body.mobile-force:not(.login-only) input,
+      html.mobile-force body:not(.login-only) input,
+      body.mobile-force:not(.login-only) select,
+      html.mobile-force body:not(.login-only) select,
+      body.mobile-force:not(.login-only) textarea,
+      html.mobile-force body:not(.login-only) textarea,
+      body.mobile-force:not(.login-only) button:not(.mobile-zoom-controls button),
+      html.mobile-force body:not(.login-only) button:not(.mobile-zoom-controls button) {
+        min-height: calc(44px * var(--mobile-ui-scale)) !important;
+        padding: calc(9px * var(--mobile-ui-scale)) calc(12px * var(--mobile-ui-scale)) !important;
+        font-size: calc(18px * var(--mobile-ui-scale)) !important;
+        line-height: 1.2 !important;
+      }
+
+      body.mobile-force.login-only .login-card,
+      html.mobile-force body.login-only .login-card {
+        max-width: min(92vw, calc(520px * var(--mobile-ui-scale))) !important;
+      }
+
+      body.mobile-force.login-only .login-title,
+      html.mobile-force body.login-only .login-title,
+      body.mobile-force:not(.login-only) h1,
+      html.mobile-force body:not(.login-only) h1 {
+        font-size: calc(34px * var(--mobile-ui-scale)) !important;
+        line-height: 1.1 !important;
+      }
+
+      body.mobile-force:not(.login-only) h2,
+      html.mobile-force body:not(.login-only) h2 {
+        font-size: calc(27px * var(--mobile-ui-scale)) !important;
+        line-height: 1.15 !important;
+      }
+
+      body.mobile-force:not(.login-only) h3,
+      html.mobile-force body:not(.login-only) h3 {
+        font-size: calc(23px * var(--mobile-ui-scale)) !important;
+        line-height: 1.2 !important;
+      }
+
+      body.mobile-force:not(.login-only) .nav-button,
+      html.mobile-force body:not(.login-only) .nav-button,
+      body.mobile-force:not(.login-only) .user-box,
+      html.mobile-force body:not(.login-only) .user-box {
+        font-size: calc(18px * var(--mobile-ui-scale)) !important;
+        min-height: calc(44px * var(--mobile-ui-scale)) !important;
+      }
+
+      body.mobile-force:not(.login-only) .metric-card strong,
+      html.mobile-force body:not(.login-only) .metric-card strong,
+      body.mobile-force:not(.login-only) .summary-number,
+      html.mobile-force body:not(.login-only) .summary-number {
+        font-size: calc(34px * var(--mobile-ui-scale)) !important;
+      }
+
+      body.mobile-force:not(.login-only) .attendance-mobile-card,
+      html.mobile-force body:not(.login-only) .attendance-mobile-card {
+        font-size: calc(19px * var(--mobile-ui-scale)) !important;
+      }
+    }
   </style>
 </head>
 <body class="login-only">
@@ -4811,6 +4951,12 @@
           <span>Advanced Attendance System</span>
           <small>Powered By DETH</small>
         </div>
+      </div>
+      <div class="mobile-zoom-controls" aria-label="Mobile text size controls">
+        <button class="secondary" id="mobileZoomOut" type="button">A-</button>
+        <span id="mobileZoomLabel">90%</span>
+        <button class="secondary" id="mobileZoomIn" type="button">A+</button>
+        <button class="secondary" id="mobileZoomReset" type="button">Reset</button>
       </div>
       <nav aria-label="ERP sections">
         <button class="nav-button active" data-page="dashboard">Dashboard</button>
@@ -6042,7 +6188,8 @@
     const CLOUD_TS_KEY = "oavBadiCloudUpdatedAt";
     const REMEMBERED_LOGIN_KEY = "oavBadiRememberedLogin";
     const ACTIVE_SESSION_KEY = "oavBadiActiveSession";
-    const PER_DEVICE_KEYS = new Set([REMEMBERED_LOGIN_KEY, ACTIVE_SESSION_KEY]);
+    const MOBILE_ZOOM_KEY = "oavBadiMobileUiScale";
+    const PER_DEVICE_KEYS = new Set([REMEMBERED_LOGIN_KEY, ACTIVE_SESSION_KEY, MOBILE_ZOOM_KEY]);
     let cloudSyncReady = false;
     let cloudSyncTimer = null;
     let cloudApplyingRemote = false;
@@ -6097,7 +6244,7 @@
     let loggedIn = false;
     let adminSession = false;
     let activeTimetableTimeMode = "normal";
-    const UI_SESSION_KEY = "oavBadiUiSessionState";
+    const UI_SESSION_BASE_KEY = "oavBadiUiSessionState";
 
     function saveLocalData() {
       localStorage.setItem("oavBadiClassData", JSON.stringify(classData));
@@ -6296,11 +6443,19 @@
 
     function readSavedUiPage() {
       try {
-        const saved = JSON.parse(sessionStorage.getItem(UI_SESSION_KEY) || "{}");
+        const saved = JSON.parse(sessionStorage.getItem(uiSessionStorageKey()) || "{}");
         return saved.page || "";
       } catch (error) {
         return "";
       }
+    }
+
+    function uiSessionStorageKey() {
+      const role = activeUser.role || document.getElementById("loginRole")?.value || "guest";
+      const teacher = activeUser.teacher || document.getElementById("loginTeacher")?.value || "";
+      const loginId = document.getElementById("loginUserId")?.value?.trim() || "";
+      const identity = [role, teacher || loginId || "guest"].join(":").replace(/[^a-z0-9:_-]/gi, "_");
+      return `${UI_SESSION_BASE_KEY}:${identity}`;
     }
 
     function collectUiFieldState() {
@@ -6319,7 +6474,7 @@
 
     function saveUiSessionState(page = currentPageId()) {
       try {
-        sessionStorage.setItem(UI_SESSION_KEY, JSON.stringify({
+        sessionStorage.setItem(uiSessionStorageKey(), JSON.stringify({
           page,
           fields: collectUiFieldState(),
           scrollY: window.scrollY || 0,
@@ -6332,7 +6487,13 @@
 
     function restoreUiFieldState() {
       try {
-        const saved = JSON.parse(sessionStorage.getItem(UI_SESSION_KEY) || "{}");
+        const saved = JSON.parse(sessionStorage.getItem(uiSessionStorageKey()) || "{}");
+        if (activeUser.role === "teacher") {
+          delete saved.fields?.classFilter;
+          delete saved.fields?.sectionFilter;
+          delete saved.fields?.mdmClass;
+          delete saved.fields?.mdmSection;
+        }
         Object.entries(saved.fields || {}).forEach(([id, value]) => {
           const field = document.getElementById(id);
           if (field && value !== undefined) field.value = value;
@@ -6394,6 +6555,7 @@
     function populateLoginTeachers() {
       syncTeacherAssignmentsFromMaster();
       const select = document.getElementById("loginTeacher");
+      const previousValue = select.value;
       const role = document.getElementById("loginRole")?.value || "principal";
       if (role === "teacher") {
         const assignedNames = Object.keys(teacherAssignments);
@@ -6401,6 +6563,7 @@
         select.innerHTML = names.length ? names.map(name => (
           `<option value="${name}">${name}${teacherAssignments[name] ? ` - ${teacherAssignments[name]}` : ""}</option>`
         )).join("") : `<option value="">No teacher added</option>`;
+        if (previousValue && names.includes(previousValue)) select.value = previousValue;
         fillLoginCredentials();
         return;
       }
@@ -6409,12 +6572,14 @@
         select.innerHTML = staff.length ? staff.map(teacher => (
           `<option value="${teacher[0]}">${teacher[0]} - ${teacher[1]}</option>`
         )).join("") : `<option value="">Use generic admin/principal login</option>`;
+        if (previousValue && staff.some(teacher => teacher[0] === previousValue)) select.value = previousValue;
         fillLoginCredentials();
         return;
       }
       select.innerHTML = teachers.length ? teachers.map(teacher => (
         `<option value="${teacher[0]}">${teacher[0]} - ${teacher[1]}</option>`
       )).join("") : `<option value="">No staff added</option>`;
+      if (previousValue && teachers.some(teacher => teacher[0] === previousValue)) select.value = previousValue;
       fillLoginCredentials();
     }
 
@@ -6848,6 +7013,26 @@
       if (!panel) return;
       const height = Math.min(Math.ceil(panel.getBoundingClientRect().height), 138);
       document.documentElement.style.setProperty("--mobile-panel-height", `${height}px`);
+    }
+
+    function clampMobileUiScale(value) {
+      const numeric = Number.parseFloat(value);
+      if (!Number.isFinite(numeric)) return 0.9;
+      return Math.min(1.2, Math.max(0.8, numeric));
+    }
+
+    function applyMobileUiScale(value) {
+      const scale = clampMobileUiScale(value ?? localStorage.getItem(MOBILE_ZOOM_KEY));
+      document.documentElement.style.setProperty("--mobile-ui-scale", scale.toFixed(2));
+      localStorage.setItem(MOBILE_ZOOM_KEY, scale.toFixed(2));
+      const label = document.getElementById("mobileZoomLabel");
+      if (label) label.textContent = `${Math.round(scale * 100)}%`;
+      setTimeout(syncMobilePanelHeight, 0);
+    }
+
+    function changeMobileUiScale(delta) {
+      const current = clampMobileUiScale(localStorage.getItem(MOBILE_ZOOM_KEY) || getComputedStyle(document.documentElement).getPropertyValue("--mobile-ui-scale"));
+      applyMobileUiScale(current + delta);
     }
 
     function hasPageAccess(page) {
@@ -11570,6 +11755,10 @@
       });
     });
 
+    document.getElementById("mobileZoomOut")?.addEventListener("click", () => changeMobileUiScale(-0.1));
+    document.getElementById("mobileZoomIn")?.addEventListener("click", () => changeMobileUiScale(0.1));
+    document.getElementById("mobileZoomReset")?.addEventListener("click", () => applyMobileUiScale(0.9));
+
     document.addEventListener("input", event => {
       if (event.target.matches("input, select, textarea")) saveUiSessionState();
     });
@@ -12366,6 +12555,7 @@
 
     loadLocalData();
     saveLocalData();
+    applyMobileUiScale(localStorage.getItem(MOBILE_ZOOM_KEY) || 0.9);
     applyMdmSettingsToForm();
     populateLoginTeachers();
     renderClassGroups();
