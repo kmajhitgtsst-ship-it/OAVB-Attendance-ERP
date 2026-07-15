@@ -7202,6 +7202,7 @@
       loadClassStudents();
       syncMdmWithAttendanceFilters();
       renderMdm();
+      renderReport();
       document.getElementById("attendanceSubmitStatus").textContent = `${key} ${date}: reset complete. Attendance and MDM entry reset to zero. All students set Present for fresh entry.${removedMdm ? " Previous MDM saved entry removed." : ""}`;
     }
 
@@ -9397,6 +9398,12 @@
       return selected === "All" || !selected ? keys : [selected];
     }
 
+    function syncReportMonthFromDate() {
+      const date = document.getElementById("reportDate")?.value || todayIsoDate();
+      const monthInput = document.getElementById("reportMonth");
+      if (monthInput && date) monthInput.value = date.slice(0, 7);
+    }
+
     function populateReportClassOptions() {
       const select = document.getElementById("reportClass");
       if (!select) return;
@@ -11156,6 +11163,7 @@
 
     ["reportType", "reportClass", "reportDate", "reportMonth"].forEach(id => {
       document.getElementById(id).addEventListener("change", () => {
+        if (id === "reportDate") syncReportMonthFromDate();
         renderReport();
         updateDateDayLabels();
       });
