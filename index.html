@@ -6948,6 +6948,14 @@
       return offsetDate.toISOString().slice(0, 10);
     }
 
+    function clearEntryFields(ids) {
+      ids.forEach(id => {
+        const field = document.getElementById(id);
+        if (!field) return;
+        field.value = "";
+      });
+    }
+
     function startAutoUpdateCheck() {
       if (!location.protocol.startsWith("http")) return;
       const check = async () => {
@@ -7718,11 +7726,7 @@
       selected.push(createStudentRecord({ roll, admissionNo, name, guardian, mobile, hostel }, null, key));
       selected.sort((a, b) => Number(a[0]) - Number(b[0]));
       classData[key] = selected;
-      document.getElementById("studentName").value = "";
-      document.getElementById("studentAdmissionNo").value = "";
-      document.getElementById("guardianName").value = "";
-      document.getElementById("guardianMobile").value = "";
-      document.getElementById("studentRoll").value = Math.min(99, Number(roll) + 1);
+      clearEntryFields(["studentName", "studentAdmissionNo", "guardianName", "guardianMobile", "studentRoll"]);
       document.getElementById("studentMasterStatus").textContent = `${name} added to ${key}.`;
       saveLocalData();
       renderStudentMaster();
@@ -7939,6 +7943,7 @@
       selected.sort((a, b) => Number(a[0]) - Number(b[0]));
       classData[key] = selected;
       document.getElementById("studentBulkStatus").textContent = `${added} added, ${updated} updated in ${key}. ${skipped} row(s) skipped.`;
+      clearEntryFields(["studentBulkText", "studentExcelFile"]);
       saveLocalData();
       renderStudentMaster();
       if (currentClassKey() === key) {
@@ -8007,6 +8012,7 @@
       });
 
       document.getElementById("wholeSchoolStudentStatus").textContent = `${added} added, ${updated} updated across ${touched.size} class group(s). ${skipped} row(s) skipped.`;
+      clearEntryFields(["wholeSchoolStudentText", "wholeSchoolStudentFile"]);
       saveLocalData();
       renderStudentMaster();
       loadClassStudents();
@@ -8429,6 +8435,7 @@
       syncTeacherAssignmentsFromMaster();
       const assignedCount = Object.keys(teacherAssignments).length;
       document.getElementById("teacherBulkStatus").textContent = `${added} teacher(s) added, ${updated} updated. ${skipped} row(s) skipped. ${assignedCount} class teacher login(s) active.`;
+      clearEntryFields(["teacherBulkText", "teacherExcelFile"]);
       saveLocalData();
       renderTeachers();
       populateLoginTeachers();
@@ -8988,6 +8995,7 @@
         </li>
       ` + log.innerHTML;
       addAuditLog("MDM Entry Saved", `${record.served} meal(s), ${record.menu}, total cost Rs.${record.totalCost}.`, { classGroup: record.classGroup, recordDate: record.date, page: "MDM" });
+      clearEntryFields(["mdmEggRolls", "mdmEggCount", "mdmFruitCount"]);
       saveLocalData();
       renderRecentData();
       renderMdmGroupSummary();
@@ -9843,6 +9851,7 @@
       });
       saveLocalData();
       renderExamResults();
+      clearEntryFields(["examResultText", "examResultFile"]);
       document.getElementById("examResultStatus").textContent = `${added} ${examName} result row(s) imported.`;
     }
 
@@ -9932,6 +9941,7 @@
       });
       saveLocalData();
       renderTimetableAudit();
+      clearEntryFields(["timeTableCsvText", "timeTableCsvFile"]);
       document.getElementById("timeTableStatus").textContent = `${importedTimetableRows.length} timetable row(s) imported.`;
     }
 
@@ -10609,6 +10619,7 @@
         timetableArrangementSelections[key] = selected;
       });
       addAuditLog("Daily Arrangement Saved", `${rows.length} arrangement row(s) saved.`, { page: "Time Table", recordDate: arrangementDate() });
+      clearEntryFields(["absentTeacherCodes"]);
       saveLocalData();
       renderTimetableAudit();
       document.getElementById("timeTableStatus").textContent = `${rows.length} daily arrangement row(s) saved. Weekly/monthly balance updated.`;
@@ -10956,6 +10967,8 @@
       loadClassStudents();
       renderRecentData();
       renderReport();
+      clearEntryFields(["longRangeRoll", "longRangeDates"]);
+      document.getElementById("longRangePreview").innerHTML = "";
       document.getElementById("longRangeStatusText").textContent = `${student[1]} saved as ${status} for ${workingDates.length} date(s). ${holidayDates.length} holiday skipped${invalid.length ? `, invalid ignored: ${invalid.join(", ")}` : ""}.`;
     }
 
@@ -11199,6 +11212,7 @@
       renderRecentData();
       syncMdmWithAttendanceFilters();
       saveLocalData();
+      clearEntryFields(["attendanceCsvText", "attendanceCsvFile"]);
       document.getElementById("attendanceUploadStatus").textContent = `${updated} attendance row(s) imported and saved. ${skipped} row(s) skipped.`;
       document.getElementById("attendanceSubmitStatus").textContent = `${updated} CSV attendance row(s) imported. ${skipped ? "Holiday/invalid row(s) skipped. " : ""}Current class/date screen refreshed.`;
     }
