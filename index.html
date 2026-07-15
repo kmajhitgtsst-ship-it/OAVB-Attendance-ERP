@@ -5111,7 +5111,7 @@
             <div class="field">
               <label for="classFilter">Class</label>
               <select id="classFilter">
-                <option>Class VI</option><option>Class VII</option><option>Class VIII</option><option>Class IX</option><option>Class X</option><option>Class XI-SCIENCE</option><option>Class XII-SCIENCE</option>
+                <option>Class VI</option><option>Class VII</option><option>Class VIII</option><option>Class IX</option><option>Class X</option><option hidden disabled>Class XI-SCIENCE</option><option hidden disabled>Class XII-SCIENCE</option>
               </select>
             </div>
             <div class="field">
@@ -5177,7 +5177,7 @@
             <div class="field">
               <label for="mdmClass">Class</label>
               <select id="mdmClass">
-                <option>Class VI</option><option>Class VII</option><option>Class VIII</option><option>Class IX</option><option>Class X</option><option>Class XI-SCIENCE</option><option>Class XII-SCIENCE</option>
+                <option>Class VI</option><option>Class VII</option><option>Class VIII</option><option>Class IX</option><option>Class X</option><option hidden disabled>Class XI-SCIENCE</option><option hidden disabled>Class XII-SCIENCE</option>
               </select>
             </div>
             <div class="field">
@@ -6168,7 +6168,22 @@
       classData[className] = [];
     });
 
+    function isMdmUnavailableScienceClass(className) {
+      return className === "Class XI-SCIENCE" || className === "Class XII-SCIENCE";
+    }
+
+    function keepAttendanceMdmClassVisible(classId, sectionId) {
+      const classSelect = document.getElementById(classId);
+      const sectionSelect = document.getElementById(sectionId);
+      if (!classSelect) return;
+      if (isMdmUnavailableScienceClass(classSelect.value)) {
+        classSelect.value = "Class VI";
+        if (sectionSelect) sectionSelect.value = "A";
+      }
+    }
+
     function currentClassKey() {
+      keepAttendanceMdmClassVisible("classFilter", "sectionFilter");
       const className = document.getElementById("classFilter").value;
       if (className.includes("SCIENCE")) {
         return className;
@@ -8545,6 +8560,7 @@
     }
 
     function mdmCurrentData() {
+      keepAttendanceMdmClassVisible("mdmClass", "mdmSection");
       updateLinkedSectionState("mdmClass", "mdmSection");
       const key = classKeyFrom("mdmClass", "mdmSection");
       const date = document.getElementById("mdmDate").value;
@@ -10475,8 +10491,10 @@
     }
 
     function syncMdmWithAttendanceFilters() {
+      keepAttendanceMdmClassVisible("classFilter", "sectionFilter");
       document.getElementById("mdmClass").value = document.getElementById("classFilter").value;
       document.getElementById("mdmSection").value = document.getElementById("sectionFilter").value;
+      keepAttendanceMdmClassVisible("mdmClass", "mdmSection");
       document.getElementById("mdmDate").value = document.getElementById("dateFilter").value;
       document.getElementById("mdmSummaryMonth").value = (document.getElementById("dateFilter").value || "").slice(0, 7);
       updateLinkedSectionState("mdmClass", "mdmSection");
