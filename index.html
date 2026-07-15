@@ -5182,11 +5182,20 @@
               <label for="longRangeDates">Date Entry Format</label>
               <textarea id="longRangeDates" placeholder="Example: 1,2,3,8-9,15,18 April 2026, 5-8,15,16 May 2026"></textarea>
             </div>
+            <div class="field">
+              <label for="longRangeMonth">Month Wise Entry</label>
+              <input id="longRangeMonth" type="month" value="2026-07">
+            </div>
             <button class="secondary" id="previewLongRangeAttendance">Preview Long Entry</button>
             <button class="primary" id="saveLongRangeAttendance">Save Long Entry</button>
+            <button class="danger" id="resetLongRangeAttendance" type="button">Reset Long Entry</button>
+            <button class="secondary" id="loadLongRangeMonth" type="button">Load Month Dates</button>
+            <button class="primary" id="saveLongRangeMonth" type="button">Save Month Entry</button>
+            <button class="danger" id="resetLongRangeMonth" type="button">Reset Month Entry</button>
           </div>
           <p class="success-note" id="longRangeStatusText">Enter one student roll number and date pattern to preview 1-3 month attendance entry.</p>
           <div class="name-preview" id="longRangePreview"></div>
+          <div class="table-wrap" id="longRangeMonthGrid" style="margin-top: 12px;"></div>
           <div class="grid two-col">
             <div class="bulk-preview" id="bulkPreviewCard">
               <h2>Selected Students Preview</h2>
@@ -10931,6 +10940,137 @@
       }));
     }
 
+    function datesForMonth(month) {
+      if (!/^\d{4}-\d{2}$/.test(month || "")) return [];
+      const [year, monthNumber] = month.split("-").map(Number);
+      const totalDays = new Date(year, monthNumber, 0).getDate();
+      return Array.from({ length: totalDays }, (_, index) => `${month}-${String(index + 1).padStart(2, "0")}`);
+    }
+
+    function currentLongRangeMonth() {
+      return document.getElementById("longRangeMonth").value || (document.getElementById("dateFilter").value || todayIsoDate()).slice(0, 7);
+    }
+
+    function longRangeSavedStatus(date, classGroup, roll) {
+      const saved = dailyAttendanceRecords[attendanceRecordKey(date, classGroup)];
+      const row = saved?.students?.find(student => student.roll === roll);
+      return row?.status || (isAttendanceHolidayDate(date) ? "Holiday" : "Present");
+    }
+
+    function renderLongRangeMonthGrid() {
+      const grid = document.getElementById("longRangeMonthGrid");
+      const student = longRangeTargetStudent();
+      const month = currentLongRangeMonth();
+      const dates = datesForMonth(month);
+      const classGroup = currentClassKey();
+      if (!student) {
+        grid.innerHTML = `<p class="subtle">Enter a valid roll number to load month-wise dropdown entry.</p>`;
+        return { student: null, month, dates: [] };
+      }
+      if (!dates.length) {
+        grid.innerHTML = `<p class="subtle">Select a valid month.</p>`;
+        return { student, month, dates: [] };
+      }
+      grid.innerHTML = `
+        <table>
+          <thead><tr><th>Date</th><th>Day</th><th>${htmlSafe(student[1])} Status</th></tr></thead>
+          <tbody>
+            ${dates.map(date => {
+              const holiday = isAttendanceHolidayDate(date);
+              const status = longRangeSavedStatus(date, classGroup, student[0]);
+              const options = ["Present", "Absent", "Leave", "Holiday"].map(item => `<option${item === status ? " selected" : ""}>${item}</option>`).join("");
+              return `<tr class="${holiday ? "holiday-row" : ""}">
+                <td>${date}</td>
+                <td>${dayName(date)}</td>
+                <td><select class="long-month-status" data-date="${date}"${holiday ? " disabled" : ""}>${options}</select></td>
+              </tr>`;
+            }).join("")}
+          </tbody>
+        </table>`;
+      document.getElementById("longRangeStatusText").textContent = `Month grid loaded for Roll ${Number(student[0])}: ${student[1]} / ${monthLabel(month)}.`;
+      return { student, month, dates };
+    }
+
+    function saveLongRangeMonthAttendance() {
+      const student = longRangeTargetStudent();
+      const month = currentLongRangeMonth();
+      if (!student) {
+        document.getElementById("longRangeStatusText").textContent = "Enter a valid roll number before saving month entry.";
+        return;
+      }
+      const classGroup = currentClassKey();
+      const selects = [...document.querySelectorAll("#longRangeMonthGrid .long-month-status")];
+      if (!selects.length) {
+        renderLongRangeMonthGrid();
+        document.getElementById("longRangeStatusText").textContent = "Month grid loaded. Select status and press Save Month Entry again.";
+        return;
+      }
+      let savedCount = 0;
+      selects.forEach(select => {
+        const date = select.dataset.date;
+        if (!date || isAttendanceHolidayDate(date)) return;
+        const rows = savedOrDefaultAttendanceStudents(date, classGroup);
+        const target = rows.find(row => row.roll === student[0]);
+        if (!target) return;
+        target.status = select.value;
+        target.inTime = select.value === "Present" ? (target.inTime === "-" ? "08:55" : target.inTime || "08:55") : "-";
+        target.remark = `Month grid marked ${select.value}`;
+        dailyAttendanceRecords[attendanceRecordKey(date, classGroup)] = {
+          date,
+          classGroup,
+          savedAt: new Date().toISOString(),
+          students: rows
+        };
+        resetMdmRecordForAttendance(date, classGroup);
+        savedCount += 1;
+      });
+      addAuditLog("Month Grid Student Attendance Saved", `${student[1]} saved for ${savedCount} date(s) in ${monthLabel(month)}.`, { classGroup, recordDate: month });
+      saveLocalData();
+      applySavedAttendanceForDate(classGroup, document.getElementById("dateFilter").value);
+      loadClassStudents();
+      syncMdmWithAttendanceFilters();
+      renderMdm();
+      renderRecentData();
+      renderReport();
+      renderLongRangeMonthGrid();
+      document.getElementById("longRangeStatusText").textContent = `${student[1]} ${monthLabel(month)} month-wise attendance saved for ${savedCount} working date(s). Reports updated instantly.`;
+    }
+
+    function resetLongRangeMonthAttendance() {
+      const { student, month, dates } = renderLongRangeMonthGrid();
+      if (!student || !dates.length) return;
+      const classGroup = currentClassKey();
+      if (!confirm(`Reset ${student[1]} attendance to Present for ${monthLabel(month)}? Linked MDM records for this class/month will refresh.`)) return;
+      let resetCount = 0;
+      dates.forEach(date => {
+        if (isAttendanceHolidayDate(date)) return;
+        const rows = savedOrDefaultAttendanceStudents(date, classGroup);
+        const target = rows.find(row => row.roll === student[0]);
+        if (!target) return;
+        target.status = "Present";
+        target.inTime = "08:55";
+        target.remark = "";
+        dailyAttendanceRecords[attendanceRecordKey(date, classGroup)] = {
+          date,
+          classGroup,
+          savedAt: new Date().toISOString(),
+          students: rows
+        };
+        resetMdmRecordForAttendance(date, classGroup);
+        resetCount += 1;
+      });
+      addAuditLog("Month Grid Student Attendance Reset", `${student[1]} reset to Present for ${resetCount} date(s) in ${monthLabel(month)}.`, { classGroup, recordDate: month });
+      saveLocalData();
+      applySavedAttendanceForDate(classGroup, document.getElementById("dateFilter").value);
+      loadClassStudents();
+      syncMdmWithAttendanceFilters();
+      renderMdm();
+      renderRecentData();
+      renderReport();
+      renderLongRangeMonthGrid();
+      document.getElementById("longRangeStatusText").textContent = `${student[1]} ${monthLabel(month)} reset to Present for ${resetCount} working date(s). Reports updated instantly.`;
+    }
+
     function saveLongRangeAttendance() {
       const { student, status, workingDates, holidayDates, invalid } = updateLongRangePreview();
       if (!student) {
@@ -10970,6 +11110,62 @@
       clearEntryFields(["longRangeRoll", "longRangeDates"]);
       document.getElementById("longRangePreview").innerHTML = "";
       document.getElementById("longRangeStatusText").textContent = `${student[1]} saved as ${status} for ${workingDates.length} date(s). ${holidayDates.length} holiday skipped${invalid.length ? `, invalid ignored: ${invalid.join(", ")}` : ""}.`;
+    }
+
+    function resetLongRangeAttendance() {
+      const student = longRangeTargetStudent();
+      const { dates, invalid } = parseLongRangeDates(document.getElementById("longRangeDates").value);
+      const workingDates = dates.filter(date => !isAttendanceHolidayDate(date));
+      const holidayDates = dates.filter(date => isAttendanceHolidayDate(date));
+      const classGroup = currentClassKey();
+      if (!student) {
+        document.getElementById("longRangeStatusText").textContent = "Enter a valid roll number before reset.";
+        return;
+      }
+      if (!workingDates.length) {
+        document.getElementById("longRangeStatusText").textContent = "No valid working date found for reset.";
+        return;
+      }
+      if (!confirm(`Reset ${student[1]} (${classGroup}) attendance for ${workingDates.length} date(s)? Linked MDM for those dates will also reset.`)) return;
+
+      let changedDates = 0;
+      let removedMdm = 0;
+      workingDates.forEach(date => {
+        const recordKey = attendanceRecordKey(date, classGroup);
+        const rows = savedOrDefaultAttendanceStudents(date, classGroup);
+        const target = rows.find(row => row.roll === student[0]);
+        if (!target) return;
+        target.status = "Present";
+        target.inTime = "08:55";
+        target.remark = "";
+        dailyAttendanceRecords[recordKey] = {
+          date,
+          classGroup,
+          savedAt: new Date().toISOString(),
+          students: rows
+        };
+        removedMdm += resetMdmRecordForAttendance(date, classGroup);
+        changedDates += 1;
+      });
+
+      student[3] = "08:55";
+      student[4] = "Present";
+      student[5] = "";
+      addAuditLog(
+        "Long Range Student Attendance Reset",
+        `${student[1]} reset to Present for ${changedDates} date(s). MDM records removed: ${removedMdm}.`,
+        { classGroup, recordDate: workingDates[0] }
+      );
+      saveLocalData();
+      applySavedAttendanceForDate(classGroup, document.getElementById("dateFilter").value);
+      loadClassStudents();
+      syncMdmWithAttendanceFilters();
+      renderMdm();
+      renderRecentData();
+      renderReport();
+      clearEntryFields(["longRangeRoll", "longRangeDates"]);
+      document.getElementById("longRangePreview").innerHTML = "";
+      document.getElementById("longRangeStatusText").textContent = `${student[1]} reset to Present for ${changedDates} date(s). ${holidayDates.length} holiday skipped${invalid.length ? `, invalid ignored: ${invalid.join(", ")}` : ""}. Reports updated instantly.`;
     }
 
     function updateBulkPreview() {
@@ -11299,12 +11495,14 @@
 
     document.getElementById("dateFilter").addEventListener("change", () => {
       syncWorkingMonthFromDate();
+      document.getElementById("longRangeMonth").value = (document.getElementById("dateFilter").value || todayIsoDate()).slice(0, 7);
       document.getElementById("bulkRolls").value = "";
       loadClassStudents();
       refreshWhatsappMessage();
       syncMdmWithAttendanceFilters();
       updateDateDayLabels();
       updateBulkPreview();
+      renderLongRangeMonthGrid();
       blockAttendanceIfHoliday();
     });
 
@@ -11313,6 +11511,7 @@
       loadClassStudents();
       syncMdmWithAttendanceFilters();
       updateBulkPreview();
+      renderLongRangeMonthGrid();
       document.getElementById("attendanceSubmitStatus").textContent = `${currentClassKey()} loaded. Select status and roll numbers to mark attendance.`;
     });
 
@@ -11321,6 +11520,7 @@
       loadClassStudents();
       syncMdmWithAttendanceFilters();
       updateBulkPreview();
+      renderLongRangeMonthGrid();
       document.getElementById("attendanceSubmitStatus").textContent = `${currentClassKey()} loaded. Select status and roll numbers to mark attendance.`;
     });
 
@@ -11876,12 +12076,37 @@
       });
     });
 
+    ["longRangeRoll", "longRangeMonth"].forEach(id => {
+      document.getElementById(id).addEventListener("change", () => {
+        renderLongRangeMonthGrid();
+      });
+      document.getElementById(id).addEventListener("input", () => {
+        renderLongRangeMonthGrid();
+      });
+    });
+
     document.getElementById("previewLongRangeAttendance").addEventListener("click", () => {
       updateLongRangePreview();
     });
 
     document.getElementById("saveLongRangeAttendance").addEventListener("click", () => {
       saveLongRangeAttendance();
+    });
+
+    document.getElementById("resetLongRangeAttendance").addEventListener("click", () => {
+      resetLongRangeAttendance();
+    });
+
+    document.getElementById("loadLongRangeMonth").addEventListener("click", () => {
+      renderLongRangeMonthGrid();
+    });
+
+    document.getElementById("saveLongRangeMonth").addEventListener("click", () => {
+      saveLongRangeMonthAttendance();
+    });
+
+    document.getElementById("resetLongRangeMonth").addEventListener("click", () => {
+      resetLongRangeMonthAttendance();
     });
 
     document.getElementById("applyBulk").addEventListener("click", () => {
