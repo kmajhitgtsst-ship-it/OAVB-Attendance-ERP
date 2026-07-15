@@ -5111,7 +5111,7 @@
             <div class="field">
               <label for="classFilter">Class</label>
               <select id="classFilter">
-                <option>Class VI</option><option>Class VII</option><option>Class VIII</option><option>Class IX</option><option>Class X</option><option hidden disabled>Class XI-SCIENCE</option><option hidden disabled>Class XII-SCIENCE</option>
+                <option>Class VI</option><option>Class VII</option><option>Class VIII</option><option>Class IX</option><option>Class X</option><option>Class XI-SCIENCE</option><option>Class XII-SCIENCE</option>
               </select>
             </div>
             <div class="field">
@@ -5140,6 +5140,26 @@
             <button class="secondary" id="resetAttendance">Reset Entry</button>
             <button class="primary" id="submitAttendance">Submit Attendance</button>
           </div>
+          <div class="section-title" style="margin-top: 14px;">
+            <h2>Attendance CSV Upload</h2>
+            <span class="pill">Template based</span>
+          </div>
+          <div class="toolbar">
+            <button class="secondary" id="downloadAttendanceTemplate">Download Attendance Template</button>
+            <div class="field wide-field">
+              <label for="attendanceCsvFile">Upload Attendance CSV File</label>
+              <input id="attendanceCsvFile" type="file" accept=".csv">
+            </div>
+            <button class="secondary" id="importAttendanceFile">Import Attendance CSV</button>
+          </div>
+          <div class="field">
+            <label for="attendanceCsvText">Paste Attendance CSV Rows</label>
+            <textarea id="attendanceCsvText" placeholder="Date, Class, Section, Roll No, Admission No, Student Name, Status, In Time, Remark"></textarea>
+          </div>
+          <div class="toolbar">
+            <button class="primary" id="importAttendanceText">Import Pasted Attendance</button>
+          </div>
+          <p class="success-note" id="attendanceUploadStatus">Download template, fill attendance status, then import. Press Submit Attendance to save final entry.</p>
           <div class="grid two-col">
             <div class="bulk-preview" id="bulkPreviewCard">
               <h2>Selected Students Preview</h2>
@@ -6183,7 +6203,6 @@
     }
 
     function currentClassKey() {
-      keepAttendanceMdmClassVisible("classFilter", "sectionFilter");
       const className = document.getElementById("classFilter").value;
       if (className.includes("SCIENCE")) {
         return className;
@@ -6197,6 +6216,14 @@
         return className;
       }
       return `${className}-${document.getElementById(sectionId).value}`;
+    }
+
+    function setAttendanceMdmCardVisibility() {
+      const card = document.getElementById("mdmDailyEntryCard");
+      if (!card) return false;
+      const hidden = isMdmUnavailableScienceClass(document.getElementById("classFilter")?.value || "");
+      card.classList.toggle("hidden", hidden);
+      return !hidden;
     }
 
     function splitClassKey(key) {
@@ -7179,6 +7206,7 @@
       renderIndividualOptions();
       updateBulkPreview();
       refreshWhatsappMessage();
+      setAttendanceMdmCardVisibility();
     }
 
     function studentMonthlyStats(student) {
@@ -10491,7 +10519,11 @@
     }
 
     function syncMdmWithAttendanceFilters() {
-      keepAttendanceMdmClassVisible("classFilter", "sectionFilter");
+      if (!setAttendanceMdmCardVisibility()) {
+        document.getElementById("mdmSummaryMonth").value = (document.getElementById("dateFilter").value || "").slice(0, 7);
+        renderMdmGroupSummary();
+        return;
+      }
       document.getElementById("mdmClass").value = document.getElementById("classFilter").value;
       document.getElementById("mdmSection").value = document.getElementById("sectionFilter").value;
       keepAttendanceMdmClassVisible("mdmClass", "mdmSection");
@@ -10594,8 +10626,183 @@
       updateBulkPreview();
       document.getElementById("attendanceSubmitStatus").textContent = `${prefix}${document.getElementById("dateFilter").value} saved. Present: ${summary.present}, Absent: ${summary.absent}, Leave: ${summary.leave}, Holiday: ${summary.holiday}, Late: ${summary.late}.`;
       document.getElementById("attendanceListCard")?.classList.add("hidden");
-      document.getElementById("mdmDailyEntryCard")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (setAttendanceMdmCardVisibility()) {
+        document.getElementById("mdmDailyEntryCard")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
       saveLocalData();
+    }
+
+    function splitClassSectionValue(classValue, sectionValue = "") {
+      let className = normalizeClassName(classValue || document.getElementById("classFilter").value);
+      let section = String(sectionValue || "").trim().toUpperCase();
+      if (className.includes("SCIENCE")) return { className, section: "" };
+      const classSection = className.match(/^(Class\s+(?:VI|VII|VIII|IX|X))-([A-Z])$/i);
+      if (classSection) {
+        className = classSection[1];
+        section = section || classSection[2].toUpperCase();
+      }
+      return { className, section: section || "A" };
+    }
+
+    function attendanceClassKeyFromData(data) {
+      const { className, section } = splitClassSectionValue(data.className, data.section);
+      if (!className) return currentClassKey();
+      return className.includes("SCIENCE") ? className : `${className}-${section}`;
+    }
+
+    function normalizeAttendanceDate(value) {
+      const text = String(value || "").trim();
+      if (!text) return document.getElementById("dateFilter").value || todayIsoDate();
+      if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+      const dmy = text.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+      if (dmy) return `${dmy[3]}-${String(Number(dmy[2])).padStart(2, "0")}-${String(Number(dmy[1])).padStart(2, "0")}`;
+      return document.getElementById("dateFilter").value || todayIsoDate();
+    }
+
+    function normalizeAttendanceStatus(value) {
+      const text = String(value || "Present").trim().toLowerCase();
+      if (["a", "abs", "absent"].includes(text)) return "Absent";
+      if (["l", "leave"].includes(text)) return "Leave";
+      if (["h", "holiday"].includes(text)) return "Holiday";
+      if (["late", "lt"].includes(text)) return "Late";
+      return "Present";
+    }
+
+    function attendanceTemplateRows() {
+      const { className, section } = splitClassKey(currentClassKey());
+      return [
+        ["Date", "Class", "Section", "Roll No", "Admission No", "Student Name", "Status", "In Time", "Remark"],
+        ...students.map(student => [
+          document.getElementById("dateFilter").value || todayIsoDate(),
+          className,
+          section,
+          Number(student[0]),
+          studentAdmissionNo(student),
+          student[1],
+          student[4] || "Present",
+          student[3] || "08:55",
+          student[5] || ""
+        ])
+      ];
+    }
+
+    function downloadAttendanceTemplate() {
+      downloadCsv(`attendance-template-${currentClassKey()}-${document.getElementById("dateFilter").value || todayIsoDate()}.csv`, attendanceTemplateRows());
+      document.getElementById("attendanceUploadStatus").textContent = "Attendance CSV template downloaded. Fill Status/In Time/Remark and import it back.";
+    }
+
+    function attendanceDataFromRow(row, headerMap = null) {
+      if (headerMap) {
+        return {
+          date: rowValue(row, headerMap, ["Date", "Attendance Date"], 0),
+          className: rowValue(row, headerMap, ["Class"], 1),
+          section: rowValue(row, headerMap, ["Section"], 2),
+          roll: rowValue(row, headerMap, ["Roll No", "Roll Number", "Roll"], 3),
+          admissionNo: rowValue(row, headerMap, ["Admission No", "Admission Number", "Adm No"], 4),
+          name: rowValue(row, headerMap, ["Student Name", "Name"], 5),
+          status: rowValue(row, headerMap, ["Status", "Attendance Status"], 6),
+          inTime: rowValue(row, headerMap, ["In Time", "Time"], 7),
+          remark: rowValue(row, headerMap, ["Remark", "Remarks"], 8)
+        };
+      }
+      return {
+        date: row[0],
+        className: row[1],
+        section: row[2],
+        roll: row[3],
+        admissionNo: row[4],
+        name: row[5],
+        status: row[6],
+        inTime: row[7],
+        remark: row[8]
+      };
+    }
+
+    function monthIndexForDate(dateText) {
+      const day = Number(String(dateText || "").slice(-2));
+      return Math.max(0, Math.min(30, (Number.isNaN(day) ? 1 : day) - 1));
+    }
+
+    function saveAttendanceRecordForGroup(key, date, selected) {
+      dailyAttendanceRecords[attendanceRecordKey(date, key)] = {
+        date,
+        classGroup: key,
+        savedAt: new Date().toISOString(),
+        students: selected.map(student => ({
+          roll: student[0],
+          name: student[1],
+          inTime: student[3],
+          status: student[4],
+          remark: student[5] || "",
+          guardian: student[6] || "",
+          mobile: student[7] || "",
+          hostel: student[2] || ""
+        }))
+      };
+    }
+
+    function importAttendanceCsv() {
+      const rawRows = parseCsvLines(document.getElementById("attendanceCsvText").value, 1, { keepHeader: true });
+      const hasHeader = /date|class|roll|status/i.test((rawRows[0] || []).join(" "));
+      const headerMap = hasHeader
+        ? Object.fromEntries(rawRows[0].map((cell, index) => [normalizeHeaderName(cell), index]))
+        : null;
+      const rows = hasHeader ? rawRows.slice(1) : rawRows;
+      const touched = new Map();
+      const initialized = new Set();
+      let updated = 0;
+      let skipped = 0;
+
+      rows.forEach(row => {
+        const data = attendanceDataFromRow(row, headerMap);
+        const key = attendanceClassKeyFromData(data);
+        const selected = classData[key];
+        const roll = String(Number(data.roll)).padStart(2, "0");
+        const date = normalizeAttendanceDate(data.date);
+        if (!selected || Number.isNaN(Number(data.roll))) {
+          skipped += 1;
+          return;
+        }
+        const recordKey = attendanceRecordKey(date, key);
+        if (!initialized.has(recordKey)) {
+          const existingRecord = dailyAttendanceRecords[recordKey];
+          const savedByRoll = existingRecord ? new Map(existingRecord.students.map(item => [item.roll, item])) : null;
+          selected.forEach(item => {
+            const saved = savedByRoll?.get(item[0]);
+            item[3] = saved?.inTime || "08:55";
+            item[4] = saved?.status || "Present";
+            item[5] = saved?.remark || "";
+            if (item[8]) item[8][monthIndexForDate(date)] = item[4] === "Holiday" ? "Leave" : item[4];
+          });
+          initialized.add(recordKey);
+        }
+        const student = selected.find(item => item[0] === roll || studentAdmissionNo(item) === String(data.admissionNo || "").trim());
+        if (!student) {
+          skipped += 1;
+          return;
+        }
+        const status = normalizeAttendanceStatus(data.status);
+        student[4] = status;
+        student[3] = status === "Present" || status === "Late" ? (data.inTime || student[3] || "08:55") : "-";
+        student[5] = data.remark || `CSV marked ${status}`;
+        if (student[8]) student[8][monthIndexForDate(date)] = status === "Holiday" ? "Leave" : status;
+        touched.set(`${date}|${key}`, { date, key, selected });
+        updated += 1;
+      });
+
+      touched.forEach(({ date, key, selected }) => {
+        saveAttendanceRecordForGroup(key, date, selected);
+        resetMdmRecordForAttendance(date, key);
+      });
+
+      attendanceSubmitted = Boolean(dailyAttendanceRecords[attendanceRecordKey()]);
+      renderStudents(document.getElementById("searchStudent").value);
+      refreshWhatsappMessage();
+      renderRecentData();
+      syncMdmWithAttendanceFilters();
+      saveLocalData();
+      document.getElementById("attendanceUploadStatus").textContent = `${updated} attendance row(s) imported and saved. ${skipped} row(s) skipped.`;
+      document.getElementById("attendanceSubmitStatus").textContent = `${updated} CSV attendance row(s) imported. Current class/date screen refreshed.`;
     }
 
     function syncWorkingMonthFromDate() {
@@ -10736,6 +10943,23 @@
         "teacherBulkText",
         importBulkTeachers,
         "teacherBulkStatus"
+      );
+    });
+
+    document.getElementById("downloadAttendanceTemplate").addEventListener("click", () => {
+      downloadAttendanceTemplate();
+    });
+
+    document.getElementById("importAttendanceText").addEventListener("click", () => {
+      importAttendanceCsv();
+    });
+
+    document.getElementById("importAttendanceFile").addEventListener("click", () => {
+      importTextFile(
+        document.getElementById("attendanceCsvFile").files[0],
+        "attendanceCsvText",
+        importAttendanceCsv,
+        "attendanceUploadStatus"
       );
     });
 
