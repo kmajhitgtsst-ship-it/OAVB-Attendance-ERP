@@ -6097,6 +6097,7 @@
     let loggedIn = false;
     let adminSession = false;
     let activeTimetableTimeMode = "normal";
+    const UI_SESSION_KEY = "oavBadiUiSessionState";
 
     function saveLocalData() {
       localStorage.setItem("oavBadiClassData", JSON.stringify(classData));
@@ -6287,6 +6288,59 @@
 
     function currentPageName() {
       return document.querySelector(".nav-button.active")?.textContent?.trim() || "";
+    }
+
+    function currentPageId() {
+      return document.querySelector(".nav-button.active")?.dataset.page || "";
+    }
+
+    function readSavedUiPage() {
+      try {
+        const saved = JSON.parse(sessionStorage.getItem(UI_SESSION_KEY) || "{}");
+        return saved.page || "";
+      } catch (error) {
+        return "";
+      }
+    }
+
+    function collectUiFieldState() {
+      const ids = [
+        "dateFilter", "classFilter", "sectionFilter", "searchStudent", "bulkStatus", "bulkRolls",
+        "longRangeRoll", "longRangeStatus", "longRangeDates", "longRangeMonth",
+        "mdmDate", "mdmClass", "mdmSection", "reportType", "reportClass", "reportDate", "reportMonth",
+        "workingMonth", "workingDays", "holidayDates", "examResultClass", "examName", "timeTableClassSelect"
+      ];
+      return ids.reduce((state, id) => {
+        const field = document.getElementById(id);
+        if (field) state[id] = field.value;
+        return state;
+      }, {});
+    }
+
+    function saveUiSessionState(page = currentPageId()) {
+      try {
+        sessionStorage.setItem(UI_SESSION_KEY, JSON.stringify({
+          page,
+          fields: collectUiFieldState(),
+          scrollY: window.scrollY || 0,
+          savedAt: Date.now()
+        }));
+      } catch (error) {
+        // Session storage can be unavailable in private browsing; the ERP still works.
+      }
+    }
+
+    function restoreUiFieldState() {
+      try {
+        const saved = JSON.parse(sessionStorage.getItem(UI_SESSION_KEY) || "{}");
+        Object.entries(saved.fields || {}).forEach(([id, value]) => {
+          const field = document.getElementById(id);
+          if (field && value !== undefined) field.value = value;
+        });
+        if (Number.isFinite(saved.scrollY)) setTimeout(() => window.scrollTo(0, saved.scrollY), 50);
+      } catch (error) {
+        // Ignore invalid saved UI state.
+      }
     }
 
     function currentAuditUser() {
@@ -6840,11 +6894,13 @@
       if (page === "settings") {
         updateAdminResetVisibility();
       }
+      saveUiSessionState(page);
       syncMobilePanelHeight();
     }
 
     function openFirstAllowedPage() {
-      showPage(activeUser.pages[0] || "dashboard");
+      const savedPage = readSavedUiPage();
+      showPage(savedPage && hasPageAccess(savedPage) ? savedPage : (activeUser.pages[0] || "dashboard"));
     }
 
     function logout() {
@@ -6975,6 +7031,7 @@
           if (match && match[1] !== APP_VERSION) {
             const banner = document.getElementById("updateBanner");
             banner.style.display = "block";
+            saveUiSessionState();
             setTimeout(() => location.reload(), 2000);
           }
         } catch (error) {
@@ -6985,6 +7042,43 @@
       document.addEventListener("visibilitychange", () => {
         if (!document.hidden) check();
       });
+    }
+
+    function softRefreshFromStorage(message = "Online data synced. You can continue on this page.") {
+      const pageBeforeRefresh = currentPageId() || readSavedUiPage();
+      saveUiSessionState(pageBeforeRefresh);
+      loadLocalData();
+      restoreUiFieldState();
+      applyMdmSettingsToForm();
+      populateLoginTeachers();
+      renderClassGroups();
+      applyClassAccess();
+      renderNavAccess();
+      loadClassStudents();
+      renderStudentMaster();
+      renderTeachers();
+      renderTeacherAttendance();
+      syncMdmWithAttendanceFilters();
+      renderMdmStockRegister();
+      renderMdmReference();
+      renderMdm();
+      renderMdmGroupSummary();
+      renderDashboardSnapshot();
+      renderRecentData();
+      populateReportClassOptions();
+      renderReport();
+      populateExamClassOptions();
+      renderExamResults();
+      renderPeriodTimeInputs();
+      renderTimetableAudit();
+      updateTimetableAccess();
+      updateAdminResetVisibility();
+      if (loggedIn) {
+        const targetPage = pageBeforeRefresh && hasPageAccess(pageBeforeRefresh) ? pageBeforeRefresh : (readSavedUiPage() || activeUser.pages[0] || "dashboard");
+        showPage(targetPage);
+      }
+      const summary = document.getElementById("accessSummary");
+      if (summary && message) summary.value = message;
     }
 
     function collectCloudState() {
@@ -7037,7 +7131,7 @@
           const payload = await response.json();
           if (payload.current?.updatedAt) {
             applyCloudState(payload.current.state || {}, payload.current.updatedAt);
-            location.reload();
+            softRefreshFromStorage("Newer online data applied. You are still on the same page.");
           }
         }
       } catch (error) {
@@ -7055,7 +7149,7 @@
         const localUpdatedAt = Number(localStorage.getItem(CLOUD_TS_KEY) || 0);
         if (remoteUpdatedAt > localUpdatedAt && payload.state && Object.keys(payload.state).length) {
           applyCloudState(payload.state, remoteUpdatedAt);
-          if (reloadOnApply) location.reload();
+          if (reloadOnApply) softRefreshFromStorage("Online data synced. Your page was kept open.");
         }
       } catch (error) {
         // Keep local work available if network is temporarily unavailable.
@@ -7071,7 +7165,7 @@
         const localUpdatedAt = Number(localStorage.getItem(CLOUD_TS_KEY) || 0);
         if (remoteUpdatedAt > localUpdatedAt && payload.state && Object.keys(payload.state).length) {
           applyCloudState(payload.state, remoteUpdatedAt);
-          location.reload();
+          softRefreshFromStorage("Latest online data loaded. Continue from this page.");
           return;
         }
         cloudSyncReady = true;
@@ -11476,6 +11570,16 @@
       });
     });
 
+    document.addEventListener("input", event => {
+      if (event.target.matches("input, select, textarea")) saveUiSessionState();
+    });
+
+    document.addEventListener("change", event => {
+      if (event.target.matches("input, select, textarea")) saveUiSessionState();
+    });
+
+    window.addEventListener("beforeunload", () => saveUiSessionState());
+
     document.addEventListener("click", event => {
       if (!event.target.matches(".status[data-index]")) return;
       if (blockAttendanceIfHoliday()) return;
@@ -12270,6 +12374,7 @@
     document.getElementById("whatsappLog").dataset.empty = "true";
     document.getElementById("mdmLog").dataset.empty = "true";
     setAttendanceDateToToday();
+    restoreUiFieldState();
     updateDateDayLabels();
     syncWorkingMonthFromDate();
     applyClassAccess();
