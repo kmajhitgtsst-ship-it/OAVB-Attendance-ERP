@@ -5221,7 +5221,7 @@
         <div class="card" id="mdmDailyEntryCard" style="margin-top: 14px;">
           <div class="section-title">
             <h2>MDM Daily Entry</h2>
-            <span class="pill">Attendance se auto fetch</span>
+            <span class="pill">Auto fetched from attendance</span>
           </div>
           <div class="grid stats">
             <div class="card metric good"><span>Eligible Students</span><strong id="mdmEligible">0</strong></div>
@@ -5249,7 +5249,7 @@
               <input id="mdmMenu" value="Auto by weekday" readonly>
             </div>
           </div>
-          <p class="success-note">Stock entry aur month starting price entry MDM tab me MDM incharge/admin karega. Class teacher yahan sirf attendance based MDM save/report karega.</p>
+          <p class="success-note">Stock entry and monthly price entry are handled in the MDM tab by the MDM in-charge or admin. Class teachers can save attendance-based MDM entries and reports here.</p>
           <div class="toolbar" id="mdmChoiceFields">
             <div class="field wide-field">
               <label for="mdmEggRolls">Egg Eating Roll Numbers</label>
@@ -5550,7 +5550,7 @@
             </div>
             <button class="secondary" id="resetStockRegister">Reset Register With Permission</button>
           </div>
-          <p class="subtle">Stock In MDM tab se aayega. Expenditure saved MDM entries se date wise automatic calculate hoga.</p>
+          <p class="subtle">Stock-in values come from the MDM tab. Expenditure is calculated automatically date-wise from saved MDM entries.</p>
           <div class="table-wrap">
             <table>
               <thead>
@@ -5565,7 +5565,7 @@
             <h2>MDM Entry Location</h2>
             <span class="pill">Attendance linked</span>
           </div>
-          <p class="subtle">Student Attendance page open karke attendance table ke niche MDM Daily Entry use karein. Wahi se daily aur monthly Excel report download hogi.</p>
+          <p class="subtle">Open the Student Attendance page and use MDM Daily Entry below the attendance table. Daily and monthly Excel reports can be downloaded from there.</p>
           <button class="secondary" id="downloadDailyMdm">Download Daily Excel</button>
           <button class="secondary" id="downloadMonthlyMdm">Download Monthly Excel</button>
           <button class="primary" id="openAttendanceMdm">Open Attendance MDM Entry</button>
@@ -7260,11 +7260,8 @@
         { classGroup: key, recordDate: date }
       );
       saveLocalData();
-      renderRecentData();
       loadClassStudents();
-      syncMdmWithAttendanceFilters();
-      renderMdm();
-      renderReport();
+      refreshAttendanceLinkedViews();
       document.getElementById("attendanceSubmitStatus").textContent = `${key} ${date}: reset complete. Attendance and MDM entry reset to zero. All students set Present for fresh entry.${removedMdm ? " Previous MDM saved entry removed." : ""}`;
     }
 
@@ -10952,9 +10949,20 @@
     }
 
     function longRangeSavedStatus(date, classGroup, roll) {
+      if (isAttendanceHolidayDate(date)) return "Holiday";
       const saved = dailyAttendanceRecords[attendanceRecordKey(date, classGroup)];
       const row = saved?.students?.find(student => student.roll === roll);
-      return row?.status || (isAttendanceHolidayDate(date) ? "Holiday" : "Present");
+      return row?.status || "Present";
+    }
+
+    function refreshAttendanceLinkedViews() {
+      syncMdmWithAttendanceFilters();
+      renderMdm();
+      renderMdmGroupSummary();
+      renderMdmStockRegister();
+      renderRecentData();
+      renderDashboardSnapshot();
+      renderReport();
     }
 
     function renderLongRangeMonthGrid() {
@@ -11028,10 +11036,7 @@
       saveLocalData();
       applySavedAttendanceForDate(classGroup, document.getElementById("dateFilter").value);
       loadClassStudents();
-      syncMdmWithAttendanceFilters();
-      renderMdm();
-      renderRecentData();
-      renderReport();
+      refreshAttendanceLinkedViews();
       renderLongRangeMonthGrid();
       document.getElementById("longRangeStatusText").textContent = `${student[1]} ${monthLabel(month)} month-wise attendance saved for ${savedCount} working date(s). Reports updated instantly.`;
     }
@@ -11063,10 +11068,7 @@
       saveLocalData();
       applySavedAttendanceForDate(classGroup, document.getElementById("dateFilter").value);
       loadClassStudents();
-      syncMdmWithAttendanceFilters();
-      renderMdm();
-      renderRecentData();
-      renderReport();
+      refreshAttendanceLinkedViews();
       renderLongRangeMonthGrid();
       document.getElementById("longRangeStatusText").textContent = `${student[1]} ${monthLabel(month)} reset to Present for ${resetCount} working date(s). Reports updated instantly.`;
     }
@@ -11082,7 +11084,7 @@
         return;
       }
       const classGroup = currentClassKey();
-      const confirmText = `${student[1]} (${classGroup}) ko ${workingDates.length} date(s) me ${status} mark karna hai? ${holidayDates.length} holiday skipped.`;
+      const confirmText = `Mark ${student[1]} (${classGroup}) as ${status} for ${workingDates.length} date(s)? ${holidayDates.length} holiday date(s) will be skipped.`;
       if (!confirm(confirmText)) return;
 
       workingDates.forEach(date => {
@@ -11099,14 +11101,14 @@
           savedAt: new Date().toISOString(),
           students: rows
         };
+        resetMdmRecordForAttendance(date, classGroup);
       });
 
       addAuditLog("Long Range Student Attendance Saved", `${student[1]} marked ${status} for ${workingDates.length} date(s). Holidays skipped: ${holidayDates.length}.`, { classGroup, recordDate: workingDates[0] });
       saveLocalData();
       applySavedAttendanceForDate(classGroup, document.getElementById("dateFilter").value);
       loadClassStudents();
-      renderRecentData();
-      renderReport();
+      refreshAttendanceLinkedViews();
       clearEntryFields(["longRangeRoll", "longRangeDates"]);
       document.getElementById("longRangePreview").innerHTML = "";
       document.getElementById("longRangeStatusText").textContent = `${student[1]} saved as ${status} for ${workingDates.length} date(s). ${holidayDates.length} holiday skipped${invalid.length ? `, invalid ignored: ${invalid.join(", ")}` : ""}.`;
@@ -11465,6 +11467,7 @@
       loadClassStudents();
       refreshWhatsappMessage();
       blockAttendanceIfHoliday();
+      renderLongRangeMonthGrid();
     }
 
     document.querySelectorAll(".nav-button").forEach(button => {
