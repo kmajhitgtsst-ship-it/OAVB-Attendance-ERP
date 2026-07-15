@@ -5035,18 +5035,21 @@
         <div class="card" style="margin-top: 14px;">
           <div class="section-title">
             <h2>Student Bulk Entry</h2>
-            <span class="pill">Excel / CSV</span>
+              <span class="pill">CSV Upload</span>
+          </div>
+          <div class="toolbar">
+            <button class="secondary" id="downloadStudentTemplate">Download Student Template</button>
           </div>
           <div class="toolbar">
             <div class="field wide-field">
-              <label for="wholeSchoolStudentFile">Whole School Student Excel/CSV File</label>
-              <input id="wholeSchoolStudentFile" type="file" accept=".csv,.xlsx,.xls">
+              <label for="wholeSchoolStudentFile">Whole School Student CSV File</label>
+              <input id="wholeSchoolStudentFile" type="file" accept=".csv">
             </div>
             <button class="primary" id="importWholeSchoolStudentsFile">Import Whole School</button>
           </div>
           <div class="field">
               <label for="wholeSchoolStudentText">Paste rows from template or compact format</label>
-              <textarea id="wholeSchoolStudentText" placeholder="Template format: Admission No, Roll No, Student Name, Class, Section, Gender, DOB, Guardian, Father, Mother, Mobile, Hostel...&#10;Compact format: 1,SAI SANGAM MUND,Class VI,B,Parent Name,+91 9876543210,Yes"></textarea>
+              <textarea id="wholeSchoolStudentText" placeholder="Template format: Admission No, Roll No, Student Name, Class, Section, Gender, DOB, Guardian/Father Name, Mother Name, Mobile Number, Hostel, Address, Category, Aadhaar No, Blood Group, Status, Remarks&#10;Compact format: 1,SAI SANGAM MUND,Class VI,B,Parent Name,+91 9876543210,Yes"></textarea>
           </div>
           <div class="toolbar">
             <button class="secondary" id="importWholeSchoolStudents">Import Pasted Whole School Data</button>
@@ -5054,15 +5057,15 @@
           <p class="success-note" id="wholeSchoolStudentStatus">Whole school import will auto-place students into their class and section.</p>
           <div class="toolbar">
             <div class="field wide-field">
-              <label for="studentExcelFile">Import Student Excel/CSV File</label>
-              <input id="studentExcelFile" type="file" accept=".csv,.xlsx,.xls">
+              <label for="studentExcelFile">Import Student CSV File</label>
+              <input id="studentExcelFile" type="file" accept=".csv">
             </div>
             <button class="secondary" id="importStudentsFile">Import File</button>
           </div>
           <div class="toolbar">
             <div class="field wide-field">
-              <label for="studentBulkText">Paste rows: roll,name,guardian,mobile,hostel</label>
-              <textarea id="studentBulkText" placeholder="41,New Student,Guardian Name,+91 9876543210,Yes&#10;42,Second Student,Parent Name,+91 9876543211,No"></textarea>
+              <label for="studentBulkText">Paste rows from template or compact format</label>
+              <textarea id="studentBulkText" placeholder="Template format: Admission No, Roll No, Student Name, Class, Section, Gender, DOB, Guardian/Father Name, Mother Name, Mobile Number, Hostel, Address, Category, Aadhaar No, Blood Group, Status, Remarks&#10;Compact format: 41,New Student,Guardian Name,+91 9876543210,Yes"></textarea>
             </div>
             <button class="primary" id="importStudents">Import Students</button>
           </div>
@@ -5076,7 +5079,7 @@
           <div class="table-wrap">
             <table>
               <thead>
-                <tr><th>Admission No.</th><th>Roll</th><th>Name</th><th>Guardian</th><th>Mobile</th><th>Hostel</th><th>Status</th><th>Action</th></tr>
+                <tr><th>Admission No.</th><th>Roll</th><th>Name</th><th>Class</th><th>Section</th><th>Gender</th><th>DOB</th><th>Guardian</th><th>Mother</th><th>Mobile</th><th>Hostel</th><th>Category</th><th>Status</th><th>Action</th></tr>
               </thead>
               <tbody id="masterRows"></tbody>
             </table>
@@ -7400,6 +7403,61 @@
       student[9] = String(admissionNo || "").trim();
     }
 
+    function studentMeta(student) {
+      if (!student) return {};
+      if (!student[10] || typeof student[10] !== "object" || Array.isArray(student[10])) {
+        student[10] = {};
+      }
+      return student[10];
+    }
+
+    function classSectionFromKey(key) {
+      if (String(key || "").includes("SCIENCE")) return { className: key, section: "" };
+      const match = String(key || "").match(/^(Class\s+[A-Z]+)-([A-Z])$/i);
+      return {
+        className: match ? match[1] : String(key || ""),
+        section: match ? match[2] : ""
+      };
+    }
+
+    function applyStudentMeta(student, data = {}, classGroup = "") {
+      const meta = studentMeta(student);
+      const classSection = classSectionFromKey(classGroup);
+      Object.assign(meta, {
+        className: data.className || meta.className || classSection.className || "",
+        section: data.section || meta.section || classSection.section || "",
+        gender: data.gender || meta.gender || "",
+        dob: data.dob || meta.dob || "",
+        mother: data.mother || meta.mother || "",
+        address: data.address || meta.address || "",
+        category: data.category || meta.category || "",
+        aadhaar: data.aadhaar || meta.aadhaar || "",
+        bloodGroup: data.bloodGroup || meta.bloodGroup || "",
+        studentStatus: data.studentStatus || meta.studentStatus || "Active",
+        remarks: data.remarks || meta.remarks || ""
+      });
+      return meta;
+    }
+
+    function createStudentRecord(data, existing, classGroup) {
+      const roll = String(Number(data.roll)).padStart(2, "0");
+      const student = [
+        roll,
+        data.name || existing?.[1] || "",
+        data.hostel || existing?.[2] || "No",
+        existing?.[3] || "08:55",
+        existing?.[4] || "Present",
+        existing?.[5] || "",
+        data.guardian || existing?.[6] || "Guardian",
+        data.mobile || existing?.[7] || "+91 9000000000",
+        existing?.[8] || buildMonthRecord(Number(roll), 1, 1),
+        data.admissionNo || existing?.[9] || "",
+        existing?.[10] && typeof existing[10] === "object" ? { ...existing[10] } : {}
+      ];
+      applyStudentMeta(student, data, classGroup);
+      return student;
+    }
+
     function updateStudentRollReferences(classGroup, oldRoll, newRoll) {
       Object.keys(dailyAttendanceRecords).forEach(recordKey => {
         if (!recordKey.endsWith(`|${classGroup}`)) return;
@@ -7418,18 +7476,27 @@
       const selected = classData[key] || [];
       document.getElementById("masterClassLabel").textContent = key;
       document.getElementById("masterClassCount").textContent = `${selected.length} students available.`;
-      document.getElementById("masterRows").innerHTML = selected.map(student => `
-        <tr>
-          <td>${studentAdmissionNo(student) || "-"}</td>
-          <td>${student[0]}</td>
-          <td>${student[1]}</td>
-          <td>${student[6]}</td>
-          <td>${student[7]}</td>
-          <td>${student[2]}</td>
-          <td><span class="status ${statusClass[student[4]]}">${student[4]}</span></td>
-          <td><button class="secondary edit-student" data-roll="${student[0]}">Edit</button> <button class="secondary delete-student" data-roll="${student[0]}">Delete</button></td>
-        </tr>
-      `).join("");
+      document.getElementById("masterRows").innerHTML = selected.map(student => {
+        const meta = applyStudentMeta(student, {}, key);
+        return `
+          <tr>
+            <td>${studentAdmissionNo(student) || "-"}</td>
+            <td>${student[0]}</td>
+            <td>${student[1]}</td>
+            <td>${meta.className || classSectionFromKey(key).className}</td>
+            <td>${meta.section || classSectionFromKey(key).section || "-"}</td>
+            <td>${meta.gender || "-"}</td>
+            <td>${meta.dob || "-"}</td>
+            <td>${student[6]}</td>
+            <td>${meta.mother || "-"}</td>
+            <td>${student[7]}</td>
+            <td>${student[2]}</td>
+            <td>${meta.category || "-"}</td>
+            <td><span class="status ${statusClass[student[4]]}">${student[4]}</span></td>
+            <td><button class="secondary edit-student" data-roll="${student[0]}">Edit</button> <button class="secondary delete-student" data-roll="${student[0]}">Delete</button></td>
+          </tr>
+        `;
+      }).join("");
     }
 
     function editStudent(roll) {
@@ -7453,14 +7520,25 @@
       const name = prompt("Student name", student[1]);
       if (!name) return;
       const guardian = prompt("Guardian name", student[6]) || student[6];
+      const meta = studentMeta(student);
+      const gender = prompt("Gender", meta.gender || "") || meta.gender || "";
+      const dob = prompt("DOB (yyyy-mm-dd)", meta.dob || "") || meta.dob || "";
+      const mother = prompt("Mother name", meta.mother || "") || meta.mother || "";
       const mobile = prompt("Mobile", student[7]) || student[7];
       const hostel = prompt("Hostel Yes/No", student[2]) || student[2];
+      const address = prompt("Address", meta.address || "") || meta.address || "";
+      const category = prompt("Category", meta.category || "") || meta.category || "";
+      const aadhaar = prompt("Aadhaar No.", meta.aadhaar || "") || meta.aadhaar || "";
+      const bloodGroup = prompt("Blood Group", meta.bloodGroup || "") || meta.bloodGroup || "";
+      const studentStatus = prompt("Student Status Active/Inactive", meta.studentStatus || "Active") || meta.studentStatus || "Active";
+      const remarks = prompt("Remarks", meta.remarks || "") || meta.remarks || "";
       student[0] = nextRoll;
       setStudentAdmissionNo(student, admissionNo);
       student[1] = name;
       student[6] = guardian;
       student[7] = mobile;
       student[2] = hostel;
+      applyStudentMeta(student, { gender, dob, mother, address, category, aadhaar, bloodGroup, studentStatus, remarks }, key);
       if (nextRoll !== oldRoll) updateStudentRollReferences(key, oldRoll, nextRoll);
       selected.sort((a, b) => Number(a[0]) - Number(b[0]));
       saveLocalData();
@@ -7507,7 +7585,7 @@
         return;
       }
 
-      selected.push([roll, name, hostel, "08:55", "Present", "", guardian, mobile, buildMonthRecord(Number(roll), 1, 1), admissionNo]);
+      selected.push(createStudentRecord({ roll, admissionNo, name, guardian, mobile, hostel }, null, key));
       selected.sort((a, b) => Number(a[0]) - Number(b[0]));
       classData[key] = selected;
       document.getElementById("studentName").value = "";
@@ -7524,32 +7602,102 @@
       }
     }
 
-    function parseCsvLines(text, expectedColumns) {
-      return text
+    function parseCsvLine(line) {
+      const cells = [];
+      let current = "";
+      let quoted = false;
+      for (let index = 0; index < line.length; index += 1) {
+        const char = line[index];
+        if (char === '"' && line[index + 1] === '"') {
+          current += '"';
+          index += 1;
+        } else if (char === '"') {
+          quoted = !quoted;
+        } else if (char === "," && !quoted) {
+          cells.push(current.trim());
+          current = "";
+        } else {
+          current += char;
+        }
+      }
+      cells.push(current.trim());
+      return cells;
+    }
+
+    function parseCsvLines(text, expectedColumns, { keepHeader = false } = {}) {
+      const rows = text
         .split(/\r?\n/)
         .map(line => line.replace(/^\uFEFF/, "").trim())
         .filter(Boolean)
-        .map(line => line.split(",").map(cell => cell.trim()))
+        .map(parseCsvLine);
+      if (keepHeader) return rows.filter(row => row.length >= expectedColumns);
+      return rows
         .filter(row => !/^(admission no|employee id|roll no|teacher name)$/i.test(row[0] || ""))
         .filter(row => row.length >= expectedColumns);
     }
 
+    function normalizeHeaderName(value) {
+      return String(value || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+    }
+
+    function rowValue(row, headerMap, aliases, fallbackIndex = -1) {
+      for (const alias of aliases) {
+        const index = headerMap[normalizeHeaderName(alias)];
+        if (index !== undefined) return row[index] || "";
+      }
+      return fallbackIndex >= 0 ? row[fallbackIndex] || "" : "";
+    }
+
+    function studentDataFromTemplateRow(row, headerMap = null) {
+      if (headerMap) {
+        return {
+          admissionNo: rowValue(row, headerMap, ["Admission No", "Admission Number", "Adm No"], 0),
+          roll: rowValue(row, headerMap, ["Roll No", "Roll Number", "Roll"], 1),
+          name: rowValue(row, headerMap, ["Student Name", "Name"], 2),
+          className: rowValue(row, headerMap, ["Class"], 3),
+          section: rowValue(row, headerMap, ["Section"], 4),
+          gender: rowValue(row, headerMap, ["Gender"], 5),
+          dob: rowValue(row, headerMap, ["DOB", "Date of Birth"], 6),
+          guardian: rowValue(row, headerMap, ["Guardian/Father Name", "Guardian Name", "Father Name", "Guardian"], 7),
+          mother: rowValue(row, headerMap, ["Mother Name", "Mother"], 8),
+          mobile: rowValue(row, headerMap, ["Mobile Number", "Mobile", "Phone"], 9),
+          hostel: rowValue(row, headerMap, ["Hostel"], 10) || "No",
+          address: rowValue(row, headerMap, ["Address"], 11),
+          category: rowValue(row, headerMap, ["Category", "Caste"], 12),
+          aadhaar: rowValue(row, headerMap, ["Aadhaar No", "Aadhaar Number", "Aadhar No"], 13),
+          bloodGroup: rowValue(row, headerMap, ["Blood Group"], 14),
+          studentStatus: rowValue(row, headerMap, ["Status", "Student Status"], 15) || "Active",
+          remarks: rowValue(row, headerMap, ["Remarks", "Remark"], 16)
+        };
+      }
+      return {
+        admissionNo: row[0] || "",
+        roll: row[1],
+        name: row[2],
+        className: row[3],
+        section: row[4],
+        gender: row[5] || "",
+        dob: row[6] || "",
+        guardian: row[7] || "Guardian",
+        mother: row[8] || "",
+        mobile: row[9] || "+91 9000000000",
+        hostel: row[10] || "No",
+        address: row[11] || "",
+        category: row[12] || "",
+        aadhaar: row[13] || "",
+        bloodGroup: row[14] || "",
+        studentStatus: row[15] || "Active",
+        remarks: row[16] || ""
+      };
+    }
+
     function isStudentTemplateRow(row) {
-      return row.length >= 12 && !Number.isNaN(Number(row[1])) && row[2] && row[3];
+      return row.length >= 10 && !Number.isNaN(Number(row[1])) && row[2] && row[3];
     }
 
     function compactStudentFromRow(row) {
       if (isStudentTemplateRow(row)) {
-        return {
-          admissionNo: row[0],
-          roll: row[1],
-          name: row[2],
-          className: row[3],
-          section: row[4],
-          guardian: row[7] || row[8] || "Guardian",
-          mobile: row[10] || "+91 9000000000",
-          hostel: row[11] || "No"
-        };
+        return studentDataFromTemplateRow(row);
       }
 
       return {
@@ -7560,8 +7708,31 @@
         section: row[3],
         guardian: row[4] || "Guardian",
         mobile: row[5] || "+91 9000000000",
-        hostel: row[6] || "No"
+        hostel: row[6] || "No",
+        gender: "",
+        dob: "",
+        mother: "",
+        address: "",
+        category: "",
+        aadhaar: "",
+        bloodGroup: "",
+        studentStatus: "Active",
+        remarks: ""
       };
+    }
+
+    function studentTemplateRows() {
+      return [
+        ["Admission No", "Roll No", "Student Name", "Class", "Section", "Gender", "DOB", "Guardian/Father Name", "Mother Name", "Mobile Number", "Hostel", "Address", "Category", "Aadhaar No", "Blood Group", "Status", "Remarks"],
+        ["OAVB-2026-001", "1", "SAI SANGAM MUND", "Class VI", "B", "Male", "2014-05-12", "FATHER NAME", "MOTHER NAME", "9876543210", "No", "Village, Block, District", "ST", "", "B+", "Active", "Sample row - replace/delete"],
+        ["OAVB-2026-002", "2", "ADITYA JHANKAR", "Class VI", "A", "Male", "2014-08-21", "PHAKIR MOHAN JHANKAR", "MOTHER NAME", "7894657912", "No", "Village, Block, District", "OBC", "", "O+", "Active", "Sample row - replace/delete"]
+      ];
+    }
+
+    function downloadStudentTemplate() {
+      downloadCsv("oav-badi-student-bulk-entry-template.csv", studentTemplateRows());
+      document.getElementById("studentBulkStatus").textContent = "Student CSV template downloaded. Fill all rows and import from Whole School Student Excel/CSV File.";
+      document.getElementById("wholeSchoolStudentStatus").textContent = "Template columns activated: Admission, Roll, Name, Class, Section, Gender, DOB, Guardian, Mother, Mobile, Hostel, Address, Category, Aadhaar, Blood Group, Status, Remarks.";
     }
 
     function teacherDataFromRow(row) {
@@ -7597,29 +7768,34 @@
     function importBulkStudents() {
       const key = classKeyFrom("masterClass", "masterSection");
       const selected = classData[key] || [];
-      const rows = parseCsvLines(document.getElementById("studentBulkText").value, 5);
+      const rawRows = parseCsvLines(document.getElementById("studentBulkText").value, 1, { keepHeader: true });
+      const hasHeader = /admission|roll|student/i.test((rawRows[0] || []).join(" "));
+      const headerMap = hasHeader
+        ? Object.fromEntries(rawRows[0].map((cell, index) => [normalizeHeaderName(cell), index]))
+        : null;
+      const rows = hasHeader ? rawRows.slice(1) : rawRows;
       let added = 0;
       let updated = 0;
       let skipped = 0;
       rows.forEach(row => {
-        const roll = String(Number(row[0])).padStart(2, "0");
-        if (!row[1] || Number.isNaN(Number(row[0]))) {
+        const studentData = headerMap ? studentDataFromTemplateRow(row, headerMap) : (isStudentTemplateRow(row) ? studentDataFromTemplateRow(row) : {
+          admissionNo: "",
+          roll: row[0],
+          name: row[1],
+          guardian: row[2] || "Guardian",
+          mobile: row[3] || "+91 9000000000",
+          hostel: row[4] || "No",
+          className: classSectionFromKey(key).className,
+          section: classSectionFromKey(key).section,
+          studentStatus: "Active"
+        });
+        const roll = String(Number(studentData.roll)).padStart(2, "0");
+        if (!studentData.name || Number.isNaN(Number(studentData.roll))) {
           skipped += 1;
           return;
         }
         const existing = selected.find(student => student[0] === roll);
-        const nextStudent = [
-          roll,
-          row[1],
-          row[4] || "No",
-          "08:55",
-          "Present",
-          "",
-          row[2] || "Guardian",
-          row[3] || "+91 9000000000",
-          existing?.[8] || buildMonthRecord(Number(roll), 1, 1),
-          existing?.[9] || ""
-        ];
+        const nextStudent = createStudentRecord({ ...studentData, roll }, existing, key);
         if (existing) {
           selected[selected.indexOf(existing)] = nextStudent;
           updated += 1;
@@ -7648,22 +7824,32 @@
     }
 
     function wholeSchoolKey(student) {
-      const className = normalizeClassName(student.className);
-      const section = (student.section || "").trim().toUpperCase();
+      let className = normalizeClassName(student.className);
+      let section = (student.section || "").trim().toUpperCase();
       if (!className) return "";
       if (className.includes("SCIENCE")) return className;
+      const classSection = className.match(/^(Class\s+(?:VI|VII|VIII|IX|X))-([A-Z])$/i);
+      if (classSection) {
+        className = classSection[1];
+        section = section || classSection[2].toUpperCase();
+      }
       return `${className}-${section || "A"}`;
     }
 
     function importWholeSchoolStudentsFromText() {
-      const rows = parseCsvLines(document.getElementById("wholeSchoolStudentText").value, 7);
+      const rawRows = parseCsvLines(document.getElementById("wholeSchoolStudentText").value, 1, { keepHeader: true });
+      const hasHeader = /admission|roll|student/i.test((rawRows[0] || []).join(" "));
+      const headerMap = hasHeader
+        ? Object.fromEntries(rawRows[0].map((cell, index) => [normalizeHeaderName(cell), index]))
+        : null;
+      const rows = hasHeader ? rawRows.slice(1) : rawRows;
       let added = 0;
       let updated = 0;
       let skipped = 0;
       const touched = new Set();
 
       rows.forEach(row => {
-        const studentData = compactStudentFromRow(row);
+        const studentData = headerMap ? studentDataFromTemplateRow(row, headerMap) : compactStudentFromRow(row);
         const key = wholeSchoolKey(studentData);
         if (!key || !classData[key]) {
           skipped += 1;
@@ -7676,18 +7862,7 @@
           return;
         }
         const existing = selected.find(student => student[0] === roll);
-        const nextStudent = [
-          roll,
-          studentData.name,
-          studentData.hostel,
-          "08:55",
-          "Present",
-          "",
-          studentData.guardian,
-          studentData.mobile,
-          existing?.[8] || buildMonthRecord(Number(roll), 1, 1),
-          studentData.admissionNo || existing?.[9] || ""
-        ];
+        const nextStudent = createStudentRecord({ ...studentData, roll }, existing, key);
         if (existing) {
           selected[selected.indexOf(existing)] = nextStudent;
           updated += 1;
@@ -10493,6 +10668,10 @@
 
     document.getElementById("refreshMaster").addEventListener("click", () => {
       renderStudentMaster();
+    });
+
+    document.getElementById("downloadStudentTemplate").addEventListener("click", () => {
+      downloadStudentTemplate();
     });
 
     document.getElementById("importStudents").addEventListener("click", () => {
