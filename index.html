@@ -5322,11 +5322,18 @@
             <h1>Staff Attendance</h1>
             <p class="subtle">Track teaching and non-teaching staff attendance with leave and duty notes.</p>
           </div>
-          <button class="primary" id="saveTeacherAttendance">Save Teacher Attendance</button>
+          <div class="toolbar">
+            <div class="field">
+              <label for="teacherAttendanceDate">Date</label>
+              <input id="teacherAttendanceDate" type="date" value="2026-07-02">
+            </div>
+            <button class="primary" id="saveTeacherAttendance">Save Teacher Attendance</button>
+            <button class="secondary" id="downloadTeacherDailyReport">Download Daily Excel</button>
+          </div>
         </header>
         <div class="card table-wrap">
           <table>
-            <thead><tr><th>Name</th><th>Code</th><th>Role</th><th>Subject</th><th>In</th><th>Out</th><th>Status</th><th>Action</th></tr></thead>
+            <thead><tr><th>Employee ID</th><th>Employee Name</th><th>Designation</th><th>Subject</th><th>In Time</th><th>Out Time</th><th>Status</th><th>Action</th></tr></thead>
             <tbody id="teacherAttendanceRows"></tbody>
           </table>
         </div>
@@ -5354,7 +5361,7 @@
           <p class="success-note" id="teacherBulkStatus">Imported teachers will appear below.</p>
           <div class="table-wrap" style="margin-top: 14px;">
             <table>
-              <thead><tr><th>Name</th><th>Code</th><th>Role</th><th>Subject</th><th>Mobile</th><th>Assigned Class</th><th>Status</th><th>Login ID</th><th>Password</th><th>Action</th></tr></thead>
+              <thead><tr><th>Employee ID</th><th>Teacher Name</th><th>Code</th><th>Designation</th><th>Subject</th><th>Mobile</th><th>Assigned Class</th><th>Status</th><th>Login ID</th><th>Password</th><th>Action</th></tr></thead>
               <tbody id="teacherRows"></tbody>
             </table>
           </div>
@@ -5950,7 +5957,7 @@
       Leave: "leave",
       Holiday: "holiday"
     };
-    const TEACHER_ATTENDANCE_STATUSES = ["Present", "Leave", "Half Day Leave - 1st Half", "Half Day Leave - 2nd Half"];
+    const TEACHER_ATTENDANCE_STATUSES = ["Present", "Absent", "Leave", "Half Day Leave - 1st Half", "Half Day Leave - 2nd Half"];
 
     let attendanceSubmitted = false;
 
@@ -5988,6 +5995,7 @@
       "oavBadiStockBackups",
       "oavBadiMonthSettings",
       "oavBadiDailyAttendanceRecords",
+      "oavBadiDailyTeacherAttendanceRecords",
       "oavBadiMdmRecords",
       "oavBadiMdmStockEntries",
       "oavBadiMdmSettings",
@@ -6003,6 +6011,7 @@
     let cloudSyncTimer = null;
     let cloudApplyingRemote = false;
     const dailyAttendanceRecords = {};
+    const dailyTeacherAttendanceRecords = {};
     const mdmRecords = [];
     const mdmStockEntries = [];
     const mdmSettings = {
@@ -6063,6 +6072,7 @@
       localStorage.setItem("oavBadiStockBackups", JSON.stringify(savedStockBackups));
       localStorage.setItem("oavBadiMonthSettings", JSON.stringify(monthSettings));
       localStorage.setItem("oavBadiDailyAttendanceRecords", JSON.stringify(dailyAttendanceRecords));
+      localStorage.setItem("oavBadiDailyTeacherAttendanceRecords", JSON.stringify(dailyTeacherAttendanceRecords));
       localStorage.setItem("oavBadiMdmRecords", JSON.stringify(mdmRecords));
       localStorage.setItem("oavBadiMdmStockEntries", JSON.stringify(mdmStockEntries));
       localStorage.setItem("oavBadiMdmSettings", JSON.stringify(mdmSettings));
@@ -6086,6 +6096,7 @@
       const savedBackups = localStorage.getItem("oavBadiStockBackups");
       const savedMonthSettings = localStorage.getItem("oavBadiMonthSettings");
       const savedDailyAttendanceRecords = localStorage.getItem("oavBadiDailyAttendanceRecords");
+      const savedDailyTeacherAttendanceRecords = localStorage.getItem("oavBadiDailyTeacherAttendanceRecords");
       const savedMdmRecords = localStorage.getItem("oavBadiMdmRecords");
       const savedMdmStockEntries = localStorage.getItem("oavBadiMdmStockEntries");
       const savedMdmSettings = localStorage.getItem("oavBadiMdmSettings");
@@ -6141,6 +6152,10 @@
 
       if (savedDailyAttendanceRecords) {
         Object.assign(dailyAttendanceRecords, JSON.parse(savedDailyAttendanceRecords));
+      }
+
+      if (savedDailyTeacherAttendanceRecords) {
+        Object.assign(dailyTeacherAttendanceRecords, JSON.parse(savedDailyTeacherAttendanceRecords));
       }
 
       if (savedMdmRecords) {
@@ -6856,6 +6871,7 @@
       attendanceSubmitted = false;
       [
         "oavBadiDailyAttendanceRecords",
+        "oavBadiDailyTeacherAttendanceRecords",
         "oavBadiMdmRecords",
         "oavBadiExamResults",
         "oavBadiTimetableArrangementRecords",
@@ -7084,6 +7100,8 @@
       document.getElementById("mdmSummaryMonth").value = document.getElementById("dateFilter").value.slice(0, 7);
       document.getElementById("reportDate").value = document.getElementById("dateFilter").value;
       document.getElementById("reportMonth").value = document.getElementById("dateFilter").value.slice(0, 7);
+      const teacherDate = document.getElementById("teacherAttendanceDate");
+      if (teacherDate) teacherDate.value = document.getElementById("dateFilter").value;
     }
 
     function attendanceRecordKey(date = document.getElementById("dateFilter").value, key = currentClassKey()) {
@@ -7823,6 +7841,7 @@
     function teacherDataFromRow(row) {
       if (row.length >= 7 && row[1] && row[6]) {
         return {
+          employeeId: row[0] || "",
           name: row[1],
           role: row[2] || "Teacher",
           subject: row[3] || "",
@@ -7833,11 +7852,12 @@
       }
 
       return {
-        name: row[0],
-        role: row[1] || "Teacher",
-        mobile: row[2] || "+91 9000000000",
-        assignedClass: normalizeAssignedClass(row[3]),
-        subject: row[4] || "",
+        employeeId: /^\d{4,}$/.test(String(row[0] || "").trim()) ? row[0] : "",
+        name: /^\d{4,}$/.test(String(row[0] || "").trim()) ? row[1] : row[0],
+        role: /^\d{4,}$/.test(String(row[0] || "").trim()) ? (row[2] || "Teacher") : (row[1] || "Teacher"),
+        mobile: /^\d{4,}$/.test(String(row[0] || "").trim()) ? (row[4] || "+91 9000000000") : (row[2] || "+91 9000000000"),
+        assignedClass: /^\d{4,}$/.test(String(row[0] || "").trim()) ? normalizeAssignedClass(row[6]) : normalizeAssignedClass(row[3]),
+        subject: /^\d{4,}$/.test(String(row[0] || "").trim()) ? (row[3] || "") : (row[4] || ""),
         status: "Present"
       };
     }
@@ -7965,13 +7985,76 @@
       loadClassStudents();
     }
 
+    function teacherEmployeeId(teacher) {
+      return String(teacher?.[6] || "").trim() || teacherCodeFromName(teacher?.[0] || "");
+    }
+
+    function teacherDesignation(teacher) {
+      return String(teacher?.[1] || "Teacher").trim();
+    }
+
+    function teacherAttendanceDate() {
+      return document.getElementById("teacherAttendanceDate")?.value || todayIsoDate();
+    }
+
+    function teacherAttendanceRecordKey(date = teacherAttendanceDate()) {
+      return date;
+    }
+
+    function displayDateLong(dateText) {
+      const [year, month, day] = String(dateText || todayIsoDate()).split("-").map(Number);
+      return new Date(year, month - 1, day).toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "long",
+        year: "numeric"
+      });
+    }
+
+    function teacherTimeForStatus(status, side) {
+      if (status === "Absent" || status === "Leave") return "00:00";
+      if (status === "Half Day Leave - 1st Half") return side === "in" ? "09:30" : "01:30";
+      if (status === "Half Day Leave - 2nd Half") return side === "in" ? "01:30" : "04:30";
+      return side === "in" ? "08:45" : "04:30";
+    }
+
+    function teacherDailyRows(date = teacherAttendanceDate()) {
+      const saved = dailyTeacherAttendanceRecords[teacherAttendanceRecordKey(date)];
+      if (saved?.teachers?.length) {
+        const byId = new Map(saved.teachers.map(row => [String(row.employeeId || row.name), row]));
+        return teachers.map(teacher => {
+          const stored = byId.get(teacherEmployeeId(teacher)) || byId.get(teacher[0]) || {};
+          const status = stored.status || teacherAttendanceStatus(teacher);
+          return {
+            employeeId: teacherEmployeeId(teacher),
+            name: teacher[0],
+            designation: teacherDesignation(teacher),
+            status,
+            inTime: stored.inTime || teacherTimeForStatus(status, "in"),
+            outTime: stored.outTime || teacherTimeForStatus(status, "out")
+          };
+        });
+      }
+      return teachers.map(teacher => {
+        const status = teacherAttendanceStatus(teacher);
+        return {
+          employeeId: teacherEmployeeId(teacher),
+          name: teacher[0],
+          designation: teacherDesignation(teacher),
+          status,
+          inTime: teacherTimeForStatus(status, "in"),
+          outTime: teacherTimeForStatus(status, "out")
+        };
+      });
+    }
+
     function renderTeachers() {
       renderStaffMetric();
       document.getElementById("teacherRows").innerHTML = teachers.length ? teachers.map((teacher, index) => `
         <tr class="${teacherRowClass(teacher)}">
+          <td>${teacherEmployeeId(teacher)}</td>
           <td>${teacher[0]}</td>
           <td>${teacherCodeFromName(teacher[0])}</td>
-          <td>${teacher[1]}</td>
+          <td>${teacherDesignation(teacher)}</td>
           <td>${teacherSubject(teacher) ? `<span class="teacher-subject-badge">${htmlSafe(teacherSubject(teacher))}</span>` : '<span class="status leave">Not assigned</span>'}</td>
           <td>${teacher[2]}</td>
           <td>${teacher[3] || '<span class="status absent">Class not assigned</span>'}</td>
@@ -7980,7 +8063,7 @@
           <td><span class="status leave">Protected</span></td>
           <td><button class="secondary assign-teacher-subject" data-index="${index}">Assign Subject</button> <button class="secondary assign-teacher-class" data-index="${index}">Assign Class</button> <button class="secondary assign-admin-principal" data-index="${index}">Assign Admin/Principal</button> <button class="secondary assign-erp-role" data-index="${index}">Assign ERP Role</button> <button class="secondary edit-teacher" data-index="${index}">Edit</button> <button class="secondary reset-teacher-password" data-index="${index}">Reset</button> <button class="secondary delete-teacher" data-index="${index}">Delete</button></td>
         </tr>
-      `).join("") : `<tr><td colspan="10">No teacher data uploaded yet. Import your school teacher CSV/Excel.</td></tr>`;
+      `).join("") : `<tr><td colspan="11">No teacher data uploaded yet. Import your school teacher CSV/Excel.</td></tr>`;
     }
 
     function teacherAttendanceStatus(teacher) {
@@ -7990,27 +8073,29 @@
 
     function teacherStatusClass(teacher) {
       const status = teacherAttendanceStatus(teacher);
+      return teacherStatusClassFromStatus(status);
+    }
+
+    function teacherStatusClassFromStatus(status) {
       if (status === "Present") return "present";
-      return status === "Leave" ? "leave" : "late";
+      if (status === "Absent" || status === "Leave") return "leave";
+      return "late";
     }
 
     function teacherRowClass(teacher) {
       const status = teacherAttendanceStatus(teacher);
-      if (status === "Leave") return "teacher-leave";
+      if (status === "Leave" || status === "Absent") return "teacher-leave";
       return status.includes("Half Day") ? "teacher-half-leave" : "";
     }
 
     function teacherInTime(teacher) {
       const status = teacherAttendanceStatus(teacher);
-      return status === "Leave" ? "-" : "08:45";
+      return teacherTimeForStatus(status, "in");
     }
 
     function teacherOutTime(teacher) {
       const status = teacherAttendanceStatus(teacher);
-      if (status === "Leave") return "-";
-      if (status.includes("1st Half")) return "After Period 4";
-      if (status.includes("2nd Half")) return "Before Period 5";
-      return "-";
+      return teacherTimeForStatus(status, "out");
     }
 
     function nextTeacherAttendanceStatus(current) {
@@ -8020,15 +8105,16 @@
 
     function renderTeacherAttendance() {
       renderStaffMetric();
-      document.getElementById("teacherAttendanceRows").innerHTML = teachers.length ? teachers.map((teacher, index) => `
-        <tr class="${teacherRowClass(teacher)}">
-          <td>${teacher[0]}</td>
-          <td>${teacherCodeFromName(teacher[0])}</td>
-          <td>${teacher[1]}</td>
-          <td>${teacherSubject(teacher) ? `<span class="teacher-subject-badge">${htmlSafe(teacherSubject(teacher))}</span>` : '<span class="status leave">Not assigned</span>'}</td>
-          <td>${teacherInTime(teacher)}</td>
-          <td>${teacherOutTime(teacher)}</td>
-          <td><button class="status ${teacherStatusClass(teacher)} teacher-attendance-status" data-index="${index}">${teacherAttendanceStatus(teacher)}</button></td>
+      const rows = teacherDailyRows();
+      document.getElementById("teacherAttendanceRows").innerHTML = teachers.length ? rows.map((row, index) => `
+        <tr class="${row.status === "Leave" || row.status === "Absent" ? "teacher-leave" : row.status.includes("Half Day") ? "teacher-half-leave" : ""}">
+          <td>${row.employeeId}</td>
+          <td>${row.name}</td>
+          <td>${row.designation}</td>
+          <td>${teacherSubject(teachers[index]) ? `<span class="teacher-subject-badge">${htmlSafe(teacherSubject(teachers[index]))}</span>` : '<span class="status leave">Not assigned</span>'}</td>
+          <td>${row.inTime}</td>
+          <td>${row.outTime}</td>
+          <td><button class="status ${teacherStatusClassFromStatus(row.status)} teacher-attendance-status" data-index="${index}">${row.status}</button></td>
           <td><button class="secondary assign-teacher-subject" data-index="${index}">Assign Subject</button> <button class="secondary assign-erp-role" data-index="${index}">Assign ERP Role</button> <button class="secondary delete-teacher" data-index="${index}">Delete Teacher</button></td>
         </tr>
       `).join("") : `<tr><td colspan="8">No teacher data uploaded yet.</td></tr>`;
@@ -8083,15 +8169,71 @@
     }
 
     function saveTeacherAttendance() {
-      const present = teachers.filter(teacher => teacherAttendanceStatus(teacher) === "Present").length;
-      const leave = teachers.filter(teacher => teacherAttendanceStatus(teacher) === "Leave").length;
-      const firstHalf = teachers.filter(teacher => teacherAttendanceStatus(teacher).includes("1st Half")).length;
-      const secondHalf = teachers.filter(teacher => teacherAttendanceStatus(teacher).includes("2nd Half")).length;
-      addAuditLog("Staff Attendance Saved", `Present ${present}, Leave ${leave}, 1st Half ${firstHalf}, 2nd Half ${secondHalf}.`, { recordDate: todayIsoDate(), page: "Staff Attendance" });
+      const date = teacherAttendanceDate();
+      const rows = teacherDailyRows(date).map(row => ({
+        ...row,
+        inTime: teacherTimeForStatus(row.status, "in"),
+        outTime: teacherTimeForStatus(row.status, "out")
+      }));
+      dailyTeacherAttendanceRecords[teacherAttendanceRecordKey(date)] = {
+        date,
+        savedAt: new Date().toISOString(),
+        teachers: rows
+      };
+      const present = rows.filter(row => row.status === "Present").length;
+      const absent = rows.filter(row => row.status === "Absent").length;
+      const leave = rows.filter(row => row.status === "Leave").length;
+      const firstHalf = rows.filter(row => row.status.includes("1st Half")).length;
+      const secondHalf = rows.filter(row => row.status.includes("2nd Half")).length;
+      addAuditLog("Staff Attendance Saved", `Present ${present}, Absent ${absent}, Leave ${leave}, 1st Half ${firstHalf}, 2nd Half ${secondHalf}.`, { recordDate: date, page: "Staff Attendance" });
       saveLocalData();
       renderTeachers();
       renderTeacherAttendance();
-      document.getElementById("teacherBulkStatus").textContent = `Teacher attendance saved for ${todayIsoDate()}.`;
+      renderReport();
+      document.getElementById("teacherBulkStatus").textContent = `Teacher attendance saved for ${displayDateLong(date)}.`;
+    }
+
+    function updateTeacherDailyStatus(index, status) {
+      const date = teacherAttendanceDate();
+      const rows = teacherDailyRows(date);
+      if (!rows[index]) return;
+      rows[index].status = status;
+      rows[index].inTime = teacherTimeForStatus(status, "in");
+      rows[index].outTime = teacherTimeForStatus(status, "out");
+      dailyTeacherAttendanceRecords[teacherAttendanceRecordKey(date)] = {
+        date,
+        savedAt: new Date().toISOString(),
+        teachers: rows
+      };
+      if (teachers[index]) teachers[index][4] = status;
+      saveLocalData();
+    }
+
+    function teacherDailyReportExportRows(date = teacherAttendanceDate()) {
+      const rows = teacherDailyRows(date);
+      const present = rows.filter(row => row.status === "Present").length;
+      const absent = rows.filter(row => row.status === "Absent").length;
+      const leave = rows.filter(row => row.status === "Leave").length;
+      const firstHalf = rows.filter(row => row.status.includes("1st Half")).length;
+      const secondHalf = rows.filter(row => row.status.includes("2nd Half")).length;
+      return [
+        [`TEACHER DAILY ATTENDANCE REPORT - ${displayDateLong(date).toUpperCase()}`],
+        ["School", "OAV Badi"],
+        ["Date", displayDateLong(date)],
+        ["Summary", `Present: ${present}, Absent: ${absent}, Leave: ${leave}, 1st Half: ${firstHalf}, 2nd Half: ${secondHalf}`],
+        [],
+        ["Employee ID", "Employee Name", "Designation", "Date", "In Time", "Out Time", "Status"],
+        ...rows.map(row => [row.employeeId, row.name, row.designation, displayDateLong(date), row.inTime, row.outTime, row.status])
+      ];
+    }
+
+    function downloadTeacherDailyReport() {
+      const date = teacherAttendanceDate();
+      if (!dailyTeacherAttendanceRecords[teacherAttendanceRecordKey(date)]) {
+        saveTeacherAttendance();
+      }
+      downloadExcel(`${displayDateLong(date)}.xls`, teacherDailyReportExportRows(date));
+      document.getElementById("teacherBulkStatus").textContent = `${displayDateLong(date)} teacher daily report downloaded.`;
     }
 
     function editTeacher(index) {
@@ -8102,10 +8244,11 @@
       const role = prompt("Role", teacher[1]) || teacher[1];
       const mobile = prompt("Mobile", teacher[2]) || teacher[2];
       const assignedClass = normalizeAssignedClass(prompt("Assigned Class", teacher[3]) || teacher[3]);
-      const status = prompt("Status: Present / Leave / Half Day Leave - 1st Half / Half Day Leave - 2nd Half", teacherAttendanceStatus(teacher)) || teacherAttendanceStatus(teacher);
+      const status = prompt("Status: Present / Absent / Leave / Half Day Leave - 1st Half / Half Day Leave - 2nd Half", teacherAttendanceStatus(teacher)) || teacherAttendanceStatus(teacher);
       const subject = prompt("Subjects (comma separated if more than one. Example: English, Math, Science, SST)", teacherSubject(teacher)) || teacherSubject(teacher);
+      const employeeId = prompt("Employee ID", teacherEmployeeId(teacher)) || teacherEmployeeId(teacher);
       const oldName = teacher[0];
-      teachers[index] = [name, mergeTeacherRoleForUpdate(teacher[1], role), mobile, assignedClass, status, subject];
+      teachers[index] = [name, mergeTeacherRoleForUpdate(teacher[1], role), mobile, assignedClass, status, subject, employeeId];
       if (teacherAssignments[oldName]) {
         delete teacherAssignments[oldName];
       }
@@ -8245,7 +8388,8 @@
           teacherData.mobile,
           teacherData.assignedClass,
           teacherData.status === "Active" ? "Present" : teacherData.status,
-          teacherData.subject || existing?.[5] || ""
+          teacherData.subject || existing?.[5] || "",
+          teacherData.employeeId || existing?.[6] || ""
         ];
         if (existing) {
           teachers[teachers.indexOf(existing)] = nextTeacher;
@@ -9512,8 +9656,8 @@
         .map(student => [date, classGroup, student.roll, student.name, student.status, student.inTime, student.remark || ""]));
     }
 
-    function staffReportRows() {
-      return teachers.map(teacher => [todayIsoDate(), teacher[0], teacher[1], teacher[2], teacher[3], teacher[4]]);
+    function staffReportRows(date = document.getElementById("reportDate").value || todayIsoDate()) {
+      return teacherDailyRows(date).map(row => [date, row.employeeId, row.name, row.designation, row.inTime, row.outTime, row.status]);
     }
 
     function mdmReportRows(month) {
@@ -9540,7 +9684,7 @@
         return { title: `Hostel Roll Call - ${date}`, headers: ["Date", "Class", "Roll", "Student", "Status", "In Time", "Remark"], rows: hostelRows(date, classKeys) };
       }
       if (type === "staff") {
-        return { title: "Staff Register", headers: ["Date", "Name", "Role", "Mobile", "Assigned Class", "Status"], rows: staffReportRows() };
+        return { title: `Staff Daily Register - ${displayDateLong(date)}`, headers: ["Date", "Employee ID", "Employee Name", "Designation", "In Time", "Out Time", "Status"], rows: staffReportRows(date) };
       }
       if (type === "mdm") {
         return { title: `MDM Calculation Sheet - ${monthLabel(month)}`, headers: mdmExportHeaders(), rows: mdmReportRows(month) };
@@ -11054,6 +11198,16 @@
       saveTeacherAttendance();
     });
 
+    document.getElementById("downloadTeacherDailyReport").addEventListener("click", () => {
+      downloadTeacherDailyReport();
+    });
+
+    document.getElementById("teacherAttendanceDate").addEventListener("change", () => {
+      renderTeacherAttendance();
+      renderReport();
+      updateDateDayLabels();
+    });
+
     document.getElementById("importExamResults").addEventListener("click", () => {
       importExamResults();
     });
@@ -11588,8 +11742,9 @@
       if (!event.target.matches(".teacher-attendance-status")) return;
       const teacher = teachers[Number(event.target.dataset.index)];
       if (!teacher) return;
-      teacher[4] = nextTeacherAttendanceStatus(teacherAttendanceStatus(teacher));
-      saveLocalData();
+      const currentRow = teacherDailyRows()[Number(event.target.dataset.index)];
+      const nextStatus = nextTeacherAttendanceStatus(currentRow?.status || teacherAttendanceStatus(teacher));
+      updateTeacherDailyStatus(Number(event.target.dataset.index), nextStatus);
       renderTeacherAttendance();
       renderTeachers();
       renderTimetableAudit(false);
