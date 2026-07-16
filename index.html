@@ -11064,6 +11064,24 @@ function currentReportData(type = document.getElementById("reportType").value) {
       return subject ? `${subject.toUpperCase()} (${code})` : code;
     }
 
+    function escapeRegExp(value) {
+      return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }
+
+    function mergeArrangementIntoTimetableCell(value, arrangements) {
+      let result = String(value || "");
+      arrangements.forEach(item => {
+        const selectedLabel = arrangementSubjectLabel(item.selected);
+        const pattern = new RegExp(`([^/+:]*\\(${escapeRegExp(item.absent)}\\))`, "i");
+        if (pattern.test(result)) {
+          result = result.replace(pattern, match => `${match.trim()}:${selectedLabel}`);
+        } else {
+          result = `${result}${result ? " + " : ""}${selectedLabel}`;
+        }
+      });
+      return result;
+    }
+
     function timetableDailyWorkload(rows = currentTimetableRows(), day = timetableTodayName()) {
       const workload = {};
       const source = rows.filter(row => String(row.day || "").toUpperCase().includes(day));
@@ -11104,17 +11122,17 @@ function currentReportData(type = document.getElementById("reportType").value) {
         .sort((a, b) => a.score - b.score || a.plannedToday - b.plannedToday || a.todayArrangement - b.todayArrangement || a.todayPeriods - b.todayPeriods || a.code.localeCompare(b.code));
     }
 
-    function decoratedTimetableCell(row, periodIndex, rows, absenceMap) {
+    function decoratedTimetableCell(row, periodIndex, rows, absenceMap, options = {}) {
       const value = row.periods[periodIndex] || "";
       const periodAbsentCodes = absentCodesForPeriod(absenceMap, periodIndex);
       const missing = extractTeacherCodes(value).filter(code => periodAbsentCodes.includes(code));
-      if (!missing.length) return { value, arranged: false };
-      const additions = missing.map(code => {
+      if (!missing.length || !options.showArrangement) return { value, arranged: false };
+      const arrangements = missing.map(code => {
         const item = { date: arrangementDate(), day: row.day, className: row.className, period: periodIndex + 1, absent: code };
         const selected = timetableArrangementSelections[arrangementKey(item)] || rankedArrangementOptions(rows, row.day, periodIndex, periodAbsentCodes)[0]?.code || "Manual";
-        return arrangementSubjectLabel(selected);
+        return { absent: code, selected };
       });
-      return { value: `${value} + ${additions.join(" + ")}`, arranged: true };
+      return { value: mergeArrangementIntoTimetableCell(value, arrangements), arranged: true };
     }
 
     function timetableConflictDetails(rows = currentTimetableRows()) {
@@ -11235,9 +11253,10 @@ function currentReportData(type = document.getElementById("reportType").value) {
       if (editable) ensureTimetableDatalist();
       const absenceMap = timetableAbsenceMap();
       const conflictCells = timetableConflictCellSet(rows);
+      const showTodayArrangement = targetId === "timeTableTodayRows";
       tbody.innerHTML = rows.length
         ? rows.map(row => `<tr data-day="${htmlSafe(row.day)}" data-class-name="${htmlSafe(row.className)}" class="${timetableDayCss(row.day)} ${timetableGroupCss(row.className)} ${timetableClassCss(row.className)}"><td>${row.day}</td><td>${row.className}</td>${Array.from({ length: TIMETABLE_PERIOD_COUNT }, (_, index) => {
-            const cell = decoratedTimetableCell(row, index, rows, absenceMap);
+            const cell = decoratedTimetableCell(row, index, rows, absenceMap, { showArrangement: showTodayArrangement });
             const conflict = conflictCells.has(`${String(row.day || "").toUpperCase()}|${normalizeTimetableClassName(row.className)}|${index + 1}`);
             const colorClass = timetableCellColorClass(cell.value);
             const colorStyle = timetableCellColorStyle(cell.value);
