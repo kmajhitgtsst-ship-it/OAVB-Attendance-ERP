@@ -10480,14 +10480,14 @@ function currentReportData(type = document.getElementById("reportType").value) {
       });
     }
 
-    function ensureTimetableDatalist(currentValue = "") {
+    function ensureTimetableDatalist() {
       let datalist = document.getElementById("timetableCellOptions");
       if (!datalist) {
         datalist = document.createElement("datalist");
         datalist.id = "timetableCellOptions";
         document.body.appendChild(datalist);
       }
-      datalist.innerHTML = timetableDropdownOptions(currentValue)
+      datalist.innerHTML = timetableDropdownOptions("")
         .filter(option => option.value)
         .map(option => `<option value="${htmlSafe(option.value)}" label="${htmlSafe(option.label)}"></option>`)
         .join("");
@@ -10499,13 +10499,13 @@ function currentReportData(type = document.getElementById("reportType").value) {
       const data = Object.entries(attrs.data || {})
         .map(([key, item]) => ` data-${key}="${htmlSafe(item)}"`)
         .join("");
-      return `<input class="timetable-cell-select timetable-cell-input ${extraClass}" list="timetableCellOptions" value="${htmlSafe(value || "")}" placeholder="HINDI (TS)/SANS (DP)"${data}${disabled}>`;
+      return `<input class="timetable-cell-select timetable-cell-input ${extraClass}" list="timetableCellOptions" value="${htmlSafe(value || "")}" placeholder="Subject (Code) / Subject (Code)"${data}${disabled}>`;
     }
 
     function renderTimeTableEditor(rows = timetableRowsForSelectedClass()) {
       const body = document.getElementById("timeTableBody");
       if (!body) return;
-      ensureTimetableDatalist(rows.flatMap(row => row.periods || []).filter(Boolean).join("|"));
+      ensureTimetableDatalist();
       renderTimetableHeader("timeTableEditorHeader", false);
       body.innerHTML = rows.map(row => `
         <tr class="${timetableDayCss(row.day)} ${timetableGroupCss(row.className)} ${timetableClassCss(row.className)}">
@@ -10922,7 +10922,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
       if (!tbody) return;
       const editable = targetId === "timeTableRawRows";
       const selectDisabled = canEditTimetable() ? "" : " disabled";
-      if (editable) ensureTimetableDatalist(rows.flatMap(row => row.periods || []).filter(Boolean).join("|"));
+      if (editable) ensureTimetableDatalist();
       const absenceMap = timetableAbsenceMap();
       const conflictCells = timetableConflictCellSet(rows);
       tbody.innerHTML = rows.length
