@@ -8169,6 +8169,7 @@
           subject: row[3] || "",
           mobile: row[4] || "+91 9000000000",
           assignedClass: normalizeAssignedClass(row[6]),
+          code: row[7] || "",
           status: row[9] || "Present"
         };
       }
@@ -8180,6 +8181,7 @@
         mobile: /^\d{4,}$/.test(String(row[0] || "").trim()) ? (row[4] || "+91 9000000000") : (row[2] || "+91 9000000000"),
         assignedClass: /^\d{4,}$/.test(String(row[0] || "").trim()) ? normalizeAssignedClass(row[6]) : normalizeAssignedClass(row[3]),
         subject: /^\d{4,}$/.test(String(row[0] || "").trim()) ? (row[3] || "") : (row[4] || ""),
+        code: /^\d{4,}$/.test(String(row[0] || "").trim()) ? (row[7] || "") : (row[5] || ""),
         status: "Present"
       };
     }
@@ -8313,6 +8315,41 @@
       return String(teacher?.[6] || "").trim() || teacherCodeFromName(teacher?.[0] || "");
     }
 
+    function teacherCode(teacher) {
+      return String(teacher?.[7] || "").trim().toUpperCase() || teacherCodeFromName(teacher?.[0] || "");
+    }
+
+    function replaceTeacherCodeInText(value, oldCode, newCode) {
+      const from = String(oldCode || "").trim().toUpperCase();
+      const to = String(newCode || "").trim().toUpperCase();
+      if (!from || !to || from === to) return value;
+      return String(value || "").replace(/\(([A-Za-z0-9/]+)\)/g, (match, codes) => {
+        const nextCodes = codes.split("/").map(code => code.trim().toUpperCase() === from ? to : code.trim()).filter(Boolean);
+        return nextCodes.length ? `(${nextCodes.join("/")})` : match;
+      });
+    }
+
+    function updateTeacherCodeReferences(oldCode, newCode) {
+      const from = String(oldCode || "").trim().toUpperCase();
+      const to = String(newCode || "").trim().toUpperCase();
+      if (!from || !to || from === to) return;
+      importedTimetableRows.forEach(row => {
+        row.periods = (row.periods || []).map(cell => replaceTeacherCodeInText(cell, from, to));
+      });
+      timetableArrangementRecords.forEach(record => {
+        if (String(record.absent || "").toUpperCase() === from) record.absent = to;
+        if (String(record.selected || "").toUpperCase() === from) record.selected = to;
+        record.original = replaceTeacherCodeInText(record.original, from, to);
+        record.best = replaceTeacherCodeInText(record.best, from, to);
+      });
+      Object.entries(timetableArrangementSelections).forEach(([key, value]) => {
+        const nextKey = key.split("|").map(part => String(part).toUpperCase() === from ? to : part).join("|");
+        const nextValue = String(value || "").toUpperCase() === from ? to : value;
+        delete timetableArrangementSelections[key];
+        timetableArrangementSelections[nextKey] = nextValue;
+      });
+    }
+
     function teacherDesignation(teacher) {
       return String(teacher?.[1] || "Teacher").trim();
     }
@@ -8377,7 +8414,7 @@
         <tr class="${teacherRowClass(teacher)}">
           <td>${teacherEmployeeId(teacher)}</td>
           <td>${teacher[0]}</td>
-          <td>${teacherCodeFromName(teacher[0])}</td>
+          <td>${teacherCode(teacher)}</td>
           <td>${teacherDesignation(teacher)}</td>
           <td>${teacherSubject(teacher) ? `<span class="teacher-subject-badge">${htmlSafe(teacherSubject(teacher))}</span>` : '<span class="status leave">Not assigned</span>'}</td>
           <td>${teacher[2]}</td>
@@ -8513,6 +8550,7 @@
       saveLocalData();
       renderTeachers();
       renderTeacherAttendance();
+      renderTimetableAudit(false);
       renderReport();
       document.getElementById("teacherBulkStatus").textContent = `Teacher attendance saved for ${displayDateLong(date)}.`;
     }
@@ -8563,6 +8601,7 @@
     function editTeacher(index) {
       const teacher = teachers[index];
       if (!teacher) return;
+      const oldCode = teacherCode(teacher);
       const name = prompt("Teacher name", teacher[0]);
       if (!name) return;
       const role = prompt("Role", teacher[1]) || teacher[1];
@@ -8571,8 +8610,10 @@
       const status = prompt("Status: Present / Absent / Leave / Half Day Leave - 1st Half / Half Day Leave - 2nd Half", teacherAttendanceStatus(teacher)) || teacherAttendanceStatus(teacher);
       const subject = prompt("Subjects (comma separated if more than one. Example: English, Math, Science, SST)", teacherSubject(teacher)) || teacherSubject(teacher);
       const employeeId = prompt("Employee ID", teacherEmployeeId(teacher)) || teacherEmployeeId(teacher);
+      const code = (prompt("Teacher Code for Time Table (Example: KM, HCS, DP)", oldCode) || oldCode).trim().toUpperCase();
       const oldName = teacher[0];
-      teachers[index] = [name, mergeTeacherRoleForUpdate(teacher[1], role), mobile, assignedClass, status, subject, employeeId];
+      teachers[index] = [name, mergeTeacherRoleForUpdate(teacher[1], role), mobile, assignedClass, status, subject, employeeId, code];
+      updateTeacherCodeReferences(oldCode, code);
       if (teacherAssignments[oldName]) {
         delete teacherAssignments[oldName];
       }
@@ -8581,6 +8622,9 @@
       populateLoginTeachers();
       renderTeachers();
       renderClassGroups();
+      renderTeacherAttendance();
+      renderTimeTableEditor();
+      renderTimetableAudit();
       document.getElementById("teacherBulkStatus").textContent = `${name} updated.`;
     }
 
@@ -8713,8 +8757,10 @@
           teacherData.assignedClass,
           teacherData.status === "Active" ? "Present" : teacherData.status,
           teacherData.subject || existing?.[5] || "",
-          teacherData.employeeId || existing?.[6] || ""
+          teacherData.employeeId || existing?.[6] || "",
+          teacherData.code || existing?.[7] || teacherCodeFromName(teacherData.name)
         ];
+        if (existing) updateTeacherCodeReferences(teacherCode(existing), nextTeacher[7]);
         if (existing) {
           teachers[teachers.indexOf(existing)] = nextTeacher;
           updated += 1;
@@ -8729,6 +8775,9 @@
       clearEntryFields(["teacherBulkText", "teacherExcelFile"]);
       saveLocalData();
       renderTeachers();
+      renderTeacherAttendance();
+      renderTimeTableEditor();
+      renderTimetableAudit();
       populateLoginTeachers();
     }
 
@@ -10474,7 +10523,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
           return !role.includes("principal") && !isDemoTeacher(teacher);
         })
         .flatMap(teacher => {
-          const code = teacherCodeFromName(teacher[0]);
+          const code = teacherCode(teacher);
           if (!code) return [];
           return teacherSubjects(teacher).map(subject => {
             const value = `${subject.toUpperCase()} (${code})`;
@@ -10714,7 +10763,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
       });
       const fromMaster = realMasterTeachers.map(teacher => {
         const name = teacher[0] || "";
-        const code = teacherCodeFromName(name);
+        const code = teacherCode(teacher);
         const subject = teacherSubjects(teacher).join(", ");
         return { code, label: code ? `${code} - ${name}${subject ? ` (${subject})` : ""}` : name };
       }).filter(item => item.code);
@@ -10749,7 +10798,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
         .map(code => code.trim().toUpperCase())
         .filter(Boolean);
       manualCodes.forEach(code => addPeriods(code, new Set([1, 2, 3, 4, 5, 6, 7, 8])));
-      teachers.forEach(teacher => addPeriods(teacherCodeFromName(teacher[0]), teacherAbsentPeriods(teacher)));
+      teachers.forEach(teacher => addPeriods(teacherCode(teacher), teacherAbsentPeriods(teacher)));
       return map;
     }
 
@@ -10801,7 +10850,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
     }
 
     function arrangementSubjectLabel(code) {
-      const teacher = teachers.find(item => teacherCodeFromName(item[0]) === code);
+      const teacher = teachers.find(item => teacherCode(item) === code);
       if (!teacher) return code;
       const subject = teacherSubjects(teacher)[0] || "";
       return subject ? `${subject.toUpperCase()} (${code})` : code;
