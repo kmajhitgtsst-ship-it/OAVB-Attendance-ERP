@@ -5942,6 +5942,9 @@
           <div class="toolbar" style="margin-top: 10px;">
             <button class="secondary" id="showWeeklyTimetable">See Whole School Weekly Time Table</button>
             <button class="secondary" id="showTodayTimetable">See Today's Time Table</button>
+            <button class="secondary" id="shareTodayTimetableTop">Share Today's Time Table</button>
+            <button class="secondary" id="downloadWeeklyTimetableExcel">Weekly Time Table Excel</button>
+            <button class="secondary" id="printWeeklyTimetablePdf">Weekly Time Table PDF</button>
           </div>
           <div class="card" style="margin-top: 14px;">
             <div class="section-title">
@@ -13007,6 +13010,24 @@ function currentReportData(type = document.getElementById("reportType").value) {
       document.getElementById("timeTableWeeklyPanel").classList.add("hidden");
       renderTimetableAudit();
       document.getElementById("timeTableTodayPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    document.getElementById("shareTodayTimetableTop").addEventListener("click", () => {
+      document.getElementById("timeTableTodayPanel").classList.remove("hidden");
+      renderTimetableAudit();
+      shareTodayTimetable();
+    });
+
+    document.getElementById("downloadWeeklyTimetableExcel").addEventListener("click", () => {
+      document.getElementById("timeTableWeeklyPanel").classList.remove("hidden");
+      renderTimetableAudit();
+      downloadWholeSchoolTimeTableExcel();
+    });
+
+    document.getElementById("printWeeklyTimetablePdf").addEventListener("click", () => {
+      document.getElementById("timeTableWeeklyPanel").classList.remove("hidden");
+      renderTimetableAudit();
+      printWholeSchoolTimeTable();
     });
 
     document.getElementById("downloadTimetableExcel").addEventListener("click", () => {
