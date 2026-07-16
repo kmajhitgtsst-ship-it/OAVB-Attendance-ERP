@@ -10370,6 +10370,11 @@ function currentReportData(type = document.getElementById("reportType").value) {
           addImportedRow(day, `${className}-B`, sectionB);
           return;
         }
+        if (/^(XI|XII)-SCIENCE$/.test(className) && periodCells.length >= TIMETABLE_PERIOD_COUNT * 2) {
+          const singleSection = Array.from({ length: TIMETABLE_PERIOD_COUNT }, (_, index) => periodCells[index * 2] || ".");
+          addImportedRow(day, className, singleSection);
+          return;
+        }
         addImportedRow(day, className, periodCells);
       });
       saveLocalData();
@@ -10508,7 +10513,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
       const disabled = attrs.disabled ? " disabled" : "";
       const extraClass = attrs.extraClass || "";
       const data = Object.entries(attrs.data || {})
-        .map(([key, item]) => ` data-${key}="${htmlSafe(item)}"`)
+        .map(([key, item]) => ` data-${key.replace(/[A-Z]/g, char => `-${char.toLowerCase()}`)}="${htmlSafe(item)}"`)
         .join("");
       return `<input class="timetable-cell-select timetable-cell-input ${extraClass}" list="timetableCellOptions" value="${htmlSafe(value || "")}" placeholder="Subject (Code) / Subject (Code)"${data}${disabled}>`;
     }
@@ -10569,7 +10574,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
       const className = selectedTimetableClass();
       return [...document.querySelectorAll("#timeTableBody tr")].map(row => {
         const day = row.children[0]?.textContent.trim() || "";
-        const periods = [...row.querySelectorAll("select.timetable-cell-select")].map(select => select.value).slice(0, TIMETABLE_PERIOD_COUNT);
+        const periods = [...row.querySelectorAll(".timetable-cell-select")].map(field => field.value).slice(0, TIMETABLE_PERIOD_COUNT);
         return { day, className, periods };
       }).filter(row => row.day);
     }
@@ -10593,7 +10598,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
       const rows = [...document.querySelectorAll("#timeTableRawRows tr")].map(row => {
         const day = row.dataset.day || row.children[0]?.textContent.trim() || "";
         const className = row.dataset.className || row.children[1]?.textContent.trim() || "";
-        const periods = [...row.querySelectorAll("select.whole-timetable-select")].map(select => select.value).slice(0, TIMETABLE_PERIOD_COUNT);
+        const periods = [...row.querySelectorAll(".whole-timetable-select")].map(field => field.value).slice(0, TIMETABLE_PERIOD_COUNT);
         return { day, className, periods };
       }).filter(row => row.day && row.className && row.periods.length);
       return rows;
@@ -11134,17 +11139,36 @@ function currentReportData(type = document.getElementById("reportType").value) {
 
     function timetableCsvTemplateRows() {
       const header1 = ["ODISHA ADARSHA VIDYALAYA, BADI, KHARIAR"];
-      const header2 = ["TIME TABLE IMPORT TEMPLATE"];
-      const header3 = ["DAY", "CLASS", ...Array.from({ length: TIMETABLE_PERIOD_COUNT }, (_, index) => `PERIOD ${index + 1}`), "CLASS TEACHER", "ROOM", "REMARK"];
+      const header2 = ["PDF STYLE TIME TABLE IMPORT TEMPLATE"];
+      const header3 = [
+        "DAY",
+        "CLASS",
+        ...Array.from({ length: TIMETABLE_PERIOD_COUNT }, (_, index) => [`PERIOD ${index + 1} A`, `PERIOD ${index + 1} B`]).flat(),
+        "CLASS TEACHER",
+        "ROOM",
+        "REMARK"
+      ];
       const days = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
-      const classes = ["VI-A", "VI-B", "VII-A", "VII-B", "VIII-A", "VIII-B", "IX-A", "IX-B", "X-A", "X-B", "XI-SCIENCE", "XII-SCIENCE"];
+      const classes = ["VI", "VII", "VIII", "IX", "X", "XI-SCIENCE", "XII-SCIENCE"];
       const samples = {
         "VI-A": ["ODIA (JNG)", "SST (KM)", "AI (HK)", "PHE (AP)", "MATH (TM)", "SCI (HCS)", "ENG (BB)", "IT (HK)"],
         "VI-B": ["ODIA (JNG)", "SST (KM)", "AI (HK)", "PHE (AP)", "MATH (TM)", "SCI (HCS)", "ENG (BB)", "IT (HK)"],
         "VII-A": ["SCI (HCS)", "MATH (TM)", "CT (TM)", "ENG (BB)", "SST (KM)", "MATH (TM)", "ODI (SANS)", "AI (HK)"],
-        "VII-B": ["SCI (HCS)", "MATH (TM)", "CT (TM)", "ENG (BB)", "SST (KM)", "MATH (TM)", "ODI (SANS)", "AI (HK)"]
+        "VII-B": ["SCI (HCS)", "MATH (TM)", "CT (TM)", "ENG (BB)", "SST (KM)", "MATH (TM)", "ODI (SANS)", "AI (HK)"],
+        "XI-SCIENCE": ["PHY (BPS)", "CHE (BH)", "MATH (DN)", "BIO (GM)", "ENG (MRT)", "IT (SSS)/PHE (AP)/ART (AS)", "SELF STUDY", "CCA"],
+        "XII-SCIENCE": ["PHY (BPS)", "CHE (BH)", "MATH (DN)", "BIO (GM)", "ENG (MRT)", "IT (SSS)/PHE (AP)/ART (AS)", "SELF STUDY", "CCA"]
       };
-      const body = days.flatMap(day => classes.map(className => [day, className, ...(samples[className] || Array(TIMETABLE_PERIOD_COUNT).fill(".")), "", "", ""]));
+      const baseSubjects = ["ENG", "MATH", "SCI", "SST", "ODIA", "HINDI (TH)/SANS (DP)", "IT (SSS)/PHE (AP)/ART (AS)", "CCA"];
+      const pairCells = className => {
+        if (/^(VI|VII|VIII|IX|X)$/.test(className)) {
+          const sectionA = samples[`${className}-A`] || baseSubjects;
+          const sectionB = samples[`${className}-B`] || sectionA;
+          return Array.from({ length: TIMETABLE_PERIOD_COUNT }, (_, index) => [sectionA[index] || ".", sectionB[index] || "."]).flat();
+        }
+        const single = samples[className] || baseSubjects;
+        return Array.from({ length: TIMETABLE_PERIOD_COUNT }, (_, index) => [single[index] || ".", ""]).flat();
+      };
+      const body = days.flatMap(day => classes.map(className => [day, className, ...pairCells(className), "", "", ""]));
       return [header1, header2, header3, ...body];
     }
 
