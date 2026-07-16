@@ -427,9 +427,11 @@
       @page { size: A4; margin: 8mm; }
       body * { visibility: hidden; }
       #eggTokenSheet, #eggTokenSheet *,
-      #timeTableWeeklyPanel, #timeTableWeeklyPanel * { visibility: visible; }
+      #timeTableWeeklyPanel, #timeTableWeeklyPanel *,
+      #timeTableTodayPanel, #timeTableTodayPanel * { visibility: visible; }
       #eggTokenSheet,
-      #timeTableWeeklyPanel {
+      #timeTableWeeklyPanel,
+      #timeTableTodayPanel {
         border: 2px solid #111;
         left: 0;
         margin: 0;
@@ -443,6 +445,10 @@
         min-height: 72px;
       }
       #timeTableWeeklyPanel {
+        border: 0;
+        padding: 0;
+      }
+      #timeTableTodayPanel {
         border: 0;
         padding: 0;
       }
@@ -5943,6 +5949,8 @@
             <button class="secondary" id="showWeeklyTimetable">See Whole School Weekly Time Table</button>
             <button class="secondary" id="showTodayTimetable">See Today's Time Table</button>
             <button class="secondary" id="shareTodayTimetableTop">Share Today's Time Table</button>
+            <button class="secondary" id="downloadTodayTimetableExcel">Today's Time Table Excel</button>
+            <button class="secondary" id="printTodayTimetablePdf">Today's Time Table PDF</button>
             <button class="secondary" id="downloadWeeklyTimetableExcel">Weekly Time Table Excel</button>
             <button class="secondary" id="printWeeklyTimetablePdf">Weekly Time Table PDF</button>
           </div>
@@ -6015,12 +6023,17 @@
               </table>
             </div>
           </div>
-          <div class="table-wrap" style="margin-top: 14px;">
-            <h2>Subject Wise Period Count</h2>
-            <table>
-              <thead><tr><th>Subject</th><th>Teacher Code</th><th>Total Weekly Periods</th><th>Classes</th></tr></thead>
-              <tbody id="subjectPeriodRows"></tbody>
-            </table>
+          <div class="table-wrap" id="subjectPeriodPanel" style="margin-top: 14px;">
+            <div class="section-title">
+              <h2>Subject Wise Period Count</h2>
+              <button class="secondary" id="toggleSubjectPeriod">Hide Subject Wise Period Count</button>
+            </div>
+            <div id="subjectPeriodContent">
+              <table>
+                <thead><tr><th>Subject</th><th>Teacher Code</th><th>Total Weekly Periods</th><th>Classes</th></tr></thead>
+                <tbody id="subjectPeriodRows"></tbody>
+              </table>
+            </div>
           </div>
           <div class="table-wrap" id="classSubjectPeriodPanel" style="margin-top: 14px;">
             <div class="section-title">
@@ -11704,12 +11717,53 @@ function currentReportData(type = document.getElementById("reportType").value) {
 
     function printWholeSchoolTimeTable() {
       document.getElementById("timeTableWeeklyPanel").classList.remove("hidden");
+      document.getElementById("timeTableTodayPanel").classList.add("hidden");
       renderTimetableAudit(false);
       window.print();
     }
 
     function downloadWholeSchoolTimeTableExcel() {
       downloadTimetableExcel();
+    }
+
+    function todayTimetableExportRows() {
+      const rows = todayTimetableRows(currentTimetableRows());
+      const absenceMap = timetableAbsenceMap();
+      return rows.map(row => [
+        row.day,
+        row.className,
+        ...Array.from({ length: TIMETABLE_PERIOD_COUNT }, (_, index) => {
+          const cell = decoratedTimetableCell(row, index, rows, absenceMap, { showArrangement: true });
+          return timetableExcelCell(cell.value || row.periods[index] || "");
+        })
+      ]);
+    }
+
+    function downloadTodayTimetableExcel() {
+      const rows = todayTimetableExportRows();
+      if (!rows.length) {
+        alert("Today's timetable is not available.");
+        return;
+      }
+      downloadExcelWorkbook(`today-time-table-${arrangementDate()}.xls`, [
+        {
+          name: "Today Time Table",
+          rows: [
+            ["Date", displayDateLong(arrangementDate())],
+            ["Day", timetableTodayName()],
+            [],
+            ["Day", "Class", ...Array.from({ length: TIMETABLE_PERIOD_COUNT }, (_, index) => `Period ${index + 1}`)],
+            ...rows
+          ]
+        }
+      ]);
+    }
+
+    function printTodayTimetable() {
+      document.getElementById("timeTableTodayPanel").classList.remove("hidden");
+      document.getElementById("timeTableWeeklyPanel").classList.add("hidden");
+      renderTimetableAudit(false);
+      window.print();
     }
 
     function timetableCsvTemplateRows() {
@@ -12994,6 +13048,10 @@ function currentReportData(type = document.getElementById("reportType").value) {
       togglePanelVisibility("timeTableConflictContent", "toggleConflictCompliance", "Conflict / Compliance");
     });
 
+    document.getElementById("toggleSubjectPeriod").addEventListener("click", () => {
+      togglePanelVisibility("subjectPeriodContent", "toggleSubjectPeriod", "Subject Wise Period Count");
+    });
+
     document.getElementById("toggleClassSubjectPeriod").addEventListener("click", () => {
       togglePanelVisibility("classSubjectPeriodContent", "toggleClassSubjectPeriod", "Class Wise Subject Period Count");
     });
@@ -13016,6 +13074,18 @@ function currentReportData(type = document.getElementById("reportType").value) {
       document.getElementById("timeTableTodayPanel").classList.remove("hidden");
       renderTimetableAudit();
       shareTodayTimetable();
+    });
+
+    document.getElementById("downloadTodayTimetableExcel").addEventListener("click", () => {
+      document.getElementById("timeTableTodayPanel").classList.remove("hidden");
+      renderTimetableAudit();
+      downloadTodayTimetableExcel();
+    });
+
+    document.getElementById("printTodayTimetablePdf").addEventListener("click", () => {
+      document.getElementById("timeTableTodayPanel").classList.remove("hidden");
+      renderTimetableAudit();
+      printTodayTimetable();
     });
 
     document.getElementById("downloadWeeklyTimetableExcel").addEventListener("click", () => {
