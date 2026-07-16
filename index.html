@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -5040,7 +5040,7 @@
 
       <section id="dashboard" class="page dashboard-page">
         <div class="dashboard-topbar">
-          <button class="dashboard-menu" type="button" aria-label="Menu">☰</button>
+          <button class="dashboard-menu" type="button" aria-label="Menu">â˜°</button>
           <div class="dashboard-profile">
             <span class="dashboard-bell">3</span>
             <span class="dashboard-avatar" id="dashboardAvatar">K</span>
@@ -5976,6 +5976,7 @@
                 <option value="monthly">Monthly Summary</option>
                 <option value="alerts">Parent Alerts</option>
                 <option value="low">Low Attendance</option>
+          <option value="yearly">Yearly 75% Calculation</option>
                 <option value="hostel">Hostel Roll Call</option>
                 <option value="staff">Staff Register</option>
                 <option value="mdm">MDM Calculation Sheet</option>
@@ -6003,6 +6004,7 @@
             <button class="secondary" id="downloadHostelReport">Hostel Excel</button>
             <button class="secondary" id="downloadStaffReport">Staff Excel</button>
             <button class="secondary" id="downloadMdmReport">MDM Excel</button>
+      <button class="secondary" id="downloadYearlyAttendance">Yearly 75% Excel</button>
           </div>
           <p class="success-note" id="reportStatus">Select report type and generate report.</p>
           <div class="table-wrap" style="margin-top: 14px;">
@@ -9920,7 +9922,54 @@
       ]));
     }
 
-    function monthlySummaryRows(month, classKeys) {
+    function configuredMonthHolidays(month) {
+  const raw = monthSettings[month]?.holidays || [];
+  const list = Array.isArray(raw) ? raw : String(raw).split(",");
+  return list.map(value => String(value).trim()).filter(Boolean);
+}
+
+function configuredMonthWorkingDays(month) {
+  const value = Number(monthSettings[month]?.workingDays || 0);
+  return Number.isFinite(value) && value > 0 ? value : 0;
+}
+
+function monthlyAttendanceCalculation(month, statuses) {
+  const source = Array.isArray(statuses) ? statuses.filter(Boolean) : [];
+  const present = source.filter(status => status === "Present").length;
+  const absent = source.filter(status => status === "Absent").length;
+  const late = source.filter(status => status === "Late").length;
+  const leave = source.filter(status => status === "Leave").length;
+  const savedHoliday = source.filter(status => status === "Holiday").length;
+  const holiday = Math.max(savedHoliday, configuredMonthHolidays(month).length);
+  const savedWorkingDays = source.filter(status => status !== "Holiday").length;
+  const workingDays = configuredMonthWorkingDays(month) || savedWorkingDays;
+  const attended = present + late;
+  const percentValue = savedWorkingDays ? Math.round((attended / savedWorkingDays) * 1000) / 10 : null;
+  const targetPresent = workingDays ? Math.ceil(workingDays * 0.75) : 0;
+  const neededFor75 = targetPresent ? Math.max(0, targetPresent - attended) : 0;
+  const suggestion = !savedWorkingDays
+    ? (targetPresent ? `Need attendance entries. ${targetPresent} present day(s) required for 75%.` : "Set monthly working days or save attendance.")
+    : (neededFor75 ? `${neededFor75} more present day(s) needed for 75%.` : "75% target achieved.");
+  return {
+    workingDays,
+    savedWorkingDays,
+    present,
+    absent,
+    late,
+    leave,
+    holiday,
+    percent: percentValue === null ? "-" : `${percentValue}%`,
+    percentValue,
+    targetPresent,
+    neededFor75,
+    suggestion
+  };
+}
+
+function monthlyAttendanceHeaders() {
+  return ["Month", "Class", "Roll", "Student", "Working Days", "Saved Days", "Present", "Absent", "Late", "Leave", "Total Holiday", "Attendance %", "Present Required for 75%", "Present Needed", "Suggestion", "Guardian", "Mobile"];
+}
+function monthlySummaryRows(month, classKeys) {
       return classKeys.flatMap(classGroup => {
         const classStudents = classData[classGroup] || [];
         const records = Object.values(dailyAttendanceRecords).filter(record => record.classGroup === classGroup && record.date.startsWith(month));
@@ -9987,18 +10036,89 @@
         .map(mdmExportRowFromRecord);
     }
 
-    function currentReportData(type = document.getElementById("reportType").value) {
+    function academicYearMonths(anchorMonth) {
+  const [yearText, monthText] = String(anchorMonth || todayIsoDate().slice(0, 7)).split("-");
+  const year = Number(yearText) || new Date().getFullYear();
+  const month = Number(monthText) || 1;
+  const startYear = month >= 4 ? year : year - 1;
+  return Array.from({ length: 12 }, (_, index) => {
+    const date = new Date(startYear, 3 + index, 1);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+  });
+}
+
+function academicYearLabel(anchorMonth) {
+  const months = academicYearMonths(anchorMonth);
+  return `${months[0].slice(0, 4)}-${months[11].slice(2, 4)}`;
+}
+
+function yearlyAttendanceHeaders() {
+  return ["Academic Year", "Class", "Roll", "Student", "Working Days", "Saved Days", "Total Holiday", "Present", "Absent", "Late", "Leave", "Attendance %", "Present Required for 75%", "Present Needed", "Suggestion", "Guardian", "Mobile"];
+}
+
+function yearlyAttendanceRows(anchorMonth, classKeys) {
+  const months = academicYearMonths(anchorMonth);
+  const yearLabel = academicYearLabel(anchorMonth);
+  return classKeys.flatMap(classGroup => {
+    const classStudents = classData[classGroup] || [];
+    return classStudents.map(student => {
+      const totals = months.reduce((acc, month) => {
+        const records = Object.values(dailyAttendanceRecords).filter(record => record.classGroup === classGroup && record.date.startsWith(month));
+        const calc = monthlyAttendanceCalculation(month, monthlyStatusesForStudent(month, classGroup, student[0], records));
+        acc.workingDays += calc.workingDays || calc.savedWorkingDays;
+        acc.savedWorkingDays += calc.savedWorkingDays;
+        acc.holiday += calc.holiday;
+        acc.present += calc.present;
+        acc.absent += calc.absent;
+        acc.late += calc.late;
+        acc.leave += calc.leave;
+        return acc;
+      }, { workingDays: 0, savedWorkingDays: 0, holiday: 0, present: 0, absent: 0, late: 0, leave: 0 });
+      const attended = totals.present + totals.late;
+      const denominator = totals.workingDays || totals.savedWorkingDays;
+      const percentValue = denominator ? Math.round((attended / denominator) * 1000) / 10 : null;
+      const requiredFor75 = denominator ? Math.ceil(denominator * 0.75) : 0;
+      const neededFor75 = requiredFor75 ? Math.max(0, requiredFor75 - attended) : 0;
+      const suggestion = !denominator
+        ? "Set monthly working days or save attendance."
+        : (neededFor75 ? `${neededFor75} more present day(s) needed for yearly 75%.` : "Yearly 75% target achieved.");
+      return [
+        yearLabel,
+        classGroup,
+        student[0],
+        student[1],
+        totals.workingDays,
+        totals.savedWorkingDays,
+        totals.holiday,
+        totals.present,
+        totals.absent,
+        totals.late,
+        totals.leave,
+        percentValue === null ? "-" : `${percentValue}%`,
+        requiredFor75,
+        neededFor75,
+        suggestion,
+        student[6],
+        student[7]
+      ];
+    });
+  });
+}
+function currentReportData(type = document.getElementById("reportType").value) {
       const date = document.getElementById("reportDate").value || todayIsoDate();
       const month = document.getElementById("reportMonth").value || date.slice(0, 7);
       const classKeys = reportClassKeys();
       if (type === "monthly") {
-        return { title: `Monthly Summary - ${monthLabel(month)}`, headers: ["Month", "Class", "Roll", "Student", "Present", "Absent", "Late", "Leave", "Holiday", "Attendance %", "Guardian", "Mobile"], rows: monthlySummaryRows(month, classKeys) };
+        return { title: `Monthly Summary - ${monthLabel(month)}`, headers: monthlyAttendanceHeaders(), rows: monthlySummaryRows(month, classKeys) };
       }
-      if (type === "alerts") {
+      if (type === "yearly") {
+    return { title: `Yearly 75% Attendance Calculation - ${academicYearLabel(month)}`, headers: yearlyAttendanceHeaders(), rows: yearlyAttendanceRows(month, classKeys) };
+  }
+  if (type === "alerts") {
         return { title: `Parent Alerts - ${date}`, headers: ["Date", "Class", "Roll", "Student", "Status", "Guardian", "Mobile", "WhatsApp Link"], rows: parentAlertRows(date, classKeys) };
       }
       if (type === "low") {
-        return { title: `Low Attendance - ${monthLabel(month)}`, headers: ["Month", "Class", "Roll", "Student", "Present", "Absent", "Late", "Leave", "Holiday", "Attendance %", "Guardian", "Mobile", "Action"], rows: lowAttendanceRows(month, classKeys) };
+        return { title: `Low Attendance - ${monthLabel(month)}`, headers: [...monthlyAttendanceHeaders(), "Action"], rows: lowAttendanceRows(month, classKeys) };
       }
       if (type === "hostel") {
         return { title: `Hostel Roll Call - ${date}`, headers: ["Date", "Class", "Roll", "Student", "Status", "In Time", "Remark"], rows: hostelRows(date, classKeys) };
@@ -12076,6 +12196,11 @@
       downloadReportExcel("mdm");
     });
 
+    document.getElementById("downloadYearlyAttendance")?.addEventListener("click", () => {
+      document.getElementById("reportType").value = "yearly";
+      downloadReportExcel("yearly");
+    });
+
     document.getElementById("downloadAuditLog").addEventListener("click", () => {
       downloadAuditLogExcel();
     });
@@ -12597,3 +12722,6 @@
   </script>
 </body>
 </html>
+
+
+
