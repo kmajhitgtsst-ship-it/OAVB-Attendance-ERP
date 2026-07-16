@@ -619,8 +619,8 @@
     .tt-section-a td:nth-child(2)::after { content: "A"; }
     .tt-section-b td:nth-child(2)::after { content: "B"; }
     #timetable td {
-      min-height: 62px;
-      height: 62px;
+      min-height: 92px;
+      height: 92px;
       white-space: normal;
       vertical-align: middle;
       word-break: break-word;
@@ -665,7 +665,7 @@
       width: 100%;
       min-width: 92px;
       max-width: 128px;
-      min-height: 54px;
+      min-height: 82px;
       border: 1px solid #cbd5e1;
       border-radius: 6px;
       padding: 8px 7px;
@@ -673,11 +673,15 @@
       color: #0f172a;
       font-weight: 800;
       font-size: 13px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
     }
     .timetable-cell-input {
       min-width: 104px;
       max-width: 128px;
       line-height: 1.28;
+      resize: vertical;
+      overflow: auto;
     }
     .timetable-cell-input.teacher-colored-cell {
       border-width: 2px;
@@ -10814,7 +10818,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
       const data = Object.entries(attrs.data || {})
         .map(([key, item]) => ` data-${key.replace(/[A-Z]/g, char => `-${char.toLowerCase()}`)}="${htmlSafe(item)}"`)
         .join("");
-      return `<input class="timetable-cell-select timetable-cell-input ${extraClass} ${colorClass}" list="timetableCellOptions" value="${htmlSafe(value || "")}" placeholder="Subject (Code) / Subject (Code)"${data}${style}${disabled}>`;
+      return `<textarea class="timetable-cell-select timetable-cell-input ${extraClass} ${colorClass}" rows="3" placeholder="Subject (Code) / Subject (Code)" spellcheck="false"${data}${style}${disabled}>${htmlSafe(value || "")}</textarea>`;
     }
 
     function renderTimeTableEditor(rows = timetableRowsForSelectedClass()) {
