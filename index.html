@@ -657,6 +657,37 @@
       color: #991b1b;
       font-weight: 700;
     }
+    .arrangement-pair {
+      display: inline-flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      line-height: 1.35;
+    }
+    .arrangement-original,
+    .arrangement-duty {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-weight: 900;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+    .arrangement-original {
+      border: 1px solid #fecaca;
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    .arrangement-duty {
+      border: 1px solid #bbf7d0;
+      background: #dcfce7;
+      color: #166534;
+    }
+    .arrangement-separator {
+      color: #475569;
+      font-weight: 900;
+    }
     td.conflict-cell {
       background: #fecaca !important;
       color: #7f1d1d;
@@ -5944,28 +5975,42 @@
             <div class="table-wrap">
               <div class="section-title">
                 <h2>Daily Arrangement</h2>
-                <button class="secondary" id="saveDailyArrangement">Save Daily Arrangement</button>
+                <div class="toolbar">
+                  <button class="secondary" id="shareDailyArrangement">Share Daily Arrangement</button>
+                  <button class="secondary" id="shareTodayTimetable">Share Today's Time Table</button>
+                  <button class="secondary" id="resetDailyArrangement">Reset Daily Arrangement</button>
+                  <button class="secondary" id="toggleDailyArrangement">Hide Daily Arrangement</button>
+                  <button class="secondary" id="saveDailyArrangement">Save Daily Arrangement</button>
+                </div>
               </div>
-              <table>
+              <table id="dailyArrangementTable">
                 <thead><tr><th>Day</th><th>Class</th><th>Period</th><th>Absent</th><th>Original</th><th>Best Suggestion</th><th>Select Teacher</th><th>Load</th></tr></thead>
                 <tbody id="timeTableArrangementRows"></tbody>
               </table>
             </div>
-            <div class="table-wrap">
-              <h2>Workload Summary</h2>
+            <div class="table-wrap" id="timeTableWorkloadPanel">
+              <div class="section-title">
+                <h2>Workload Summary</h2>
+                <button class="secondary" id="toggleWorkloadSummary">Hide Workload Summary</button>
+              </div>
               <table>
                 <thead><tr><th>Teacher Code</th><th>Original Today</th><th>Original Weekly</th><th>Today Arrangement</th><th>This Week Arrangement</th><th>This Month Arrangement</th></tr></thead>
                 <tbody id="timeTableWorkloadRows"></tbody>
               </table>
             </div>
           </div>
-          <div class="table-wrap" style="margin-top: 14px;">
-            <h2>Conflict / Compliance</h2>
-            <p class="conflict-note clear" id="timeTableConflictStatus">No conflict found yet.</p>
-            <table>
+          <div class="table-wrap" id="timeTableConflictPanel" style="margin-top: 14px;">
+            <div class="section-title">
+              <h2>Conflict / Compliance</h2>
+              <button class="secondary" id="toggleConflictCompliance">Hide Conflict / Compliance</button>
+            </div>
+            <div id="timeTableConflictContent">
+              <p class="conflict-note clear" id="timeTableConflictStatus">No conflict found yet.</p>
+              <table>
               <thead><tr><th>Day</th><th>Period</th><th>Teacher Code</th><th>Classes</th><th>Status</th></tr></thead>
               <tbody id="timeTableConflictRows"></tbody>
-            </table>
+              </table>
+            </div>
           </div>
           <div class="table-wrap" style="margin-top: 14px;">
             <h2>Subject Wise Period Count</h2>
@@ -5974,13 +6019,18 @@
               <tbody id="subjectPeriodRows"></tbody>
             </table>
           </div>
-          <div class="table-wrap" style="margin-top: 14px;">
-            <h2>Class Wise Subject Period Count</h2>
-            <p class="success-note">Shows which subject is allotted how many weekly periods/days in each class. Optional cells like HINDI (TH)/SANS (DP) are counted separately.</p>
-            <table>
+          <div class="table-wrap" id="classSubjectPeriodPanel" style="margin-top: 14px;">
+            <div class="section-title">
+              <h2>Class Wise Subject Period Count</h2>
+              <button class="secondary" id="toggleClassSubjectPeriod">Hide Class Wise Subject Period Count</button>
+            </div>
+            <div id="classSubjectPeriodContent">
+              <p class="success-note">Shows which subject is allotted how many weekly periods/days in each class. Optional cells like HINDI (TH)/SANS (DP) are counted separately.</p>
+              <table>
               <thead><tr><th>Class</th><th>Subject</th><th>Teacher Code</th><th>Weekly Periods</th><th>Days</th></tr></thead>
               <tbody id="classSubjectPeriodRows"></tbody>
-            </table>
+              </table>
+            </div>
           </div>
           <div class="table-wrap hidden" id="timeTableTodayPanel" style="margin-top: 14px;">
             <h2>Today's Time Table</h2>
@@ -9312,6 +9362,7 @@
         "clearTimetableImport",
         "generateArrangement",
         "saveDailyArrangement",
+        "resetDailyArrangement",
         "saveTimeTableGrid",
         "saveWholeSchoolTimeTable",
         "resetWholeSchoolTimeTable",
@@ -11171,6 +11222,25 @@ function currentReportData(type = document.getElementById("reportType").value) {
       return result;
     }
 
+    function mergeArrangementIntoTimetableCellView(value, arrangements) {
+      const text = mergeArrangementIntoTimetableCell(value, arrangements);
+      let html = htmlSafe(String(value || ""));
+      arrangements.forEach(item => {
+        const selectedLabel = arrangementSubjectLabel(item.selected);
+        const pattern = new RegExp(`([^/+:]*\\(${escapeRegExp(item.absent)}\\))`, "i");
+        const plain = String(value || "");
+        const match = plain.match(pattern);
+        const originalLabel = match ? match[1].trim() : String(item.absent || "").trim();
+        const pairHtml = `<span class="arrangement-pair"><span class="arrangement-original">${htmlSafe(originalLabel)}</span><span class="arrangement-separator">:</span><span class="arrangement-duty">${htmlSafe(selectedLabel)}</span></span>`;
+        if (match && html.includes(htmlSafe(match[1]))) {
+          html = html.replace(htmlSafe(match[1]), pairHtml);
+        } else {
+          html += `${html ? " + " : ""}${pairHtml}`;
+        }
+      });
+      return { text, html };
+    }
+
     function timetableDailyWorkload(rows = currentTimetableRows(), day = timetableTodayName()) {
       const workload = {};
       const source = rows.filter(row => String(row.day || "").toUpperCase().includes(day));
@@ -11221,7 +11291,8 @@ function currentReportData(type = document.getElementById("reportType").value) {
         const selected = timetableArrangementSelections[arrangementKey(item)] || rankedArrangementOptions(rows, row.day, periodIndex, periodAbsentCodes)[0]?.code || "Manual";
         return { absent: code, selected };
       });
-      return { value: mergeArrangementIntoTimetableCell(value, arrangements), arranged: true };
+      const merged = mergeArrangementIntoTimetableCellView(value, arrangements);
+      return { value: merged.text, html: merged.html, arranged: true };
     }
 
     function timetableConflictDetails(rows = currentTimetableRows()) {
@@ -11349,7 +11420,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
             const conflict = conflictCells.has(`${String(row.day || "").toUpperCase()}|${normalizeTimetableClassName(row.className)}|${index + 1}`);
             const colorClass = timetableCellColorClass(cell.value);
             const colorStyle = timetableCellColorStyle(cell.value);
-            if (!editable) return `<td class="${cell.arranged ? "arranged-cell" : ""} ${conflict ? "conflict-cell" : ""} ${colorClass}"${colorStyle ? ` style="${htmlSafe(colorStyle)}"` : ""}>${htmlSafe(cell.value)}</td>`;
+            if (!editable) return `<td class="${cell.arranged ? "arranged-cell" : ""} ${conflict ? "conflict-cell" : ""} ${colorClass}"${colorStyle ? ` style="${htmlSafe(colorStyle)}"` : ""}>${cell.html || htmlSafe(cell.value)}</td>`;
             return `<td class="${conflict ? "conflict-cell" : ""}">${timetableCellInput(row.periods[index] || "", { extraClass: "whole-timetable-select", disabled: Boolean(selectDisabled), data: { day: row.day, className: row.className, period: index } })}</td>`;
           }).join("")}</tr>`).join("")
         : `<tr><td colspan="10">No imported timetable rows yet.</td></tr>`;
@@ -11489,6 +11560,84 @@ function currentReportData(type = document.getElementById("reportType").value) {
       saveLocalData();
       renderTimetableAudit();
       document.getElementById("timeTableStatus").textContent = `${rows.length} daily arrangement row(s) saved. Weekly/monthly balance updated.`;
+    }
+
+    function dailyArrangementRowsForMessage() {
+      return renderTimetableArrangement().map(row => {
+        const selected = timetableArrangementSelections[arrangementKey(row)] || row.selected || row.best || "";
+        return {
+          day: row.day,
+          className: row.className,
+          period: row.period,
+          absent: row.absent,
+          original: row.original,
+          selected: arrangementSubjectLabel(selected)
+        };
+      });
+    }
+
+    function shareDailyArrangement() {
+      const rows = dailyArrangementRowsForMessage();
+      if (!rows.length) {
+        alert("No daily arrangement available to share. Enter absent teacher code first.");
+        return;
+      }
+      const message = [
+        "OAV BADI Daily Arrangement",
+        `Date: ${displayDateLong(arrangementDate())}`,
+        `Day: ${timetableTodayName()}`,
+        "",
+        ...rows.map(row => `${row.className} P${row.period}: ${row.original} / Absent ${row.absent} -> ${row.selected}`)
+      ].join("\n");
+      window.open(whatsappComposeLink(whatsappTargetPhone(), message), "_blank");
+    }
+
+    function shareTodayTimetable() {
+      const rows = todayTimetableRows(currentTimetableRows());
+      if (!rows.length) {
+        alert("Today's timetable is not available.");
+        return;
+      }
+      const absenceMap = timetableAbsenceMap();
+      const lines = rows.map(row => {
+        const periods = row.periods.map((_, index) => {
+          const cell = decoratedTimetableCell(row, index, rows, absenceMap, { showArrangement: true });
+          return `P${index + 1}: ${cell.value || "-"}`;
+        }).join(" | ");
+        return `${row.className}: ${periods}`;
+      });
+      const message = [
+        "OAV BADI Today's Time Table",
+        `Date: ${displayDateLong(arrangementDate())}`,
+        `Day: ${timetableTodayName()}`,
+        "",
+        ...lines
+      ].join("\n");
+      window.open(whatsappComposeLink(whatsappTargetPhone(), message), "_blank");
+    }
+
+    function resetDailyArrangement() {
+      if (!requireTimetableEditAccess()) return;
+      const date = arrangementDate();
+      if (!confirm(`Reset daily arrangement for ${displayDateLong(date)}?`)) return;
+      Object.keys(timetableArrangementSelections).forEach(key => {
+        if (key.startsWith(`${date}|`)) delete timetableArrangementSelections[key];
+      });
+      for (let index = timetableArrangementRecords.length - 1; index >= 0; index -= 1) {
+        if (timetableArrangementRecords[index].date === date) timetableArrangementRecords.splice(index, 1);
+      }
+      addAuditLog("Daily Arrangement Reset", `Daily arrangement reset for ${displayDateLong(date)}.`, { page: "Time Table", recordDate: date });
+      saveLocalData();
+      renderTimetableAudit();
+      document.getElementById("timeTableStatus").textContent = `Daily arrangement reset for ${displayDateLong(date)}.`;
+    }
+
+    function togglePanelVisibility(contentId, buttonId, label) {
+      const content = document.getElementById(contentId);
+      const button = document.getElementById(buttonId);
+      if (!content || !button) return;
+      content.classList.toggle("hidden");
+      button.textContent = `${content.classList.contains("hidden") ? "Unhide" : "Hide"} ${label}`;
     }
 
     function renderTimetableAudit(refreshEditor = true) {
@@ -12816,6 +12965,34 @@ function currentReportData(type = document.getElementById("reportType").value) {
 
     document.getElementById("saveDailyArrangement").addEventListener("click", () => {
       saveDailyArrangement();
+    });
+
+    document.getElementById("shareDailyArrangement").addEventListener("click", () => {
+      shareDailyArrangement();
+    });
+
+    document.getElementById("shareTodayTimetable").addEventListener("click", () => {
+      shareTodayTimetable();
+    });
+
+    document.getElementById("resetDailyArrangement").addEventListener("click", () => {
+      resetDailyArrangement();
+    });
+
+    document.getElementById("toggleDailyArrangement").addEventListener("click", () => {
+      togglePanelVisibility("dailyArrangementTable", "toggleDailyArrangement", "Daily Arrangement");
+    });
+
+    document.getElementById("toggleWorkloadSummary").addEventListener("click", () => {
+      togglePanelVisibility("timeTableWorkloadRows", "toggleWorkloadSummary", "Workload Summary");
+    });
+
+    document.getElementById("toggleConflictCompliance").addEventListener("click", () => {
+      togglePanelVisibility("timeTableConflictContent", "toggleConflictCompliance", "Conflict / Compliance");
+    });
+
+    document.getElementById("toggleClassSubjectPeriod").addEventListener("click", () => {
+      togglePanelVisibility("classSubjectPeriodContent", "toggleClassSubjectPeriod", "Class Wise Subject Period Count");
     });
 
     document.getElementById("showWeeklyTimetable").addEventListener("click", () => {
