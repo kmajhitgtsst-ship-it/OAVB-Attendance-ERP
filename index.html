@@ -9974,22 +9974,35 @@ function monthlyAttendanceHeaders() {
   return ["Month", "Class", "Roll", "Student", "Working Days", "Saved Days", "Present", "Absent", "Late", "Leave", "Total Holiday", "Attendance %", "Present Required for 75%", "Present Needed", "Suggestion", "Guardian", "Mobile"];
 }
 function monthlySummaryRows(month, classKeys) {
-      return classKeys.flatMap(classGroup => {
-        const classStudents = classData[classGroup] || [];
-        const records = Object.values(dailyAttendanceRecords).filter(record => record.classGroup === classGroup && record.date.startsWith(month));
-        return classStudents.map(student => {
-          const source = monthlyStatusesForStudent(month, classGroup, student[0], records);
-          const present = source.filter(status => status === "Present").length;
-          const absent = source.filter(status => status === "Absent").length;
-          const late = source.filter(status => status === "Late").length;
-          const leave = source.filter(status => status === "Leave").length;
-          const holiday = source.filter(status => status === "Holiday").length;
-          const percent = source.length ? `${Math.round(((present + late) / source.length) * 1000) / 10}%` : "-";
-          if (!Array.isArray(student[8]) || student[8].length) student[8] = [];
-          return [month, classGroup, student[0], student[1], present, absent, late, leave, holiday, percent, student[6], student[7]];
-        });
-      });
-    }
+  return classKeys.flatMap(classGroup => {
+    const classStudents = classData[classGroup] || [];
+    const records = Object.values(dailyAttendanceRecords).filter(record => record.classGroup === classGroup && record.date.startsWith(month));
+    return classStudents.map(student => {
+      const source = monthlyStatusesForStudent(month, classGroup, student[0], records);
+      const calc = monthlyAttendanceCalculation(month, source);
+      if (!Array.isArray(student[8]) || student[8].length) student[8] = [];
+      return [
+        month,
+        classGroup,
+        student[0],
+        student[1],
+        calc.workingDays,
+        calc.savedWorkingDays,
+        calc.present,
+        calc.absent,
+        calc.late,
+        calc.leave,
+        calc.holiday,
+        calc.percent,
+        calc.targetPresent,
+        calc.neededFor75,
+        calc.suggestion,
+        student[6] || "",
+        student[7] || ""
+      ];
+    });
+  });
+}
 
     function monthlyStatusesForStudent(month, classGroup, roll, preloadedRecords = null) {
       const records = preloadedRecords || Object.values(dailyAttendanceRecords)
@@ -10015,7 +10028,7 @@ function monthlySummaryRows(month, classKeys) {
 
     function lowAttendanceRows(month, classKeys) {
       return monthlySummaryRows(month, classKeys)
-        .map(row => ({ row, percent: Number(String(row[9]).replace("%", "")) }))
+        .map(row => ({ row, percent: Number(String(row[11]).replace("%", "")) }))
         .filter(item => Number.isFinite(item.percent) && item.percent < 75)
         .map(item => [...item.row, item.percent < 60 ? "Urgent" : "Monitor"]);
     }
