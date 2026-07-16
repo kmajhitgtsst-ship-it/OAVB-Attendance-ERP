@@ -9396,6 +9396,38 @@
       }, 1000);
     }
 
+    function downloadExcelWorkbook(filename, sheets) {
+      const escapeXml = value => String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+      const safeSheetName = name => String(name || "Sheet").replace(/[\\/?*[\]:]/g, " ").slice(0, 31) || "Sheet";
+      const worksheetXml = sheet => {
+        const rows = (sheet.rows || []).map(row => `<Row>${row.map(cell => `<Cell><Data ss:Type="String">${escapeXml(cell)}</Data></Cell>`).join("")}</Row>`).join("");
+        return `<Worksheet ss:Name="${escapeXml(safeSheetName(sheet.name))}"><Table>${rows}</Table></Worksheet>`;
+      };
+      const workbook = `<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+${sheets.map(worksheetXml).join("")}
+</Workbook>`;
+      const blob = new Blob([workbook], { type: "application/vnd.ms-excel;charset=utf-8" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        URL.revokeObjectURL(link.href);
+        link.remove();
+      }, 1000);
+    }
+
     function priceDetail(label, qty, unit, rate, cost) {
       return `=${Number(qty)}*${Number(rate).toFixed(2)}`;
     }
@@ -9997,16 +10029,23 @@ function configuredMonthWorkingDays(month) {
 
 function monthlyAttendanceCalculation(month, statuses) {
   const source = Array.isArray(statuses) ? statuses.filter(Boolean) : [];
-  const present = source.filter(status => status === "Present").length;
-  const absent = source.filter(status => status === "Absent").length;
-  const late = source.filter(status => status === "Late").length;
-  const leave = source.filter(status => status === "Leave").length;
+  const rawPresent = source.filter(status => status === "Present").length;
+  const rawAbsent = source.filter(status => status === "Absent").length;
+  const rawLate = source.filter(status => status === "Late").length;
+  const rawLeave = source.filter(status => status === "Leave").length;
   const savedHoliday = source.filter(status => status === "Holiday").length;
   const holiday = Math.max(savedHoliday, configuredMonthHolidays(month).length);
   const savedWorkingDays = source.filter(status => status !== "Holiday").length;
   const workingDays = configuredMonthWorkingDays(month) || savedWorkingDays;
+  const absent = workingDays ? Math.min(rawAbsent, workingDays) : rawAbsent;
+  const leave = workingDays ? Math.min(rawLeave, Math.max(0, workingDays - absent)) : rawLeave;
+  const late = workingDays ? Math.min(rawLate, Math.max(0, workingDays - absent - leave)) : rawLate;
+  const present = workingDays
+    ? Math.max(0, workingDays - absent - leave - late)
+    : rawPresent;
   const attended = present + late;
-  const percentValue = savedWorkingDays ? Math.round((attended / savedWorkingDays) * 1000) / 10 : null;
+  const denominator = workingDays || savedWorkingDays;
+  const percentValue = denominator ? Math.round((attended / denominator) * 1000) / 10 : null;
   const targetPresent = workingDays ? Math.ceil(workingDays * 0.75) : 0;
   const neededFor75 = targetPresent ? Math.max(0, targetPresent - attended) : 0;
   const suggestion = !savedWorkingDays
@@ -11227,22 +11266,35 @@ function currentReportData(type = document.getElementById("reportType").value) {
       const arrangement = renderTimetableArrangement(rows);
       const subjectSummary = subjectPeriodSummary(rows);
       const classSubjectSummary = classSubjectPeriodSummary(rows);
-      downloadExcel("time-table-audit-arrangement.xls", [
-        ["TIME TABLE RAW"],
-        ["Day", "Class", ...Array.from({ length: TIMETABLE_PERIOD_COUNT }, (_, index) => `Period ${index + 1}`)],
-        ...rows.map(row => [row.day, row.className, ...row.periods]),
-        [""],
-        ["SUBJECT WISE PERIOD COUNT"],
-        ["Subject", "Teacher Code", "Total Weekly Periods", "Classes"],
-        ...subjectSummary.map(item => [item.subject, item.code, item.count, item.classes]),
-        [""],
-        ["CLASS WISE SUBJECT PERIOD COUNT"],
-        ["Class", "Subject", "Teacher Code", "Weekly Periods", "Days"],
-        ...classSubjectSummary.map(item => [item.className, item.subject, item.code, item.count, item.days]),
-        [""],
-        ["DAILY ARRANGEMENT"],
-        ["Day", "Class", "Period", "Absent", "Original", "Best Suggestion", "Selected Duty", "Weekly/Monthly Load"],
-        ...arrangement.map(row => [row.day, row.className, row.period, row.absent, row.original, row.best, row.selected, row.load])
+      downloadExcelWorkbook("time-table-audit-arrangement.xls", [
+        {
+          name: "Time Table Raw",
+          rows: [
+            ["Day", "Class", ...Array.from({ length: TIMETABLE_PERIOD_COUNT }, (_, index) => `Period ${index + 1}`)],
+            ...rows.map(row => [row.day, row.className, ...row.periods])
+          ]
+        },
+        {
+          name: "Subject Count",
+          rows: [
+            ["Subject", "Teacher Code", "Total Weekly Periods", "Classes"],
+            ...subjectSummary.map(item => [item.subject, item.code, item.count, item.classes])
+          ]
+        },
+        {
+          name: "Class Subject Count",
+          rows: [
+            ["Class", "Subject", "Teacher Code", "Weekly Periods", "Days"],
+            ...classSubjectSummary.map(item => [item.className, item.subject, item.code, item.count, item.days])
+          ]
+        },
+        {
+          name: "Daily Arrangement",
+          rows: [
+            ["Day", "Class", "Period", "Absent", "Original", "Best Suggestion", "Selected Duty", "Weekly/Monthly Load"],
+            ...arrangement.map(row => [row.day, row.className, row.period, row.absent, row.original, row.best, row.selected, row.load])
+          ]
+        }
       ]);
     }
 
