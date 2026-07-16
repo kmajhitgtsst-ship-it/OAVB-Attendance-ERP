@@ -590,13 +590,53 @@
     .tt-class-junior td:nth-child(2) { border-left: 4px solid #0f766e; }
     .tt-section-a td:nth-child(2) { box-shadow: inset 0 0 0 9999px rgba(14, 165, 233, .08); }
     .tt-section-b td:nth-child(2) { box-shadow: inset 0 0 0 9999px rgba(245, 158, 11, .10); }
-    .tt-class-vi td:first-child { border-left-color: #0f766e; }
-    .tt-class-vii td:first-child { border-left-color: #0891b2; }
-    .tt-class-viii td:first-child { border-left-color: #2563eb; }
-    .tt-class-ix td:first-child { border-left-color: #7c3aed; }
-    .tt-class-x td:first-child { border-left-color: #be123c; }
+    .tt-class-vi td:first-child,
+    .tt-class-vi td:nth-child(2) { border-left-color: #0f766e; background-color: #d9f99d !important; }
+    .tt-class-vii td:first-child,
+    .tt-class-vii td:nth-child(2) { border-left-color: #0891b2; background-color: #cffafe !important; }
+    .tt-class-viii td:first-child,
+    .tt-class-viii td:nth-child(2) { border-left-color: #2563eb; background-color: #dbeafe !important; }
+    .tt-class-ix td:first-child,
+    .tt-class-ix td:nth-child(2) { border-left-color: #7c3aed; background-color: #ede9fe !important; }
+    .tt-class-x td:first-child,
+    .tt-class-x td:nth-child(2) { border-left-color: #be123c; background-color: #ffe4e6 !important; }
     .tt-class-xi td:first-child,
-    .tt-class-xii td:first-child { border-left-color: #475569; }
+    .tt-class-xi td:nth-child(2) { border-left-color: #475569; background-color: #e2e8f0 !important; }
+    .tt-class-xii td:first-child,
+    .tt-class-xii td:nth-child(2) { border-left-color: #92400e; background-color: #fed7aa !important; }
+    .tt-section-a td:nth-child(2)::after,
+    .tt-section-b td:nth-child(2)::after {
+      display: inline-block;
+      margin-left: 6px;
+      padding: 2px 6px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 900;
+      color: #0f172a;
+      background: rgba(255, 255, 255, .62);
+      vertical-align: middle;
+    }
+    .tt-section-a td:nth-child(2)::after { content: "A"; }
+    .tt-section-b td:nth-child(2)::after { content: "B"; }
+    #timetable td {
+      min-height: 62px;
+      height: 62px;
+      white-space: normal;
+      vertical-align: middle;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      font-weight: 700;
+    }
+    #timetable th {
+      min-width: 112px;
+    }
+    #timetable th:first-child,
+    #timetable th:nth-child(2),
+    #timetable td:first-child,
+    #timetable td:nth-child(2) {
+      min-width: 72px;
+      max-width: 96px;
+    }
     td.arranged-cell {
       background: #fee2e2 !important;
       color: #991b1b;
@@ -623,17 +663,21 @@
     }
     .timetable-cell-select {
       width: 100%;
-      min-width: 150px;
+      min-width: 92px;
+      max-width: 128px;
+      min-height: 54px;
       border: 1px solid #cbd5e1;
       border-radius: 6px;
-      padding: 8px 10px;
+      padding: 8px 7px;
       background: #fff;
       color: #0f172a;
-      font-weight: 650;
+      font-weight: 800;
+      font-size: 13px;
     }
     .timetable-cell-input {
-      min-width: 210px;
-      line-height: 1.35;
+      min-width: 104px;
+      max-width: 128px;
+      line-height: 1.28;
     }
     .timetable-cell-input.teacher-colored-cell {
       border-width: 2px;
@@ -8379,8 +8423,27 @@
       return TEACHER_COLOR_PALETTE[Math.abs(hash) % TEACHER_COLOR_PALETTE.length];
     }
 
+    function defaultTeacherColor(teacher) {
+      const index = teachers.indexOf(teacher);
+      if (index >= 0) return TEACHER_COLOR_PALETTE[index % TEACHER_COLOR_PALETTE.length];
+      return colorFromTeacherCode(teacherCode(teacher));
+    }
+
     function teacherColor(teacher) {
-      return normalizeTeacherColor(teacher?.[8]) || colorFromTeacherCode(teacherCode(teacher));
+      return normalizeTeacherColor(teacher?.[8]) || defaultTeacherColor(teacher);
+    }
+
+    function teacherColorConflictIndex(color, ignoreIndex = -1) {
+      const normalized = normalizeTeacherColor(color);
+      if (!normalized) return -1;
+      return teachers.findIndex((teacher, index) => index !== ignoreIndex && teacherColor(teacher) === normalized);
+    }
+
+    function teacherColorConflictMessage(color, ignoreIndex = -1) {
+      const conflictIndex = teacherColorConflictIndex(color, ignoreIndex);
+      if (conflictIndex < 0) return "";
+      const teacher = teachers[conflictIndex];
+      return `Color ${normalizeTeacherColor(color)} is already assigned to ${teacher?.[0] || "another teacher"} (${teacherCode(teacher)}). Choose a different color.`;
     }
 
     function teacherByCode(code) {
@@ -8733,6 +8796,12 @@
       const employeeId = prompt("Employee ID", teacherEmployeeId(teacher)) || teacherEmployeeId(teacher);
       const code = (prompt("Teacher Code for Time Table (Example: KM, HCS, DP)", oldCode) || oldCode).trim().toUpperCase();
       const color = normalizeTeacherColor(prompt("Teacher color for Time Table (Example: #DBEAFE)", teacherColor(teacher)) || teacherColor(teacher)) || teacherColor(teacher);
+      const colorError = teacherColorConflictMessage(color, index);
+      if (colorError) {
+        document.getElementById("teacherBulkStatus").textContent = colorError;
+        alert(colorError);
+        return;
+      }
       const oldName = teacher[0];
       teachers[index] = [name, mergeTeacherRoleForUpdate(teacher[1], role), mobile, assignedClass, status, subject, employeeId, code, color];
       updateTeacherCodeReferences(oldCode, code);
@@ -12677,7 +12746,17 @@ function currentReportData(type = document.getElementById("reportType").value) {
       const index = Number(event.target.dataset.index);
       const teacher = teachers[index];
       if (!teacher) return;
-      teacher[8] = normalizeTeacherColor(event.target.value) || teacherColor(teacher);
+      const nextColor = normalizeTeacherColor(event.target.value) || teacherColor(teacher);
+      const colorError = teacherColorConflictMessage(nextColor, index);
+      if (colorError) {
+        event.target.value = teacherColor(teacher);
+        event.target.setCustomValidity(colorError);
+        event.target.reportValidity();
+        document.getElementById("teacherBulkStatus").textContent = colorError;
+        return;
+      }
+      event.target.setCustomValidity("");
+      teacher[8] = nextColor;
       saveLocalData();
       renderTeachers();
       renderTeacherAttendance();
