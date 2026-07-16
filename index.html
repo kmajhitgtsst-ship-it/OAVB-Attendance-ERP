@@ -6323,6 +6323,7 @@
       if (savedImportedTimetableRows) {
         importedTimetableRows.length = 0;
         JSON.parse(savedImportedTimetableRows).forEach(row => importedTimetableRows.push(row));
+        repairImportedTimetableRows();
       }
 
       if (savedTimetablePeriodTimes) {
@@ -8247,8 +8248,8 @@
     function normalizeClassName(value) {
       const raw = (value || "").trim().toUpperCase().replace(/\s+/g, " ");
       if (!raw) return "";
-      if (raw.includes("XI") && raw.includes("SCIENCE")) return "Class XI-SCIENCE";
       if (raw.includes("XII") && raw.includes("SCIENCE")) return "Class XII-SCIENCE";
+      if (raw.includes("XI") && raw.includes("SCIENCE")) return "Class XI-SCIENCE";
       const cleaned = raw.replace("CLASS", "").trim();
       return `Class ${cleaned}`;
     }
@@ -10426,6 +10427,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
         }
         addImportedRow(day, className, periodCells);
       });
+      repairImportedTimetableRows();
       saveLocalData();
       renderTimetableAudit();
       clearEntryFields(["timeTableCsvText", "timeTableCsvFile"]);
@@ -10706,11 +10708,38 @@ function currentReportData(type = document.getElementById("reportType").value) {
     function normalizeTimetableClassName(value) {
       const text = String(value || "").trim().toUpperCase().replace(/\s+/g, "-").replace(/^CLASS-/, "");
       if (!text) return "";
-      if (text.includes("XI") && text.includes("SCIENCE")) return "XI-SCIENCE";
       if (text.includes("XII") && text.includes("SCIENCE")) return "XII-SCIENCE";
+      if (text.includes("XI") && text.includes("SCIENCE")) return "XI-SCIENCE";
       const match = text.match(/^(VI|VII|VIII|IX|X)-?([AB])$/);
       if (match) return `${match[1]}-${match[2]}`;
       return text;
+    }
+
+    function repairImportedTimetableRows() {
+      const byDay = new Map();
+      importedTimetableRows.forEach(row => {
+        row.className = normalizeTimetableClassName(row.className);
+        const day = String(row.day || "").toUpperCase();
+        if (!byDay.has(day)) byDay.set(day, []);
+        byDay.get(day).push(row);
+      });
+      byDay.forEach(rows => {
+        const xiRows = rows.filter(row => row.className === "XI-SCIENCE");
+        const hasXii = rows.some(row => row.className === "XII-SCIENCE");
+        if (!hasXii && xiRows.length > 1) {
+          xiRows.slice(1).forEach(row => {
+            row.className = "XII-SCIENCE";
+          });
+        }
+      });
+      const seen = new Set();
+      const duplicateIndexes = [];
+      importedTimetableRows.forEach((row, index) => {
+        const key = `${String(row.day || "").toUpperCase()}|${normalizeTimetableClassName(row.className)}`;
+        if (seen.has(key)) duplicateIndexes.push(index);
+        else seen.add(key);
+      });
+      duplicateIndexes.reverse().forEach(index => importedTimetableRows.splice(index, 1));
     }
 
     function timetableAllCodes(rows = currentTimetableRows()) {
