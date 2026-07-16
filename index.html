@@ -635,6 +635,31 @@
       min-width: 210px;
       line-height: 1.35;
     }
+    .timetable-cell-input.teacher-colored-cell {
+      border-width: 2px;
+      color: #061426;
+      font-weight: 800;
+    }
+    .teacher-color-input {
+      width: 54px;
+      min-width: 54px;
+      height: 36px;
+      padding: 2px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #fff;
+      cursor: pointer;
+    }
+    .teacher-color-chip {
+      display: inline-flex;
+      width: 24px;
+      height: 24px;
+      border-radius: 7px;
+      border: 1px solid rgba(15, 23, 42, .18);
+      vertical-align: middle;
+      margin-right: 6px;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .45);
+    }
     .teacher-subject-badge {
       display: inline-block;
       border-radius: 999px;
@@ -5519,7 +5544,7 @@
         </header>
         <div class="card table-wrap">
           <table>
-            <thead><tr><th>Employee ID</th><th>Employee Name</th><th>Designation</th><th>Subject</th><th>In Time</th><th>Out Time</th><th>Status</th><th>Action</th></tr></thead>
+            <thead><tr><th>Employee ID</th><th>Employee Name</th><th>Code</th><th>Color</th><th>Designation</th><th>Subject</th><th>In Time</th><th>Out Time</th><th>Status</th><th>Action</th></tr></thead>
             <tbody id="teacherAttendanceRows"></tbody>
           </table>
         </div>
@@ -5547,7 +5572,7 @@
           <p class="success-note" id="teacherBulkStatus">Imported teachers will appear below.</p>
           <div class="table-wrap" style="margin-top: 14px;">
             <table>
-              <thead><tr><th>Employee ID</th><th>Teacher Name</th><th>Code</th><th>Designation</th><th>Subject</th><th>Mobile</th><th>Assigned Class</th><th>Status</th><th>Login ID</th><th>Password</th><th>Action</th></tr></thead>
+              <thead><tr><th>Employee ID</th><th>Teacher Name</th><th>Code</th><th>Color</th><th>Designation</th><th>Subject</th><th>Mobile</th><th>Assigned Class</th><th>Status</th><th>Login ID</th><th>Password</th><th>Action</th></tr></thead>
               <tbody id="teacherRows"></tbody>
             </table>
           </div>
@@ -8179,6 +8204,7 @@
           mobile: row[4] || "+91 9000000000",
           assignedClass: normalizeAssignedClass(row[6]),
           code: row[7] || "",
+          color: row[8] || "",
           status: row[9] || "Present"
         };
       }
@@ -8191,6 +8217,7 @@
         assignedClass: /^\d{4,}$/.test(String(row[0] || "").trim()) ? normalizeAssignedClass(row[6]) : normalizeAssignedClass(row[3]),
         subject: /^\d{4,}$/.test(String(row[0] || "").trim()) ? (row[3] || "") : (row[4] || ""),
         code: /^\d{4,}$/.test(String(row[0] || "").trim()) ? (row[7] || "") : (row[5] || ""),
+        color: /^\d{4,}$/.test(String(row[0] || "").trim()) ? (row[8] || "") : (row[6] || ""),
         status: "Present"
       };
     }
@@ -8328,6 +8355,88 @@
       return String(teacher?.[7] || "").trim().toUpperCase() || teacherCodeFromName(teacher?.[0] || "");
     }
 
+    const TEACHER_COLOR_PALETTE = [
+      "#DBEAFE", "#DCFCE7", "#FEF3C7", "#FCE7F3", "#EDE9FE",
+      "#CCFBF1", "#FED7AA", "#E0F2FE", "#FECACA", "#D9F99D",
+      "#FAE8FF", "#CFFAFE", "#FDE68A", "#E2E8F0", "#D1FAE5",
+      "#FFE4E6", "#DDD6FE", "#BAE6FD", "#FBCFE8", "#BBF7D0"
+    ];
+
+    function normalizeTeacherColor(value) {
+      const text = String(value || "").trim();
+      if (/^#[0-9a-f]{6}$/i.test(text)) return text.toUpperCase();
+      if (/^[0-9a-f]{6}$/i.test(text)) return `#${text.toUpperCase()}`;
+      return "";
+    }
+
+    function colorFromTeacherCode(code) {
+      const text = String(code || "TEACHER").trim().toUpperCase();
+      let hash = 0;
+      for (let index = 0; index < text.length; index += 1) {
+        hash = ((hash << 5) - hash) + text.charCodeAt(index);
+        hash |= 0;
+      }
+      return TEACHER_COLOR_PALETTE[Math.abs(hash) % TEACHER_COLOR_PALETTE.length];
+    }
+
+    function teacherColor(teacher) {
+      return normalizeTeacherColor(teacher?.[8]) || colorFromTeacherCode(teacherCode(teacher));
+    }
+
+    function teacherByCode(code) {
+      const target = String(code || "").trim().toUpperCase();
+      return teachers.find(teacher => teacherCode(teacher) === target);
+    }
+
+    function teacherColorByCode(code) {
+      const teacher = teacherByCode(code);
+      return teacher ? teacherColor(teacher) : colorFromTeacherCode(code);
+    }
+
+    function firstTeacherCodeFromCell(value) {
+      return extractTeacherCodes(value)[0] || "";
+    }
+
+    function teacherExcelStyleId(code) {
+      const clean = String(code || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "_");
+      return clean ? `teacher_${clean}` : "";
+    }
+
+    function timetableCellColorStyle(value) {
+      const code = firstTeacherCodeFromCell(value);
+      if (!code) return "";
+      const color = teacherColorByCode(code);
+      return `background-color:${color};border-color:${color};box-shadow:inset 4px 0 0 ${color};`;
+    }
+
+    function timetableCellColorClass(value) {
+      return firstTeacherCodeFromCell(value) ? "teacher-colored-cell" : "";
+    }
+
+    function teacherColorInputHtml(teacher, index) {
+      return `<input type="color" class="teacher-color-input" data-index="${index}" value="${htmlSafe(teacherColor(teacher))}" title="Teacher color for ${htmlSafe(teacherCode(teacher))}">`;
+    }
+
+    function applyTimetableCellColor(input) {
+      if (!input) return;
+      const style = timetableCellColorStyle(input.value);
+      input.classList.toggle("teacher-colored-cell", Boolean(style));
+      input.style.backgroundColor = "";
+      input.style.borderColor = "";
+      input.style.boxShadow = "";
+      if (!style) return;
+      const color = teacherColorByCode(firstTeacherCodeFromCell(input.value));
+      input.style.backgroundColor = color;
+      input.style.borderColor = color;
+      input.style.boxShadow = `inset 4px 0 0 ${color}`;
+    }
+
+    function timetableExcelCell(value) {
+      const code = firstTeacherCodeFromCell(value);
+      const styleId = teacherExcelStyleId(code);
+      return styleId ? { value, styleId } : value;
+    }
+
     function replaceTeacherCodeInText(value, oldCode, newCode) {
       const from = String(oldCode || "").trim().toUpperCase();
       const to = String(newCode || "").trim().toUpperCase();
@@ -8424,6 +8533,7 @@
           <td>${teacherEmployeeId(teacher)}</td>
           <td>${teacher[0]}</td>
           <td>${teacherCode(teacher)}</td>
+          <td>${teacherColorInputHtml(teacher, index)}</td>
           <td>${teacherDesignation(teacher)}</td>
           <td>${teacherSubject(teacher) ? `<span class="teacher-subject-badge">${htmlSafe(teacherSubject(teacher))}</span>` : '<span class="status leave">Not assigned</span>'}</td>
           <td>${teacher[2]}</td>
@@ -8433,7 +8543,7 @@
           <td><span class="status leave">Protected</span></td>
           <td><button class="secondary assign-teacher-subject" data-index="${index}">Assign Subject</button> <button class="secondary assign-teacher-class" data-index="${index}">Assign Class</button> <button class="secondary assign-admin-principal" data-index="${index}">Assign Admin/Principal</button> <button class="secondary assign-erp-role" data-index="${index}">Assign ERP Role</button> <button class="secondary edit-teacher" data-index="${index}">Edit</button> <button class="secondary reset-teacher-password" data-index="${index}">Reset</button> <button class="secondary delete-teacher" data-index="${index}">Delete</button></td>
         </tr>
-      `).join("") : `<tr><td colspan="11">No teacher data uploaded yet. Import your school teacher CSV/Excel.</td></tr>`;
+      `).join("") : `<tr><td colspan="12">No teacher data uploaded yet. Import your school teacher CSV/Excel.</td></tr>`;
     }
 
     function teacherAttendanceStatus(teacher) {
@@ -8480,6 +8590,8 @@
         <tr class="${row.status === "Leave" || row.status === "Absent" ? "teacher-leave" : row.status.includes("Half Day") ? "teacher-half-leave" : ""}">
           <td>${row.employeeId}</td>
           <td>${row.name}</td>
+          <td>${teacherCode(teachers[index])}</td>
+          <td>${teacherColorInputHtml(teachers[index], index)}</td>
           <td>${row.designation}</td>
           <td>${teacherSubject(teachers[index]) ? `<span class="teacher-subject-badge">${htmlSafe(teacherSubject(teachers[index]))}</span>` : '<span class="status leave">Not assigned</span>'}</td>
           <td>${row.inTime}</td>
@@ -8487,7 +8599,7 @@
           <td><button class="status ${teacherStatusClassFromStatus(row.status)} teacher-attendance-status" data-index="${index}">${row.status}</button></td>
           <td><button class="secondary assign-teacher-subject" data-index="${index}">Assign Subject</button> <button class="secondary assign-erp-role" data-index="${index}">Assign ERP Role</button> <button class="secondary delete-teacher" data-index="${index}">Delete Teacher</button></td>
         </tr>
-      `).join("") : `<tr><td colspan="8">No teacher data uploaded yet.</td></tr>`;
+      `).join("") : `<tr><td colspan="10">No teacher data uploaded yet.</td></tr>`;
     }
 
     function normalizePersonName(name) {
@@ -8620,8 +8732,9 @@
       const subject = prompt("Subjects (comma separated if more than one. Example: English, Math, Science, SST)", teacherSubject(teacher)) || teacherSubject(teacher);
       const employeeId = prompt("Employee ID", teacherEmployeeId(teacher)) || teacherEmployeeId(teacher);
       const code = (prompt("Teacher Code for Time Table (Example: KM, HCS, DP)", oldCode) || oldCode).trim().toUpperCase();
+      const color = normalizeTeacherColor(prompt("Teacher color for Time Table (Example: #DBEAFE)", teacherColor(teacher)) || teacherColor(teacher)) || teacherColor(teacher);
       const oldName = teacher[0];
-      teachers[index] = [name, mergeTeacherRoleForUpdate(teacher[1], role), mobile, assignedClass, status, subject, employeeId, code];
+      teachers[index] = [name, mergeTeacherRoleForUpdate(teacher[1], role), mobile, assignedClass, status, subject, employeeId, code, color];
       updateTeacherCodeReferences(oldCode, code);
       if (teacherAssignments[oldName]) {
         delete teacherAssignments[oldName];
@@ -8759,6 +8872,8 @@
           return;
         }
         const existing = teachers.find(teacher => teacher[0].toLowerCase() === teacherData.name.toLowerCase());
+        const code = teacherData.code || existing?.[7] || teacherCodeFromName(teacherData.name);
+        const color = normalizeTeacherColor(teacherData.color) || (existing ? teacherColor(existing) : colorFromTeacherCode(code));
         const nextTeacher = [
           teacherData.name,
           mergeTeacherRoleForUpdate(existing?.[1], teacherData.role),
@@ -8767,7 +8882,8 @@
           teacherData.status === "Active" ? "Present" : teacherData.status,
           teacherData.subject || existing?.[5] || "",
           teacherData.employeeId || existing?.[6] || "",
-          teacherData.code || existing?.[7] || teacherCodeFromName(teacherData.name)
+          code,
+          color
         ];
         if (existing) updateTeacherCodeReferences(teacherCode(existing), nextTeacher[7]);
         if (existing) {
@@ -9403,8 +9519,17 @@
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;");
       const safeSheetName = name => String(name || "Sheet").replace(/[\\/?*[\]:]/g, " ").slice(0, 31) || "Sheet";
+      const cellValue = cell => (cell && typeof cell === "object" && !Array.isArray(cell)) ? cell.value : cell;
+      const cellStyle = cell => (cell && typeof cell === "object" && !Array.isArray(cell) && cell.styleId) ? cell.styleId : "";
+      const teacherStyles = [...new Map(teachers.map(teacher => [teacherExcelStyleId(teacherCode(teacher)), teacherColor(teacher)])).entries()]
+        .filter(([styleId]) => styleId)
+        .map(([styleId, color]) => `<Style ss:ID="${escapeXml(styleId)}"><Font ss:Bold="1"/><Interior ss:Color="${escapeXml(color)}" ss:Pattern="Solid"/></Style>`)
+        .join("");
       const worksheetXml = sheet => {
-        const rows = (sheet.rows || []).map(row => `<Row>${row.map(cell => `<Cell><Data ss:Type="String">${escapeXml(cell)}</Data></Cell>`).join("")}</Row>`).join("");
+        const rows = (sheet.rows || []).map(row => `<Row>${row.map(cell => {
+          const styleId = cellStyle(cell);
+          return `<Cell${styleId ? ` ss:StyleID="${escapeXml(styleId)}"` : ""}><Data ss:Type="String">${escapeXml(cellValue(cell))}</Data></Cell>`;
+        }).join("")}</Row>`).join("");
         return `<Worksheet ss:Name="${escapeXml(safeSheetName(sheet.name))}"><Table>${rows}</Table></Worksheet>`;
       };
       const workbook = `<?xml version="1.0"?>
@@ -9413,6 +9538,10 @@
  xmlns:o="urn:schemas-microsoft-com:office:office"
  xmlns:x="urn:schemas-microsoft-com:office:excel"
  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+<Styles>
+  <Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Vertical="Center"/><Font ss:FontName="Calibri" ss:Size="11"/></Style>
+  ${teacherStyles}
+</Styles>
 ${sheets.map(worksheetXml).join("")}
 </Workbook>`;
       const blob = new Blob([workbook], { type: "application/vnd.ms-excel;charset=utf-8" });
@@ -10610,10 +10739,13 @@ function currentReportData(type = document.getElementById("reportType").value) {
     function timetableCellInput(value, attrs = {}) {
       const disabled = attrs.disabled ? " disabled" : "";
       const extraClass = attrs.extraClass || "";
+      const colorClass = timetableCellColorClass(value);
+      const colorStyle = timetableCellColorStyle(value);
+      const style = colorStyle ? ` style="${htmlSafe(colorStyle)}"` : "";
       const data = Object.entries(attrs.data || {})
         .map(([key, item]) => ` data-${key.replace(/[A-Z]/g, char => `-${char.toLowerCase()}`)}="${htmlSafe(item)}"`)
         .join("");
-      return `<input class="timetable-cell-select timetable-cell-input ${extraClass}" list="timetableCellOptions" value="${htmlSafe(value || "")}" placeholder="Subject (Code) / Subject (Code)"${data}${disabled}>`;
+      return `<input class="timetable-cell-select timetable-cell-input ${extraClass} ${colorClass}" list="timetableCellOptions" value="${htmlSafe(value || "")}" placeholder="Subject (Code) / Subject (Code)"${data}${style}${disabled}>`;
     }
 
     function renderTimeTableEditor(rows = timetableRowsForSelectedClass()) {
@@ -11107,7 +11239,9 @@ function currentReportData(type = document.getElementById("reportType").value) {
         ? rows.map(row => `<tr data-day="${htmlSafe(row.day)}" data-class-name="${htmlSafe(row.className)}" class="${timetableDayCss(row.day)} ${timetableGroupCss(row.className)} ${timetableClassCss(row.className)}"><td>${row.day}</td><td>${row.className}</td>${Array.from({ length: TIMETABLE_PERIOD_COUNT }, (_, index) => {
             const cell = decoratedTimetableCell(row, index, rows, absenceMap);
             const conflict = conflictCells.has(`${String(row.day || "").toUpperCase()}|${normalizeTimetableClassName(row.className)}|${index + 1}`);
-            if (!editable) return `<td class="${cell.arranged ? "arranged-cell" : ""} ${conflict ? "conflict-cell" : ""}">${htmlSafe(cell.value)}</td>`;
+            const colorClass = timetableCellColorClass(cell.value);
+            const colorStyle = timetableCellColorStyle(cell.value);
+            if (!editable) return `<td class="${cell.arranged ? "arranged-cell" : ""} ${conflict ? "conflict-cell" : ""} ${colorClass}"${colorStyle ? ` style="${htmlSafe(colorStyle)}"` : ""}>${htmlSafe(cell.value)}</td>`;
             return `<td class="${conflict ? "conflict-cell" : ""}">${timetableCellInput(row.periods[index] || "", { extraClass: "whole-timetable-select", disabled: Boolean(selectDisabled), data: { day: row.day, className: row.className, period: index } })}</td>`;
           }).join("")}</tr>`).join("")
         : `<tr><td colspan="10">No imported timetable rows yet.</td></tr>`;
@@ -11271,28 +11405,28 @@ function currentReportData(type = document.getElementById("reportType").value) {
           name: "Time Table Raw",
           rows: [
             ["Day", "Class", ...Array.from({ length: TIMETABLE_PERIOD_COUNT }, (_, index) => `Period ${index + 1}`)],
-            ...rows.map(row => [row.day, row.className, ...row.periods])
+            ...rows.map(row => [row.day, row.className, ...row.periods.map(timetableExcelCell)])
           ]
         },
         {
           name: "Subject Count",
           rows: [
             ["Subject", "Teacher Code", "Total Weekly Periods", "Classes"],
-            ...subjectSummary.map(item => [item.subject, item.code, item.count, item.classes])
+            ...subjectSummary.map(item => [item.subject, { value: item.code, styleId: teacherExcelStyleId(item.code) }, item.count, item.classes])
           ]
         },
         {
           name: "Class Subject Count",
           rows: [
             ["Class", "Subject", "Teacher Code", "Weekly Periods", "Days"],
-            ...classSubjectSummary.map(item => [item.className, item.subject, item.code, item.count, item.days])
+            ...classSubjectSummary.map(item => [item.className, item.subject, { value: item.code, styleId: teacherExcelStyleId(item.code) }, item.count, item.days])
           ]
         },
         {
           name: "Daily Arrangement",
           rows: [
             ["Day", "Class", "Period", "Absent", "Original", "Best Suggestion", "Selected Duty", "Weekly/Monthly Load"],
-            ...arrangement.map(row => [row.day, row.className, row.period, row.absent, row.original, row.best, row.selected, row.load])
+            ...arrangement.map(row => [row.day, row.className, row.period, { value: row.absent, styleId: teacherExcelStyleId(row.absent) }, timetableExcelCell(row.original), timetableExcelCell(row.best), { value: row.selected, styleId: teacherExcelStyleId(row.selected) }, row.load])
           ]
         }
       ]);
@@ -12506,6 +12640,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
     document.getElementById("timeTableBody").addEventListener("change", event => {
       if (!event.target.matches(".timetable-cell-select")) return;
       if (!requireTimetableEditAccess()) return;
+      applyTimetableCellColor(event.target);
       renderTimetableAudit(false);
       document.getElementById("timeTableStatus").textContent = "Timetable cell changed. Conflict check updated instantly. Press Save Time Table to store this class timetable.";
     });
@@ -12513,8 +12648,22 @@ function currentReportData(type = document.getElementById("reportType").value) {
     document.getElementById("timeTableRawRows").addEventListener("change", event => {
       if (!event.target.matches(".whole-timetable-select")) return;
       if (!requireTimetableEditAccess()) return;
+      applyTimetableCellColor(event.target);
       renderTimetableAudit(false);
       document.getElementById("timeTableStatus").textContent = "Whole-school timetable changed. Conflict check updated instantly. Press Save Whole School Time Table.";
+    });
+
+    document.addEventListener("change", event => {
+      if (!event.target.matches(".teacher-color-input")) return;
+      const index = Number(event.target.dataset.index);
+      const teacher = teachers[index];
+      if (!teacher) return;
+      teacher[8] = normalizeTeacherColor(event.target.value) || teacherColor(teacher);
+      saveLocalData();
+      renderTeachers();
+      renderTeacherAttendance();
+      renderTimetableAudit(false);
+      document.getElementById("teacherBulkStatus").textContent = `${teacher[0]} timetable color updated.`;
     });
 
     document.getElementById("uploadTimetableCsv").addEventListener("click", () => {
