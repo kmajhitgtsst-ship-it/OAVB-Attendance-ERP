@@ -631,6 +631,10 @@
       color: #0f172a;
       font-weight: 650;
     }
+    .timetable-cell-input {
+      min-width: 210px;
+      line-height: 1.35;
+    }
     .teacher-subject-badge {
       display: inline-block;
       border-radius: 999px;
@@ -5806,7 +5810,7 @@
           </div>
           <div class="field">
             <label for="timeTableCsvText">Paste Updated Timetable CSV</label>
-            <textarea id="timeTableCsvText" placeholder="Paste extracted timetable CSV rows here. Columns: DAY,CLASS,period cells... Teacher codes in brackets like MATH (TM)."></textarea>
+            <textarea id="timeTableCsvText" placeholder="Paste extracted timetable CSV rows here. Columns: DAY,CLASS,period cells... Teacher codes in brackets like MATH (TM). Optional cells allowed: HINDI (TS)/SANS (DP) or IT (SSS)/PHE (AP)/ART (AS)."></textarea>
           </div>
           <div class="toolbar">
             <button class="primary" id="uploadTimetableCsv">Upload & Import CSV</button>
@@ -10463,17 +10467,39 @@ function currentReportData(type = document.getElementById("reportType").value) {
       });
     }
 
+    function ensureTimetableDatalist(currentValue = "") {
+      let datalist = document.getElementById("timetableCellOptions");
+      if (!datalist) {
+        datalist = document.createElement("datalist");
+        datalist.id = "timetableCellOptions";
+        document.body.appendChild(datalist);
+      }
+      datalist.innerHTML = timetableDropdownOptions(currentValue)
+        .filter(option => option.value)
+        .map(option => `<option value="${htmlSafe(option.value)}" label="${htmlSafe(option.label)}"></option>`)
+        .join("");
+    }
+
+    function timetableCellInput(value, attrs = {}) {
+      const disabled = attrs.disabled ? " disabled" : "";
+      const extraClass = attrs.extraClass || "";
+      const data = Object.entries(attrs.data || {})
+        .map(([key, item]) => ` data-${key}="${htmlSafe(item)}"`)
+        .join("");
+      return `<input class="timetable-cell-select timetable-cell-input ${extraClass}" list="timetableCellOptions" value="${htmlSafe(value || "")}" placeholder="HINDI (TS)/SANS (DP)"${data}${disabled}>`;
+    }
+
     function renderTimeTableEditor(rows = timetableRowsForSelectedClass()) {
       const body = document.getElementById("timeTableBody");
       if (!body) return;
+      ensureTimetableDatalist(rows.flatMap(row => row.periods || []).filter(Boolean).join("|"));
       renderTimetableHeader("timeTableEditorHeader", false);
       body.innerHTML = rows.map(row => `
         <tr class="${timetableDayCss(row.day)} ${timetableGroupCss(row.className)} ${timetableClassCss(row.className)}">
           <td>${htmlSafe(row.day)}</td>
           ${Array.from({ length: TIMETABLE_PERIOD_COUNT }, (_, index) => {
             const value = row.periods[index] || "";
-            const options = timetableDropdownOptions(value).map(option => `<option value="${htmlSafe(option.value)}"${option.value === value ? " selected" : ""}>${htmlSafe(option.label)}</option>`).join("");
-            return `<td><select class="timetable-cell-select" data-day="${htmlSafe(row.day)}" data-period="${index}">${options}</select></td>`;
+            return `<td>${timetableCellInput(value, { data: { day: row.day, period: index } })}</td>`;
           }).join("")}
         </tr>
       `).join("");
@@ -10828,15 +10854,17 @@ function currentReportData(type = document.getElementById("reportType").value) {
       const map = new Map();
       rows.forEach(row => row.periods.forEach(cell => {
         const text = String(cell || "").trim();
-        const match = text.match(/^(.+?)\s*\(([A-Z0-9]+)\)/i);
-        if (!match) return;
-        const subject = match[1].trim().toUpperCase();
-        const code = match[2].trim().toUpperCase();
-        const key = `${subject}|${code}`;
-        if (!map.has(key)) map.set(key, { subject, code, count: 0, classes: new Set() });
-        const item = map.get(key);
-        item.count += 1;
-        item.classes.add(row.className);
+        const matches = [...text.matchAll(/([^()/]+?)\s*\(([A-Z0-9]+)\)/gi)];
+        matches.forEach(match => {
+          const subject = match[1].replace(/[+/]$/, "").trim().toUpperCase();
+          const code = match[2].trim().toUpperCase();
+          if (!subject || !code) return;
+          const key = `${subject}|${code}`;
+          if (!map.has(key)) map.set(key, { subject, code, count: 0, classes: new Set() });
+          const item = map.get(key);
+          item.count += 1;
+          item.classes.add(row.className);
+        });
       }));
       return [...map.values()]
         .map(item => ({ ...item, classes: [...item.classes].join(", ") }))
@@ -10881,6 +10909,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
       if (!tbody) return;
       const editable = targetId === "timeTableRawRows";
       const selectDisabled = canEditTimetable() ? "" : " disabled";
+      if (editable) ensureTimetableDatalist(rows.flatMap(row => row.periods || []).filter(Boolean).join("|"));
       const absenceMap = timetableAbsenceMap();
       const conflictCells = timetableConflictCellSet(rows);
       tbody.innerHTML = rows.length
@@ -10888,8 +10917,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
             const cell = decoratedTimetableCell(row, index, rows, absenceMap);
             const conflict = conflictCells.has(`${String(row.day || "").toUpperCase()}|${normalizeTimetableClassName(row.className)}|${index + 1}`);
             if (!editable) return `<td class="${cell.arranged ? "arranged-cell" : ""} ${conflict ? "conflict-cell" : ""}">${htmlSafe(cell.value)}</td>`;
-            const options = timetableDropdownOptions(row.periods[index] || "").map(option => `<option value="${htmlSafe(option.value)}"${option.value === (row.periods[index] || "") ? " selected" : ""}>${htmlSafe(option.label)}</option>`).join("");
-            return `<td class="${conflict ? "conflict-cell" : ""}"><select class="timetable-cell-select whole-timetable-select" data-day="${htmlSafe(row.day)}" data-class-name="${htmlSafe(row.className)}" data-period="${index}"${selectDisabled}>${options}</select></td>`;
+            return `<td class="${conflict ? "conflict-cell" : ""}">${timetableCellInput(row.periods[index] || "", { extraClass: "whole-timetable-select", disabled: Boolean(selectDisabled), data: { day: row.day, className: row.className, period: index } })}</td>`;
           }).join("")}</tr>`).join("")
         : `<tr><td colspan="10">No imported timetable rows yet.</td></tr>`;
     }
