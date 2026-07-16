@@ -10353,13 +10353,24 @@ function currentReportData(type = document.getElementById("reportType").value) {
         .filter(row => row.length > 3 && row.some(Boolean))
         .filter(row => !/^(odisha|time table|day)$/i.test(row[0] || ""));
       importedTimetableRows.length = 0;
+      const addImportedRow = (day, className, periods) => {
+        const cleanPeriods = periods.slice(0, TIMETABLE_PERIOD_COUNT).map(cell => cell || ".");
+        if (!className || className === "." || !cleanPeriods.length) return;
+        importedTimetableRows.push({ day: day || "Day", className, periods: cleanPeriods });
+      };
       rows.forEach(row => {
         const day = row[0] || importedTimetableRows[importedTimetableRows.length - 1]?.day || "";
         const className = normalizeTimetableClassName(row[1] || "");
         if (!className || className === ".") return;
-        const periods = row.slice(2, 2 + TIMETABLE_PERIOD_COUNT).map(cell => cell || ".");
-        if (!periods.length) return;
-        importedTimetableRows.push({ day: day || "Day", className, periods });
+        const periodCells = row.slice(2).map(cell => cell || ".");
+        if (/^(VI|VII|VIII|IX|X)$/.test(className) && periodCells.length >= TIMETABLE_PERIOD_COUNT * 2) {
+          const sectionA = Array.from({ length: TIMETABLE_PERIOD_COUNT }, (_, index) => periodCells[index * 2] || ".");
+          const sectionB = Array.from({ length: TIMETABLE_PERIOD_COUNT }, (_, index) => periodCells[index * 2 + 1] || ".");
+          addImportedRow(day, `${className}-A`, sectionA);
+          addImportedRow(day, `${className}-B`, sectionB);
+          return;
+        }
+        addImportedRow(day, className, periodCells);
       });
       saveLocalData();
       renderTimetableAudit();
