@@ -6032,6 +6032,19 @@
               </table>
             </div>
           </div>
+          <div class="table-wrap" id="teacherDayAllocationPanel" style="margin-top: 14px;">
+            <div class="section-title">
+              <h2>Day Wise Teacher Period Allocation</h2>
+              <button class="secondary" id="toggleTeacherDayAllocation">Hide Day Wise Teacher Allocation</button>
+            </div>
+            <div id="teacherDayAllocationContent">
+              <p class="success-note">Shows which teacher has how many allotted periods on each day. Optional cells with multiple teachers are counted for each teacher.</p>
+              <table>
+                <thead><tr><th>Teacher Code</th><th>Teacher Name</th><th>Monday</th><th>Tuesday</th><th>Wednesday</th><th>Thursday</th><th>Friday</th><th>Saturday</th><th>Total</th><th>Classes / Periods</th></tr></thead>
+                <tbody id="teacherDayAllocationRows"></tbody>
+              </table>
+            </div>
+          </div>
           <div class="table-wrap" id="timeTableConflictPanel" style="margin-top: 14px;">
             <div class="section-title">
               <h2>Conflict / Compliance</h2>
@@ -6067,6 +6080,19 @@
               <table>
               <thead><tr><th>Class</th><th>Subject</th><th>Teacher Code</th><th>Weekly Periods</th><th>Days</th></tr></thead>
               <tbody id="classSubjectPeriodRows"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="table-wrap" id="sectionSubjectBalancePanel" style="margin-top: 14px;">
+            <div class="section-title">
+              <h2>A/B Section Subject Balance</h2>
+              <button class="secondary" id="toggleSectionSubjectBalance">Hide A/B Section Balance</button>
+            </div>
+            <div id="sectionSubjectBalanceContent">
+              <p class="success-note">Checks whether A and B sections of the same class have equal weekly subject periods.</p>
+              <table>
+              <thead><tr><th>Class</th><th>Subject</th><th>A Section Periods</th><th>B Section Periods</th><th>Status</th></tr></thead>
+              <tbody id="sectionSubjectBalanceRows"></tbody>
               </table>
             </div>
           </div>
@@ -11402,6 +11428,87 @@ function currentReportData(type = document.getElementById("reportType").value) {
         .map(subject => ({ subject, code: "-" }));
     }
 
+    const TIMETABLE_DAY_ORDER = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
+
+    function teacherNameByCode(code) {
+      const teacher = teacherByCode(code);
+      return teacher?.[0] || "";
+    }
+
+    function teacherDayAllocationSummary(rows = currentTimetableRows()) {
+      const map = new Map();
+      rows.forEach(row => row.periods.forEach((cell, periodIndex) => {
+        extractTeacherCodes(cell).forEach(code => {
+          const day = String(row.day || "").trim().toUpperCase();
+          if (!day) return;
+          if (!map.has(code)) {
+            map.set(code, {
+              code,
+              name: teacherNameByCode(code),
+              days: Object.fromEntries(TIMETABLE_DAY_ORDER.map(dayName => [dayName, 0])),
+              total: 0,
+              classes: new Set()
+            });
+          }
+          const item = map.get(code);
+          if (!(day in item.days)) item.days[day] = 0;
+          item.days[day] += 1;
+          item.total += 1;
+          item.classes.add(`${normalizeTimetableClassName(row.className)} P${periodIndex + 1}`);
+        });
+      }));
+      return [...map.values()]
+        .map(item => ({ ...item, classes: [...item.classes].join(", ") }))
+        .sort((a, b) => a.code.localeCompare(b.code));
+    }
+
+    function renderTeacherDayAllocation(rows = currentTimetableRows()) {
+      const body = document.getElementById("teacherDayAllocationRows");
+      if (!body) return;
+      const summary = teacherDayAllocationSummary(rows);
+      body.innerHTML = summary.length
+        ? summary.map(item => `<tr><td>${htmlSafe(item.code)}</td><td>${htmlSafe(item.name || "-")}</td>${TIMETABLE_DAY_ORDER.map(day => `<td>${item.days[day] || 0}</td>`).join("")}<td>${item.total}</td><td>${htmlSafe(item.classes)}</td></tr>`).join("")
+        : `<tr><td colspan="10">No teacher allotment found yet.</td></tr>`;
+    }
+
+    function timetableBaseSection(className) {
+      const clean = normalizeTimetableClassName(className).replace(/^CLASS\s+/i, "").toUpperCase();
+      const match = clean.match(/^(.+)-([AB])$/);
+      if (!match) return null;
+      return { base: match[1], section: match[2] };
+    }
+
+    function sectionSubjectBalanceSummary(rows = currentTimetableRows()) {
+      const map = new Map();
+      rows.forEach(row => {
+        const parsed = timetableBaseSection(row.className);
+        if (!parsed) return;
+        row.periods.forEach(cell => {
+          subjectEntriesFromTimetableCell(cell).forEach(({ subject }) => {
+            if (!subject || subject === "-") return;
+            const key = `${parsed.base}|${subject}`;
+            if (!map.has(key)) map.set(key, { className: parsed.base, subject, A: 0, B: 0 });
+            map.get(key)[parsed.section] += 1;
+          });
+        });
+      });
+      return [...map.values()]
+        .map(item => ({
+          ...item,
+          status: item.A === item.B ? "Equal" : `Mismatch by ${Math.abs(item.A - item.B)} period(s)`
+        }))
+        .sort((a, b) => a.className.localeCompare(b.className) || a.subject.localeCompare(b.subject));
+    }
+
+    function renderSectionSubjectBalance(rows = currentTimetableRows()) {
+      const body = document.getElementById("sectionSubjectBalanceRows");
+      if (!body) return;
+      const summary = sectionSubjectBalanceSummary(rows);
+      body.innerHTML = summary.length
+        ? summary.map(item => `<tr class="${item.A === item.B ? "" : "conflict-cell"}"><td>${htmlSafe(item.className)}</td><td>${htmlSafe(item.subject)}</td><td>${item.A}</td><td>${item.B}</td><td>${htmlSafe(item.status)}</td></tr>`).join("")
+        : `<tr><td colspan="5">No A/B section timetable data found yet.</td></tr>`;
+    }
+
     function subjectPeriodSummary(rows = currentTimetableRows()) {
       const map = new Map();
       rows.forEach(row => row.periods.forEach(cell => {
@@ -11721,9 +11828,11 @@ function currentReportData(type = document.getElementById("reportType").value) {
       renderTimetableArrangement(rows);
       renderTimetableRaw(rows);
       renderTimetableWorkload(rows);
+      renderTeacherDayAllocation(rows);
       renderTimetableConflicts(rows);
       renderSubjectPeriodSummary(rows);
       renderClassSubjectPeriodSummary(rows);
+      renderSectionSubjectBalance(rows);
       updateTimetableAccess();
     }
 
@@ -11732,6 +11841,8 @@ function currentReportData(type = document.getElementById("reportType").value) {
       const arrangement = renderTimetableArrangement(rows);
       const subjectSummary = subjectPeriodSummary(rows);
       const classSubjectSummary = classSubjectPeriodSummary(rows);
+      const teacherDaySummary = teacherDayAllocationSummary(rows);
+      const sectionBalanceSummary = sectionSubjectBalanceSummary(rows);
       downloadExcelWorkbook("time-table-audit-arrangement.xls", [
         {
           name: "Time Table Raw",
@@ -11748,10 +11859,30 @@ function currentReportData(type = document.getElementById("reportType").value) {
           ]
         },
         {
+          name: "Teacher Day Count",
+          rows: [
+            ["Teacher Code", "Teacher Name", ...TIMETABLE_DAY_ORDER.map(day => day[0] + day.slice(1).toLowerCase()), "Total", "Classes / Periods"],
+            ...teacherDaySummary.map(item => [
+              { value: item.code, styleId: teacherExcelStyleId(item.code) },
+              item.name || "",
+              ...TIMETABLE_DAY_ORDER.map(day => item.days[day] || 0),
+              item.total,
+              item.classes
+            ])
+          ]
+        },
+        {
           name: "Class Subject Count",
           rows: [
             ["Class", "Subject", "Teacher Code", "Weekly Periods", "Days"],
             ...classSubjectSummary.map(item => [item.className, item.subject, { value: item.code, styleId: teacherExcelStyleId(item.code) }, item.count, item.days])
+          ]
+        },
+        {
+          name: "AB Subject Balance",
+          rows: [
+            ["Class", "Subject", "A Section Periods", "B Section Periods", "Status"],
+            ...sectionBalanceSummary.map(item => [item.className, item.subject, item.A, item.B, item.status])
           ]
         },
         {
@@ -13202,6 +13333,10 @@ function currentReportData(type = document.getElementById("reportType").value) {
       togglePanelVisibility("timeTableWorkloadRows", "toggleWorkloadSummary", "Workload Summary");
     });
 
+    document.getElementById("toggleTeacherDayAllocation").addEventListener("click", () => {
+      togglePanelVisibility("teacherDayAllocationContent", "toggleTeacherDayAllocation", "Day Wise Teacher Allocation");
+    });
+
     document.getElementById("toggleConflictCompliance").addEventListener("click", () => {
       togglePanelVisibility("timeTableConflictContent", "toggleConflictCompliance", "Conflict / Compliance");
     });
@@ -13212,6 +13347,10 @@ function currentReportData(type = document.getElementById("reportType").value) {
 
     document.getElementById("toggleClassSubjectPeriod").addEventListener("click", () => {
       togglePanelVisibility("classSubjectPeriodContent", "toggleClassSubjectPeriod", "Class Wise Subject Period Count");
+    });
+
+    document.getElementById("toggleSectionSubjectBalance").addEventListener("click", () => {
+      togglePanelVisibility("sectionSubjectBalanceContent", "toggleSectionSubjectBalance", "A/B Section Balance");
     });
 
     document.getElementById("showWeeklyTimetable").addEventListener("click", () => {
