@@ -10426,13 +10426,23 @@ function monthlySummaryRows(month, classKeys) {
     function monthlyStatusesForStudent(month, classGroup, roll, preloadedRecords = null) {
       const records = preloadedRecords || Object.values(dailyAttendanceRecords)
         .filter(record => record.classGroup === classGroup && record.date.startsWith(month));
-      return records
-        .sort((a, b) => a.date.localeCompare(b.date))
-        .map(record => {
-          const saved = (record.students || []).find(item => item.roll === roll);
-          return saved?.status || "Present";
-        })
-        .filter(Boolean);
+      const recordsByDate = new Map(records.map(record => [record.date, record]));
+      const workingDates = datesForMonth(month).filter(date => !isAttendanceHolidayDate(date));
+      if (!workingDates.length) {
+        return records
+          .filter(record => !isAttendanceHolidayDate(record.date))
+          .sort((a, b) => a.date.localeCompare(b.date))
+          .map(record => {
+            const saved = (record.students || []).find(item => item.roll === roll);
+            return saved?.status || "Present";
+          })
+          .filter(Boolean);
+      }
+      return workingDates.map(date => {
+        const record = recordsByDate.get(date);
+        const saved = (record?.students || []).find(item => item.roll === roll);
+        return saved?.status || "Present";
+      });
     }
 
     function parentAlertRows(date, classKeys) {
@@ -13641,6 +13651,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
   </script>
 </body>
 </html>
+
 
 
 
