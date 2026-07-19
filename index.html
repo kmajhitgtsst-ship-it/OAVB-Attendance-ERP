@@ -10921,7 +10921,8 @@ function currentReportData(type = document.getElementById("reportType").value) {
 
     function allTimetableClassNames() {
       const select = document.getElementById("timeTableClass");
-      return select ? [...select.options].map(option => option.value) : [selectedTimetableClass()];
+      const names = select ? [...select.options].map(option => option.value) : [selectedTimetableClass()];
+      return names.sort(compareTimetableClassNames);
     }
 
     function timetableRowsForSelectedClass() {
@@ -11118,7 +11119,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
       return activeTimetableRows().map(row => ({
         ...row,
         periods: row.periods.slice(0, TIMETABLE_PERIOD_COUNT)
-      }));
+      })).sort(compareTimetableRows);
     }
 
     function normalizeTimetableClassName(value) {
@@ -11129,6 +11130,30 @@ function currentReportData(type = document.getElementById("reportType").value) {
       const match = text.match(/^(VI|VII|VIII|IX|X)-?([AB])$/);
       if (match) return `${match[1]}-${match[2]}`;
       return text;
+    }
+
+    const TIMETABLE_CLASS_ORDER = ["VI-A", "VI-B", "VII-A", "VII-B", "VIII-A", "VIII-B", "IX-A", "IX-B", "X-A", "X-B", "XI-SCIENCE", "XII-SCIENCE"];
+
+    function timetableClassOrderIndex(className) {
+      const clean = normalizeTimetableClassName(className);
+      const index = TIMETABLE_CLASS_ORDER.indexOf(clean);
+      return index >= 0 ? index : TIMETABLE_CLASS_ORDER.length + clean.localeCompare(clean, undefined, { numeric: true });
+    }
+
+    function compareTimetableClassNames(a, b) {
+      const cleanA = normalizeTimetableClassName(a);
+      const cleanB = normalizeTimetableClassName(b);
+      const orderA = TIMETABLE_CLASS_ORDER.indexOf(cleanA);
+      const orderB = TIMETABLE_CLASS_ORDER.indexOf(cleanB);
+      if (orderA >= 0 || orderB >= 0) return (orderA >= 0 ? orderA : 999) - (orderB >= 0 ? orderB : 999);
+      return cleanA.localeCompare(cleanB, undefined, { numeric: true });
+    }
+
+    function compareTimetableRows(a, b) {
+      const dayDiff = timetableDays().findIndex(day => day.toUpperCase() === String(a.day || "").toUpperCase())
+        - timetableDays().findIndex(day => day.toUpperCase() === String(b.day || "").toUpperCase());
+      if (dayDiff) return dayDiff;
+      return compareTimetableClassNames(a.className, b.className);
     }
 
     function repairImportedTimetableRows() {
@@ -11497,7 +11522,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
           ...item,
           status: item.A === item.B ? "Equal" : `Mismatch by ${Math.abs(item.A - item.B)} period(s)`
         }))
-        .sort((a, b) => a.className.localeCompare(b.className) || a.subject.localeCompare(b.subject));
+        .sort((a, b) => compareTimetableClassNames(`${a.className}-A`, `${b.className}-A`) || a.subject.localeCompare(b.subject));
     }
 
     function renderSectionSubjectBalance(rows = currentTimetableRows()) {
@@ -11547,7 +11572,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
       }));
       return [...map.values()]
         .map(item => ({ ...item, days: [...item.days].join(", ") }))
-        .sort((a, b) => normalizeTimetableClassName(a.className).localeCompare(normalizeTimetableClassName(b.className)) || a.subject.localeCompare(b.subject) || a.code.localeCompare(b.code));
+        .sort((a, b) => compareTimetableClassNames(a.className, b.className) || a.subject.localeCompare(b.subject) || a.code.localeCompare(b.code));
     }
 
     function renderClassSubjectPeriodSummary(rows = currentTimetableRows()) {
