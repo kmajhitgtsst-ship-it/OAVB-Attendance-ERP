@@ -6039,6 +6039,12 @@
             </div>
             <div id="teacherDayAllocationContent">
               <p class="success-note">Shows which teacher has how many allotted periods on each day. Optional cells with multiple teachers are counted for each teacher.</p>
+              <h3>Day Wise Teacher Class Count</h3>
+              <table>
+                <thead><tr><th>Day</th><th>Teacher Code</th><th>Teacher Name</th><th>Total Classes / Periods</th><th>Classes / Periods</th></tr></thead>
+                <tbody id="dayWiseTeacherClassRows"></tbody>
+              </table>
+              <h3>Teacher Weekly Summary</h3>
               <table>
                 <thead><tr><th>Teacher Code</th><th>Teacher Name</th><th>Monday</th><th>Tuesday</th><th>Wednesday</th><th>Thursday</th><th>Friday</th><th>Saturday</th><th>Total</th><th>Classes / Periods</th></tr></thead>
                 <tbody id="teacherDayAllocationRows"></tbody>
@@ -11487,13 +11493,47 @@ function currentReportData(type = document.getElementById("reportType").value) {
         .sort((a, b) => a.code.localeCompare(b.code));
     }
 
+    function dayWiseTeacherClassSummary(rows = currentTimetableRows()) {
+      const map = new Map();
+      rows.forEach(row => row.periods.forEach((cell, periodIndex) => {
+        extractTeacherCodes(cell).forEach(code => {
+          const day = String(row.day || "").trim().toUpperCase();
+          if (!day) return;
+          const key = `${day}|${code}`;
+          if (!map.has(key)) {
+            map.set(key, {
+              day,
+              code,
+              name: teacherNameByCode(code),
+              count: 0,
+              classes: new Set()
+            });
+          }
+          const item = map.get(key);
+          item.count += 1;
+          item.classes.add(`${normalizeTimetableClassName(row.className)} P${periodIndex + 1}`);
+        });
+      }));
+      return [...map.values()]
+        .map(item => ({ ...item, classes: [...item.classes].join(", ") }))
+        .sort((a, b) => {
+          const dayDiff = TIMETABLE_DAY_ORDER.indexOf(a.day) - TIMETABLE_DAY_ORDER.indexOf(b.day);
+          return dayDiff || b.count - a.count || a.code.localeCompare(b.code);
+        });
+    }
+
     function renderTeacherDayAllocation(rows = currentTimetableRows()) {
       const body = document.getElementById("teacherDayAllocationRows");
-      if (!body) return;
+      const dayBody = document.getElementById("dayWiseTeacherClassRows");
+      if (!body && !dayBody) return;
       const summary = teacherDayAllocationSummary(rows);
-      body.innerHTML = summary.length
+      if (body) body.innerHTML = summary.length
         ? summary.map(item => `<tr><td>${htmlSafe(item.code)}</td><td>${htmlSafe(item.name || "-")}</td>${TIMETABLE_DAY_ORDER.map(day => `<td>${item.days[day] || 0}</td>`).join("")}<td>${item.total}</td><td>${htmlSafe(item.classes)}</td></tr>`).join("")
         : `<tr><td colspan="10">No teacher allotment found yet.</td></tr>`;
+      const daySummary = dayWiseTeacherClassSummary(rows);
+      if (dayBody) dayBody.innerHTML = daySummary.length
+        ? daySummary.map(item => `<tr><td>${htmlSafe(item.day[0] + item.day.slice(1).toLowerCase())}</td><td>${htmlSafe(item.code)}</td><td>${htmlSafe(item.name || "-")}</td><td>${item.count}</td><td>${htmlSafe(item.classes)}</td></tr>`).join("")
+        : `<tr><td colspan="5">No day-wise teacher class count found yet.</td></tr>`;
     }
 
     function timetableBaseSection(className) {
@@ -11878,6 +11918,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
       const subjectSummary = subjectPeriodSummary(rows);
       const classSubjectSummary = classSubjectPeriodSummary(rows);
       const teacherDaySummary = teacherDayAllocationSummary(rows);
+      const dayWiseTeacherSummary = dayWiseTeacherClassSummary(rows);
       const sectionBalanceSummary = sectionSubjectBalanceSummary(rows);
       downloadExcelWorkbook("time-table-audit-arrangement.xls", [
         {
@@ -11903,6 +11944,19 @@ function currentReportData(type = document.getElementById("reportType").value) {
               item.name || "",
               ...TIMETABLE_DAY_ORDER.map(day => item.days[day] || 0),
               item.total,
+              item.classes
+            ])
+          ]
+        },
+        {
+          name: "Day Wise Teacher Count",
+          rows: [
+            ["Day", "Teacher Code", "Teacher Name", "Total Classes / Periods", "Classes / Periods"],
+            ...dayWiseTeacherSummary.map(item => [
+              item.day[0] + item.day.slice(1).toLowerCase(),
+              { value: item.code, styleId: teacherExcelStyleId(item.code) },
+              item.name || "",
+              item.count,
               item.classes
             ])
           ]
