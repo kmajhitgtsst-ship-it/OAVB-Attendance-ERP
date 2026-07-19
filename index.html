@@ -10351,20 +10351,25 @@ function configuredMonthWorkingDays(month) {
 
 function monthlyAttendanceCalculation(month, statuses) {
   const source = Array.isArray(statuses) ? statuses.filter(Boolean) : [];
-  const rawPresent = source.filter(status => status === "Present").length;
-  const rawAbsent = source.filter(status => status === "Absent").length;
-  const rawLate = source.filter(status => status === "Late").length;
-  const rawLeave = source.filter(status => status === "Leave").length;
-  const savedHoliday = source.filter(status => status === "Holiday").length;
+  const entries = source.map(item => {
+    if (item && typeof item === "object" && !Array.isArray(item)) {
+      return { date: item.date || "", status: item.status || "Present" };
+    }
+    return { date: "", status: item };
+  });
+  const rawPresent = entries.filter(item => item.status === "Present").length;
+  const rawAbsent = entries.filter(item => item.status === "Absent").length;
+  const rawLate = entries.filter(item => item.status === "Late").length;
+  const rawLeave = entries.filter(item => item.status === "Leave").length;
+  const savedHoliday = entries.filter(item => item.status === "Holiday").length;
+  const absentDates = entries.filter(item => item.status === "Absent" && item.date).map(item => item.date);
   const holiday = Math.max(savedHoliday, configuredMonthHolidays(month).length);
-  const savedWorkingDays = source.filter(status => status !== "Holiday").length;
+  const savedWorkingDays = entries.filter(item => item.status !== "Holiday").length;
   const workingDays = configuredMonthWorkingDays(month) || savedWorkingDays;
   const absent = workingDays ? Math.min(rawAbsent, workingDays) : rawAbsent;
   const leave = workingDays ? Math.min(rawLeave, Math.max(0, workingDays - absent)) : rawLeave;
   const late = workingDays ? Math.min(rawLate, Math.max(0, workingDays - absent - leave)) : rawLate;
-  const present = workingDays
-    ? Math.max(0, workingDays - absent - leave - late)
-    : rawPresent;
+  const present = workingDays ? Math.min(rawPresent, Math.max(0, workingDays - absent - leave - late)) : rawPresent;
   const attended = present + late;
   const denominator = workingDays || savedWorkingDays;
   const percentValue = denominator ? Math.round((attended / denominator) * 1000) / 10 : null;
@@ -10385,12 +10390,13 @@ function monthlyAttendanceCalculation(month, statuses) {
     percentValue,
     targetPresent,
     neededFor75,
-    suggestion
+    suggestion,
+    absentDates
   };
 }
 
 function monthlyAttendanceHeaders() {
-  return ["Month", "Class", "Roll", "Student", "Working Days", "Saved Days", "Present", "Absent", "Late", "Leave", "Total Holiday", "Attendance %", "Present Required for 75%", "Present Needed", "Suggestion", "Guardian", "Mobile"];
+  return ["Month", "Class", "Roll", "Student", "Working Days", "Saved Days", "Present", "Absent", "Late", "Leave", "Total Holiday", "Attendance %", "Present Required for 75%", "Present Needed", "Suggestion", "Guardian", "Mobile", "Absent Dates"];
 }
 function monthlySummaryRows(month, classKeys) {
   return classKeys.flatMap(classGroup => {
@@ -10417,7 +10423,8 @@ function monthlySummaryRows(month, classKeys) {
         calc.neededFor75,
         calc.suggestion,
         student[6] || "",
-        student[7] || ""
+        student[7] || "",
+        (calc.absentDates || []).map(date => date.slice(-2)).join(", ")
       ];
     });
   });
@@ -10434,14 +10441,14 @@ function monthlySummaryRows(month, classKeys) {
           .sort((a, b) => a.date.localeCompare(b.date))
           .map(record => {
             const saved = (record.students || []).find(item => item.roll === roll);
-            return saved?.status || "Present";
+            return { date: record.date, status: saved?.status || "Present" };
           })
           .filter(Boolean);
       }
       return workingDates.map(date => {
         const record = recordsByDate.get(date);
         const saved = (record?.students || []).find(item => item.roll === roll);
-        return saved?.status || "Present";
+        return { date, status: saved?.status || "Present" };
       });
     }
 
