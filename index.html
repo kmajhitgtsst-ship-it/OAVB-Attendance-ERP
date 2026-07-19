@@ -6078,7 +6078,7 @@
             <div id="classSubjectPeriodContent">
               <p class="success-note">Shows which subject is allotted how many weekly periods/days in each class. Optional cells like HINDI (TH)/SANS (DP) are counted separately.</p>
               <table>
-              <thead><tr><th>Class</th><th>Subject</th><th>Teacher Code</th><th>Weekly Periods</th><th>Days</th></tr></thead>
+              <thead><tr><th>Subjects</th><th>Class-Sec</th><th>Weekly Periods</th><th>Teacher Code</th><th>Days</th></tr></thead>
               <tbody id="classSubjectPeriodRows"></tbody>
               </table>
             </div>
@@ -11563,24 +11563,35 @@ function currentReportData(type = document.getElementById("reportType").value) {
       const map = new Map();
       rows.forEach(row => row.periods.forEach(cell => {
         subjectEntriesFromTimetableCell(cell).forEach(({ subject, code }) => {
-          const key = `${normalizeTimetableClassName(row.className)}|${subject}|${code}`;
-          if (!map.has(key)) map.set(key, { className: row.className, subject, code, count: 0, days: new Set() });
+          const className = normalizeTimetableClassName(row.className);
+          const key = `${subject}|${className}`;
+          if (!map.has(key)) map.set(key, { className, subject, codes: new Set(), count: 0, days: new Set() });
           const item = map.get(key);
+          if (code && code !== "-") item.codes.add(code);
           item.count += 1;
           item.days.add(row.day);
         });
       }));
       return [...map.values()]
-        .map(item => ({ ...item, days: [...item.days].join(", ") }))
-        .sort((a, b) => compareTimetableClassNames(a.className, b.className) || a.subject.localeCompare(b.subject) || a.code.localeCompare(b.code));
+        .map(item => ({
+          ...item,
+          code: [...item.codes].sort().join(", "),
+          days: [...item.days].join(", ")
+        }))
+        .sort((a, b) => a.subject.localeCompare(b.subject) || compareTimetableClassNames(a.className, b.className));
     }
 
     function renderClassSubjectPeriodSummary(rows = currentTimetableRows()) {
       const body = document.getElementById("classSubjectPeriodRows");
       if (!body) return;
       const summary = classSubjectPeriodSummary(rows);
+      let lastSubject = "";
       body.innerHTML = summary.length
-        ? summary.map(item => `<tr><td>${htmlSafe(item.className)}</td><td>${htmlSafe(item.subject)}</td><td>${htmlSafe(item.code)}</td><td>${item.count}</td><td>${htmlSafe(item.days)}</td></tr>`).join("")
+        ? summary.map(item => {
+            const subjectCell = item.subject === lastSubject ? "" : item.subject;
+            lastSubject = item.subject;
+            return `<tr><td><strong>${htmlSafe(subjectCell)}</strong></td><td>${htmlSafe(item.className)}</td><td>${item.count}</td><td>${htmlSafe(item.code || "-")}</td><td>${htmlSafe(item.days)}</td></tr>`;
+          }).join("")
         : `<tr><td colspan="5">No class-wise subject period found yet.</td></tr>`;
     }
 
@@ -11899,8 +11910,14 @@ function currentReportData(type = document.getElementById("reportType").value) {
         {
           name: "Class Subject Count",
           rows: [
-            ["Class", "Subject", "Teacher Code", "Weekly Periods", "Days"],
-            ...classSubjectSummary.map(item => [item.className, item.subject, { value: item.code, styleId: teacherExcelStyleId(item.code) }, item.count, item.days])
+            ["Subjects", "Class-Sec", "Weekly Periods", "Teacher Code", "Days"],
+            ...classSubjectSummary.map((item, index, list) => [
+              index > 0 && list[index - 1].subject === item.subject ? "" : item.subject,
+              item.className,
+              item.count,
+              item.code,
+              item.days
+            ])
           ]
         },
         {
