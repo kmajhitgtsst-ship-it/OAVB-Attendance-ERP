@@ -5974,6 +5974,8 @@
             </div>
             <button class="secondary" id="shareDailyTimetableFormat">Share / Download Daily</button>
             <button class="secondary" id="downloadWeeklyTimetableExcel">Weekly Time Table Excel</button>
+            <button class="secondary" id="downloadDayWiseTeacherExcel">Day Wise Teacher Excel</button>
+            <button class="secondary" id="downloadSubjectClassExcel">Subject-Class Excel</button>
             <button class="secondary" id="printWeeklyTimetablePdf">Weekly Time Table PDF</button>
           </div>
           <div class="card" style="margin-top: 14px;">
@@ -6010,6 +6012,7 @@
                 <h2>Daily Arrangement</h2>
                 <div class="toolbar">
                   <button class="secondary" id="shareDailyArrangement">Share Daily Arrangement</button>
+                  <button class="secondary" id="downloadDailyArrangementExcel">Daily Arrangement Excel</button>
                   <button class="secondary" id="shareTodayTimetable">Share Today's Time Table</button>
                   <button class="secondary" id="resetDailyArrangement">Reset Daily Arrangement</button>
                   <button class="secondary" id="toggleDailyArrangement">Hide Daily Arrangement</button>
@@ -6024,7 +6027,10 @@
             <div class="table-wrap" id="timeTableWorkloadPanel">
               <div class="section-title">
                 <h2>Workload Summary</h2>
-                <button class="secondary" id="toggleWorkloadSummary">Hide Workload Summary</button>
+                <div class="toolbar">
+                  <button class="secondary" id="downloadWorkloadSummaryExcel">Workload Excel</button>
+                  <button class="secondary" id="toggleWorkloadSummary">Hide Workload Summary</button>
+                </div>
               </div>
               <table>
                 <thead><tr><th>Teacher Code</th><th>Original Today</th><th>Original Weekly</th><th>Today Arrangement</th><th>This Week Arrangement</th><th>This Month Arrangement</th></tr></thead>
@@ -6035,7 +6041,10 @@
           <div class="table-wrap" id="teacherDayAllocationPanel" style="margin-top: 14px;">
             <div class="section-title">
               <h2>Day Wise Teacher Period Allocation</h2>
-              <button class="secondary" id="toggleTeacherDayAllocation">Hide Day Wise Teacher Allocation</button>
+              <div class="toolbar">
+                <button class="secondary" id="downloadTeacherDayAllocationExcel">Teacher Allocation Excel</button>
+                <button class="secondary" id="toggleTeacherDayAllocation">Hide Day Wise Teacher Allocation</button>
+              </div>
             </div>
             <div id="teacherDayAllocationContent">
               <p class="success-note">Shows which teacher has how many allotted periods on each day. Optional cells with multiple teachers are counted for each teacher.</p>
@@ -6054,7 +6063,10 @@
           <div class="table-wrap" id="timeTableConflictPanel" style="margin-top: 14px;">
             <div class="section-title">
               <h2>Conflict / Compliance</h2>
-              <button class="secondary" id="toggleConflictCompliance">Hide Conflict / Compliance</button>
+              <div class="toolbar">
+                <button class="secondary" id="downloadConflictComplianceExcel">Conflict Excel</button>
+                <button class="secondary" id="toggleConflictCompliance">Hide Conflict / Compliance</button>
+              </div>
             </div>
             <div id="timeTableConflictContent">
               <p class="conflict-note clear" id="timeTableConflictStatus">No conflict found yet.</p>
@@ -6067,7 +6079,10 @@
           <div class="table-wrap" id="subjectPeriodPanel" style="margin-top: 14px;">
             <div class="section-title">
               <h2>Subject Wise Period Count</h2>
-              <button class="secondary" id="toggleSubjectPeriod">Hide Subject Wise Period Count</button>
+              <div class="toolbar">
+                <button class="secondary" id="downloadSubjectPeriodExcel">Subject Period Excel</button>
+                <button class="secondary" id="toggleSubjectPeriod">Hide Subject Wise Period Count</button>
+              </div>
             </div>
             <div id="subjectPeriodContent">
               <table>
@@ -6079,7 +6094,10 @@
           <div class="table-wrap" id="classSubjectPeriodPanel" style="margin-top: 14px;">
             <div class="section-title">
               <h2>Class Wise Subject Period Count</h2>
-              <button class="secondary" id="toggleClassSubjectPeriod">Hide Class Wise Subject Period Count</button>
+              <div class="toolbar">
+                <button class="secondary" id="downloadClassSubjectPeriodExcel">Class Subject Excel</button>
+                <button class="secondary" id="toggleClassSubjectPeriod">Hide Class Wise Subject Period Count</button>
+              </div>
             </div>
             <div id="classSubjectPeriodContent">
               <p class="success-note">Shows which subject is allotted how many weekly periods/days in each class. Optional cells like HINDI (TH)/SANS (DP) are counted separately.</p>
@@ -6092,7 +6110,10 @@
           <div class="table-wrap" id="sectionSubjectBalancePanel" style="margin-top: 14px;">
             <div class="section-title">
               <h2>A/B Section Subject Balance</h2>
-              <button class="secondary" id="toggleSectionSubjectBalance">Hide A/B Section Balance</button>
+              <div class="toolbar">
+                <button class="secondary" id="downloadSectionSubjectBalanceExcel">A/B Balance Excel</button>
+                <button class="secondary" id="toggleSectionSubjectBalance">Hide A/B Section Balance</button>
+              </div>
             </div>
             <div id="sectionSubjectBalanceContent">
               <p class="success-note">Checks whether A and B sections of the same class have equal weekly subject periods.</p>
@@ -6103,7 +6124,10 @@
             </div>
           </div>
           <div class="table-wrap hidden" id="timeTableTodayPanel" style="margin-top: 14px;">
-            <h2>Today's Time Table</h2>
+            <div class="section-title">
+              <h2>Today's Time Table</h2>
+              <button class="secondary" id="downloadTodayTimeTableExcel">Today's Time Table Excel</button>
+            </div>
             <table>
               <thead><tr id="timeTableTodayHeader"><th>Day</th><th>Class</th><th>Period 1</th><th>Period 2</th><th>Period 3</th><th>Period 4</th><th>Period 5</th><th>Period 6</th><th>Period 7</th><th>Period 8</th></tr></thead>
               <tbody id="timeTableTodayRows"></tbody>
@@ -9746,6 +9770,13 @@
       const safeSheetName = name => String(name || "Sheet").replace(/[\\/?*[\]:]/g, " ").slice(0, 31) || "Sheet";
       const cellValue = cell => (cell && typeof cell === "object" && !Array.isArray(cell)) ? cell.value : cell;
       const cellStyle = cell => (cell && typeof cell === "object" && !Array.isArray(cell) && cell.styleId) ? cell.styleId : "";
+      const cellAttrs = cell => {
+        if (!cell || typeof cell !== "object" || Array.isArray(cell)) return "";
+        const attrs = [];
+        if (cell.index) attrs.push(`ss:Index="${escapeXml(cell.index)}"`);
+        if (cell.mergeDown) attrs.push(`ss:MergeDown="${escapeXml(cell.mergeDown)}"`);
+        return attrs.length ? ` ${attrs.join(" ")}` : "";
+      };
       const teacherStyles = [...new Map(teachers.map(teacher => [teacherExcelStyleId(teacherCode(teacher)), teacherColor(teacher)])).entries()]
         .filter(([styleId]) => styleId)
         .map(([styleId, color]) => `<Style ss:ID="${escapeXml(styleId)}"><Font ss:Bold="1"/><Interior ss:Color="${escapeXml(color)}" ss:Pattern="Solid"/></Style>`)
@@ -9753,7 +9784,7 @@
       const worksheetXml = sheet => {
         const rows = (sheet.rows || []).map(row => `<Row>${row.map(cell => {
           const styleId = cellStyle(cell);
-          return `<Cell${styleId ? ` ss:StyleID="${escapeXml(styleId)}"` : ""}><Data ss:Type="String">${escapeXml(cellValue(cell))}</Data></Cell>`;
+          return `<Cell${cellAttrs(cell)}${styleId ? ` ss:StyleID="${escapeXml(styleId)}"` : ""}><Data ss:Type="String">${escapeXml(cellValue(cell))}</Data></Cell>`;
         }).join("")}</Row>`).join("");
         return `<Worksheet ss:Name="${escapeXml(safeSheetName(sheet.name))}"><Table>${rows}</Table></Worksheet>`;
       };
@@ -9765,6 +9796,9 @@
  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
 <Styles>
   <Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Vertical="Center"/><Font ss:FontName="Calibri" ss:Size="11"/></Style>
+  <Style ss:ID="ReportHeader"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
+  <Style ss:ID="ReportCell"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Font ss:FontName="Calibri" ss:Size="11"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
+  <Style ss:ID="ReportSubject"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
   ${teacherStyles}
 </Styles>
 ${sheets.map(worksheetXml).join("")}
@@ -11635,6 +11669,33 @@ function currentReportData(type = document.getElementById("reportType").value) {
         : `<tr><td colspan="5">No class-wise subject period found yet.</td></tr>`;
     }
 
+    function imageStyleClassSubjectRows(rows = currentTimetableRows()) {
+      const summary = classSubjectPeriodSummary(rows);
+      const grouped = new Map();
+      summary.forEach(item => {
+        if (!grouped.has(item.subject)) grouped.set(item.subject, []);
+        grouped.get(item.subject).push(item);
+      });
+      const output = [];
+      grouped.forEach((items, subject) => {
+        items.forEach((item, index) => {
+          if (index === 0) {
+            output.push([
+              { value: subject, styleId: "ReportSubject", mergeDown: Math.max(0, items.length - 1) },
+              { value: item.className, styleId: "ReportCell" },
+              { value: item.count, styleId: "ReportCell" }
+            ]);
+          } else {
+            output.push([
+              { value: item.className, styleId: "ReportCell", index: 2 },
+              { value: item.count, styleId: "ReportCell" }
+            ]);
+          }
+        });
+      });
+      return output;
+    }
+
     function timetableConflictCellSet(rows = currentTimetableRows()) {
       const conflictSet = new Set();
       timetableConflictDetails(rows).forEach(conflict => {
@@ -11962,6 +12023,17 @@ function currentReportData(type = document.getElementById("reportType").value) {
           ]
         },
         {
+          name: "Image Format Subject Count",
+          rows: [
+            [
+              { value: "SUBJECTS", styleId: "ReportHeader" },
+              { value: "CLASS-SEC", styleId: "ReportHeader" },
+              { value: "WEEKLY PERIODS", styleId: "ReportHeader" }
+            ],
+            ...imageStyleClassSubjectRows(rows)
+          ]
+        },
+        {
           name: "Class Subject Count",
           rows: [
             ["Subjects", "Class-Sec", "Weekly Periods", "Teacher Code", "Days"],
@@ -12010,6 +12082,201 @@ function currentReportData(type = document.getElementById("reportType").value) {
 
     function downloadWholeSchoolTimeTableExcel() {
       downloadTimetableExcel();
+    }
+
+    function downloadDayWiseTeacherExcel() {
+      const rows = currentTimetableRows();
+      const teacherDaySummary = teacherDayAllocationSummary(rows);
+      const dayWiseTeacherSummary = dayWiseTeacherClassSummary(rows);
+      downloadExcelWorkbook("day-wise-teacher-class-count.xls", [
+        {
+          name: "Day Wise Teacher Count",
+          rows: [
+            ["Day", "Teacher Code", "Teacher Name", "Total Classes / Periods", "Classes / Periods"],
+            ...dayWiseTeacherSummary.map(item => [
+              item.day[0] + item.day.slice(1).toLowerCase(),
+              { value: item.code, styleId: teacherExcelStyleId(item.code) },
+              item.name || "",
+              item.count,
+              item.classes
+            ])
+          ]
+        },
+        {
+          name: "Teacher Weekly Summary",
+          rows: [
+            ["Teacher Code", "Teacher Name", ...TIMETABLE_DAY_ORDER.map(day => day[0] + day.slice(1).toLowerCase()), "Total", "Classes / Periods"],
+            ...teacherDaySummary.map(item => [
+              { value: item.code, styleId: teacherExcelStyleId(item.code) },
+              item.name || "",
+              ...TIMETABLE_DAY_ORDER.map(day => item.days[day] || 0),
+              item.total,
+              item.classes
+            ])
+          ]
+        }
+      ]);
+    }
+
+    function downloadSubjectClassExcel() {
+      const rows = currentTimetableRows();
+      downloadExcelWorkbook("subject-class-weekly-periods.xls", [
+        {
+          name: "Subject Class Periods",
+          rows: [
+            [
+              { value: "SUBJECTS", styleId: "ReportHeader" },
+              { value: "CLASS-SEC", styleId: "ReportHeader" },
+              { value: "WEEKLY PERIODS", styleId: "ReportHeader" }
+            ],
+            ...imageStyleClassSubjectRows(rows)
+          ]
+        }
+      ]);
+    }
+
+    function downloadDailyArrangementExcel() {
+      const rows = renderTimetableArrangement(currentTimetableRows());
+      downloadExcelWorkbook(`daily-arrangement-${arrangementDate()}.xls`, [
+        {
+          name: "Daily Arrangement",
+          rows: [
+            ["Date", displayDateLong(arrangementDate())],
+            ["Day", timetableTodayName()],
+            [],
+            ["Day", "Class", "Period", "Absent Teacher", "Original Period", "Best Suggestion", "Selected Duty", "Weekly/Monthly Load"],
+            ...rows.map(row => [
+              row.day,
+              row.className,
+              row.period,
+              { value: row.absent, styleId: teacherExcelStyleId(row.absent) },
+              timetableExcelCell(row.original),
+              timetableExcelCell(row.best),
+              { value: arrangementSubjectLabel(timetableArrangementSelections[arrangementKey(row)] || row.selected || row.best || ""), styleId: teacherExcelStyleId(timetableArrangementSelections[arrangementKey(row)] || row.selected || row.best || "") },
+              row.load
+            ])
+          ]
+        }
+      ]);
+    }
+
+    function downloadWorkloadSummaryExcel() {
+      const rows = currentTimetableRows();
+      const dailyWorkload = timetableDailyWorkload(rows);
+      const weeklyWorkload = timetableWeeklyWorkload(rows);
+      const codes = teacherOptionPool(rows).map(item => item.code);
+      downloadExcelWorkbook(`timetable-workload-summary-${arrangementDate()}.xls`, [
+        {
+          name: "Workload Summary",
+          rows: [
+            ["Date", displayDateLong(arrangementDate())],
+            ["Day", timetableTodayName()],
+            [],
+            ["Teacher Code", "Teacher Name", "Original Today", "Original Weekly", "Today Arrangement", "This Week Arrangement", "This Month Arrangement"],
+            ...codes.map(code => {
+              const counts = arrangementCounts(code);
+              return [
+                { value: code, styleId: teacherExcelStyleId(code) },
+                teacherNameByCode(code),
+                dailyWorkload[code] || 0,
+                weeklyWorkload[code] || 0,
+                counts.today,
+                counts.week,
+                counts.month
+              ];
+            })
+          ]
+        }
+      ]);
+    }
+
+    function downloadTeacherDayAllocationExcel() {
+      downloadDayWiseTeacherExcel();
+    }
+
+    function downloadConflictComplianceExcel() {
+      const conflicts = timetableConflictDetails(currentTimetableRows());
+      downloadExcelWorkbook(`timetable-conflict-compliance-${arrangementDate()}.xls`, [
+        {
+          name: "Conflict Compliance",
+          rows: [
+            ["Generated Date", displayDateLong(arrangementDate())],
+            ["Status", conflicts.length ? `${conflicts.length} conflict(s) found` : "No conflict found"],
+            [],
+            ["Day", "Period", "Teacher Code", "Teacher Name", "Classes", "Status"],
+            ...(conflicts.length ? conflicts.map(item => [
+              item.day,
+              item.period,
+              { value: item.code, styleId: teacherExcelStyleId(item.code) },
+              teacherNameByCode(item.code),
+              item.classes,
+              "Conflict"
+            ]) : [["-", "-", "-", "-", "-", "No teacher double-booking conflict found"]])
+          ]
+        }
+      ]);
+    }
+
+    function downloadSubjectPeriodExcel() {
+      const summary = subjectPeriodSummary(currentTimetableRows());
+      downloadExcelWorkbook("subject-wise-period-count.xls", [
+        {
+          name: "Subject Period Count",
+          rows: [
+            ["Subject", "Teacher Code", "Teacher Name", "Total Weekly Periods", "Classes"],
+            ...summary.map(item => [
+              item.subject,
+              { value: item.code, styleId: teacherExcelStyleId(item.code) },
+              teacherNameByCode(item.code),
+              item.count,
+              item.classes
+            ])
+          ]
+        }
+      ]);
+    }
+
+    function downloadClassSubjectPeriodExcel() {
+      const summary = classSubjectPeriodSummary(currentTimetableRows());
+      downloadExcelWorkbook("class-wise-subject-period-count.xls", [
+        {
+          name: "Class Subject Count",
+          rows: [
+            ["Subjects", "Class-Sec", "Weekly Periods", "Teacher Code", "Days"],
+            ...summary.map((item, index, list) => [
+              index > 0 && list[index - 1].subject === item.subject ? "" : item.subject,
+              item.className,
+              item.count,
+              item.code,
+              item.days
+            ])
+          ]
+        },
+        {
+          name: "Image Format",
+          rows: [
+            [
+              { value: "SUBJECTS", styleId: "ReportHeader" },
+              { value: "CLASS-SEC", styleId: "ReportHeader" },
+              { value: "WEEKLY PERIODS", styleId: "ReportHeader" }
+            ],
+            ...imageStyleClassSubjectRows(currentTimetableRows())
+          ]
+        }
+      ]);
+    }
+
+    function downloadSectionSubjectBalanceExcel() {
+      const summary = sectionSubjectBalanceSummary(currentTimetableRows());
+      downloadExcelWorkbook("ab-section-subject-balance.xls", [
+        {
+          name: "AB Subject Balance",
+          rows: [
+            ["Class", "Subject", "A Section Periods", "B Section Periods", "Status"],
+            ...summary.map(item => [item.className, item.subject, item.A, item.B, item.status])
+          ]
+        }
+      ]);
     }
 
     function todayTimetableExportRows() {
@@ -13413,6 +13680,10 @@ function currentReportData(type = document.getElementById("reportType").value) {
       shareDailyArrangement();
     });
 
+    document.getElementById("downloadDailyArrangementExcel").addEventListener("click", () => {
+      downloadDailyArrangementExcel();
+    });
+
     document.getElementById("shareTodayTimetable").addEventListener("click", () => {
       shareTodayTimetable();
     });
@@ -13429,24 +13700,48 @@ function currentReportData(type = document.getElementById("reportType").value) {
       togglePanelVisibility("timeTableWorkloadRows", "toggleWorkloadSummary", "Workload Summary");
     });
 
+    document.getElementById("downloadWorkloadSummaryExcel").addEventListener("click", () => {
+      downloadWorkloadSummaryExcel();
+    });
+
     document.getElementById("toggleTeacherDayAllocation").addEventListener("click", () => {
       togglePanelVisibility("teacherDayAllocationContent", "toggleTeacherDayAllocation", "Day Wise Teacher Allocation");
+    });
+
+    document.getElementById("downloadTeacherDayAllocationExcel").addEventListener("click", () => {
+      downloadTeacherDayAllocationExcel();
     });
 
     document.getElementById("toggleConflictCompliance").addEventListener("click", () => {
       togglePanelVisibility("timeTableConflictContent", "toggleConflictCompliance", "Conflict / Compliance");
     });
 
+    document.getElementById("downloadConflictComplianceExcel").addEventListener("click", () => {
+      downloadConflictComplianceExcel();
+    });
+
     document.getElementById("toggleSubjectPeriod").addEventListener("click", () => {
       togglePanelVisibility("subjectPeriodContent", "toggleSubjectPeriod", "Subject Wise Period Count");
+    });
+
+    document.getElementById("downloadSubjectPeriodExcel").addEventListener("click", () => {
+      downloadSubjectPeriodExcel();
     });
 
     document.getElementById("toggleClassSubjectPeriod").addEventListener("click", () => {
       togglePanelVisibility("classSubjectPeriodContent", "toggleClassSubjectPeriod", "Class Wise Subject Period Count");
     });
 
+    document.getElementById("downloadClassSubjectPeriodExcel").addEventListener("click", () => {
+      downloadClassSubjectPeriodExcel();
+    });
+
     document.getElementById("toggleSectionSubjectBalance").addEventListener("click", () => {
       togglePanelVisibility("sectionSubjectBalanceContent", "toggleSectionSubjectBalance", "A/B Section Balance");
+    });
+
+    document.getElementById("downloadSectionSubjectBalanceExcel").addEventListener("click", () => {
+      downloadSectionSubjectBalanceExcel();
     });
 
     document.getElementById("showWeeklyTimetable").addEventListener("click", () => {
@@ -13467,10 +13762,26 @@ function currentReportData(type = document.getElementById("reportType").value) {
       runDailyTimetableExport();
     });
 
+    document.getElementById("downloadTodayTimeTableExcel").addEventListener("click", () => {
+      downloadTodayTimetableExcel();
+    });
+
     document.getElementById("downloadWeeklyTimetableExcel").addEventListener("click", () => {
       document.getElementById("timeTableWeeklyPanel").classList.remove("hidden");
       renderTimetableAudit();
       downloadWholeSchoolTimeTableExcel();
+    });
+
+    document.getElementById("downloadDayWiseTeacherExcel").addEventListener("click", () => {
+      document.getElementById("timeTableWeeklyPanel").classList.remove("hidden");
+      renderTimetableAudit();
+      downloadDayWiseTeacherExcel();
+    });
+
+    document.getElementById("downloadSubjectClassExcel").addEventListener("click", () => {
+      document.getElementById("timeTableWeeklyPanel").classList.remove("hidden");
+      renderTimetableAudit();
+      downloadSubjectClassExcel();
     });
 
     document.getElementById("printWeeklyTimetablePdf").addEventListener("click", () => {
