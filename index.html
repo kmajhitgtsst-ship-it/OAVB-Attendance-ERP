@@ -5084,6 +5084,7 @@
       }
     }
   </style>
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 </head>
 <body class="login-only">
   <div class="update-banner" id="updateBanner">New update found. Reloading automatically...</div>
@@ -6183,21 +6184,21 @@
             </div>
             <div class="field">
               <label for="examResultFile">CSV File</label>
-              <input id="examResultFile" type="file" accept=".csv,.txt">
+              <input id="examResultFile" type="file" accept=".csv,.txt,.xls,.xlsx">
             </div>
             <button class="secondary" id="importExamResults">Import Results</button>
-            <button class="secondary" id="importExamResultsFile">Upload CSV</button>
+            <button class="secondary" id="importExamResultsFile">Upload Excel / CSV</button>
             <button class="secondary" id="downloadExamTemplate">Download Template</button>
             <button class="secondary" id="resetExamResults">Reset / Delete Results</button>
           </div>
           <div class="field">
             <label for="examResultText">Paste CSV rows</label>
-            <textarea id="examResultText" placeholder="Class,Section,Roll,Student Name,Father Name,Mother Name,DOB,Mobile,English,Odia,Hindi,Sanskrit,Mathematics,Science,Social Science,ICT,Result&#10;Class VI,A,1,SAI SANGAM MUND,Father Name,Mother Name,01/01/2014,+91 9876543210,78,80,75,70,82,79,76,85,Pass"></textarea>
+            <textarea id="examResultText" placeholder="Class IX/X template: Admission No, Name, Roll No, Class, Section, ENGLISH, ODIA, MATHEMATICS, SCIENCE, SOCIAL SCIENCE, I.T.-SKILL, PHYSICAL EDUCATION&#10;2022-23/063, AKANKSHYA PANIGRAHI, 1, Class X, A, 36.5, 31, 30, 37, 37.5, 35, 38"></textarea>
           </div>
           <p class="success-note" id="examResultStatus">Paste or import marks, then send WhatsApp result messages.</p>
           <div class="table-wrap" style="margin-top: 14px;">
             <table>
-              <thead><tr><th>Class</th><th>Exam</th><th>Roll</th><th>Student</th><th>Father</th><th>Mother</th><th>DOB</th><th>Total</th><th>%</th><th>Result</th><th>Mobile</th><th>Action</th></tr></thead>
+              <thead><tr><th>Class</th><th>Section</th><th>Exam</th><th>Admission No.</th><th>Roll</th><th>Student</th><th>Father</th><th>Mobile</th><th>Total Mark Secured</th><th>%</th><th>Rank in Class</th><th>Result</th><th>Action</th></tr></thead>
               <tbody id="examResultRows"></tbody>
             </table>
           </div>
@@ -9160,17 +9161,29 @@
         return;
       }
 
-      if (!file.name.toLowerCase().endsWith(".csv")) {
-        document.getElementById(statusId).textContent = `${file.name} selected, but this static prototype imports CSV only. Open the template in WPS, use Save As CSV, then import that CSV file. XLSX import will work in backend version.`;
-        return;
-      }
-
+      const lowerName = file.name.toLowerCase();
       const reader = new FileReader();
       reader.onload = () => {
+        if (lowerName.endsWith(".xlsx") || lowerName.endsWith(".xls")) {
+          if (!window.XLSX) {
+            document.getElementById(statusId).textContent = "Excel reader is loading or unavailable. Please refresh once, or save the sheet as CSV and upload again.";
+            return;
+          }
+          const workbook = XLSX.read(new Uint8Array(reader.result), { type: "array" });
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          document.getElementById(targetId).value = XLSX.utils.sheet_to_csv(firstSheet, { blankrows: false });
+          callback();
+          return;
+        }
+        if (!lowerName.endsWith(".csv") && !lowerName.endsWith(".txt")) {
+          document.getElementById(statusId).textContent = "Please upload a CSV, TXT, XLS, or XLSX file.";
+          return;
+        }
         document.getElementById(targetId).value = reader.result;
         callback();
       };
-      reader.readAsText(file);
+      if (lowerName.endsWith(".xlsx") || lowerName.endsWith(".xls")) reader.readAsArrayBuffer(file);
+      else reader.readAsText(file);
     }
 
     function mdmCategoryForClass(key) {
@@ -10710,73 +10723,185 @@ function currentReportData(type = document.getElementById("reportType").value) {
     }
 
     const examSubjects = ["English", "Odia", "Hindi", "Sanskrit", "Mathematics", "Science", "Social Science", "ICT"];
+    const class10ExamSubjects = ["English", "Odia", "Mathematics", "Science", "Social Science", "I.T.-Skill", "Physical Education"];
+    const examSubjectAliases = {
+      "english": "English",
+      "odia": "Odia",
+      "hindi": "Hindi",
+      "sanskrit": "Sanskrit",
+      "mathematics": "Mathematics",
+      "math": "Mathematics",
+      "science": "Science",
+      "socialscience": "Social Science",
+      "socialstudies": "Social Science",
+      "sst": "Social Science",
+      "ict": "ICT",
+      "it": "I.T.-Skill",
+      "itskill": "I.T.-Skill",
+      "itskills": "I.T.-Skill",
+      "physicaleducation": "Physical Education",
+      "phe": "Physical Education"
+    };
 
     function populateExamClassOptions() {
       const select = document.getElementById("examResultClass");
       if (!select) return;
       const selected = select.value || "All";
       const keys = Object.keys(classData).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-      const allowedKeys = activeUser.role === "teacher" && activeUser.classKey ? keys.filter(key => key === activeUser.classKey) : keys;
-      const options = allowedKeys.map(key => `<option>${key}</option>`).join("");
-      select.innerHTML = activeUser.role === "teacher" && activeUser.classKey ? options : `<option>All</option>${options}`;
-      select.value = [...select.options].some(option => option.value === selected) ? selected : (allowedKeys[0] || "All");
+      const options = keys.map(key => `<option>${key}</option>`).join("");
+      select.innerHTML = `<option>All</option>${options}`;
+      select.value = [...select.options].some(option => option.value === selected) ? selected : "All";
     }
 
-    function findStudentMasterRecord(classGroup, roll, name) {
+    function findStudentMasterRecord(classGroup, roll, name, admissionNo = "") {
       const list = classData[classGroup] || [];
       const paddedRoll = String(Number(roll || 0)).padStart(2, "0");
-      return list.find(student => String(student[0]).padStart(2, "0") === paddedRoll)
+      const normalizedAdmission = String(admissionNo || "").trim().toLowerCase();
+      return (normalizedAdmission && list.find(student => studentAdmissionNo(student).toLowerCase() === normalizedAdmission))
+        || list.find(student => String(student[0]).padStart(2, "0") === paddedRoll)
         || list.find(student => String(student[1] || "").trim().toLowerCase() === String(name || "").trim().toLowerCase());
     }
 
     function enrichExamResultFromMaster(result) {
-      const master = findStudentMasterRecord(result.classGroup, result.roll, result.name);
+      const master = findStudentMasterRecord(result.classGroup, result.roll, result.name, result.admissionNo);
       if (!master) return result;
+      result.admissionNo = result.admissionNo || studentAdmissionNo(master) || "";
       result.name = result.name || master[1] || "";
       result.father = result.father || master[6] || "";
       result.mother = result.mother || "";
       result.dob = result.dob || "";
       result.mobile = result.mobile || master[7] || "";
+      const meta = studentMeta(master);
+      result.mother = result.mother || meta.mother || "";
+      result.dob = result.dob || meta.dob || "";
       return result;
     }
 
+    function examBaseClass(classGroup) {
+      const text = String(classGroup || "").trim();
+      if (text.includes("SCIENCE")) return text;
+      return text.replace(/-[A-Z]$/, "");
+    }
+
+    function examSectionFromClassGroup(classGroup, fallback = "") {
+      const text = String(classGroup || "").trim();
+      if (text.includes("SCIENCE")) return fallback || "";
+      const match = text.match(/-([A-Z])$/);
+      return match ? match[1] : (fallback || "A");
+    }
+
+    function resolveExamSubject(header) {
+      const normalized = normalizeHeaderName(header);
+      return examSubjectAliases[normalized] || null;
+    }
+
+    function updateExamRanks() {
+      const groups = {};
+      examResults.forEach(result => {
+        const key = `${result.examName || "EXAM"}|${examBaseClass(result.classGroup)}`;
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(result);
+      });
+      Object.values(groups).forEach(group => {
+        group
+          .sort((a, b) => Number(b.total || 0) - Number(a.total || 0) || String(a.roll || "").localeCompare(String(b.roll || ""), undefined, { numeric: true }))
+          .forEach((result, index, sorted) => {
+            result.rank = index > 0 && Number(result.total || 0) === Number(sorted[index - 1].total || 0) ? sorted[index - 1].rank : index + 1;
+          });
+      });
+    }
+
+    function canSendExamResult(result) {
+      if (activeUser.role !== "teacher") return true;
+      if (!activeUser.classKey) return false;
+      return result.classGroup === activeUser.classKey;
+    }
+
     function importExamResults() {
-      const rows = parseCsvLines(document.getElementById("examResultText").value, 17);
-      let added = 0;
-      const examName = document.getElementById("examName").value || "EXAM";
-      rows.forEach(row => {
-        if (/^class$/i.test(row[0] || "") || Number.isNaN(Number(row[2]))) return;
-        const classGroup = row[0].includes("-") || row[0].includes("SCIENCE") ? row[0] : `${normalizeClassName(row[0])}-${String(row[1] || "A").toUpperCase()}`;
-        if (activeUser.role === "teacher" && activeUser.classKey && classGroup !== activeUser.classKey) return;
-        const marks = {};
-        examSubjects.forEach((subject, index) => {
-          marks[subject] = Number(row[8 + index] || 0);
+      const rawRows = parseCsvLines(document.getElementById("examResultText").value, 1, { keepHeader: true });
+      if (!rawRows.length) {
+        document.getElementById("examResultStatus").textContent = "No valid result row found.";
+        return;
+      }
+      const headerIndex = rawRows.findIndex(row => row.some(cell => /admission|roll|student|name|english|odia|mathematics/i.test(cell || "")));
+      const header = headerIndex >= 0 ? rawRows[headerIndex] : [];
+      const dataRows = headerIndex >= 0 ? rawRows.slice(headerIndex + 1) : rawRows;
+      const headerMap = {};
+      header.forEach((cell, index) => { headerMap[normalizeHeaderName(cell)] = index; });
+      const subjectColumns = header
+        .map((cell, index) => ({ subject: resolveExamSubject(cell), index }))
+        .filter(item => item.subject);
+      const usingClass10Format = subjectColumns.some(item => class10ExamSubjects.includes(item.subject));
+      const subjects = usingClass10Format ? class10ExamSubjects : examSubjects;
+      const maxMarksBySubject = {};
+      subjects.forEach(subject => { maxMarksBySubject[subject] = 100; });
+      const maxMarksRow = subjectColumns.length
+        ? dataRows.find(row => !String(rowValue(row, headerMap, ["Roll No", "Roll Number", "Roll"], usingClass10Format ? 2 : 2) || "").trim() && subjectColumns.some(({ index }) => Number(row[index] || 0) > 0))
+        : null;
+      if (maxMarksRow) {
+        subjectColumns.forEach(({ subject, index }) => {
+          const max = Number(maxMarksRow[index] || 0);
+          if (max > 0) maxMarksBySubject[subject] = max;
         });
+      }
+      const examName = document.getElementById("examName").value || "EXAM";
+      let added = 0;
+
+      dataRows.forEach(row => {
+        if (row === maxMarksRow) return;
+        const admissionNo = rowValue(row, headerMap, ["Admission No", "Admission Number", "Adm No"], usingClass10Format ? 0 : -1);
+        const name = rowValue(row, headerMap, ["Student Name", "Name"], usingClass10Format ? 1 : 3);
+        const rollRaw = rowValue(row, headerMap, ["Roll No", "Roll Number", "Roll"], usingClass10Format ? 2 : 2);
+        if (Number.isNaN(Number(rollRaw))) return;
+        const section = String(rowValue(row, headerMap, ["Section", "Sec"], usingClass10Format ? 4 : 1) || "A").toUpperCase();
+        const classValue = rowValue(row, headerMap, ["Class"], usingClass10Format ? 3 : 0) || "Class X";
+        const classGroup = String(classValue).includes("-") || String(classValue).includes("SCIENCE") ? normalizeClassName(classValue) : `${normalizeClassName(classValue)}-${section}`;
+        const allowedImport = activeUser.role !== "teacher" || !activeUser.classKey || classGroup === activeUser.classKey || examBaseClass(classGroup) === examBaseClass(activeUser.classKey);
+        if (!allowedImport) return;
+
+        const marks = {};
+        subjects.forEach(subject => { marks[subject] = 0; });
+        if (subjectColumns.length) {
+          subjectColumns.forEach(({ subject, index }) => {
+            marks[subject] = Number(row[index] || 0);
+          });
+        } else {
+          subjects.forEach((subject, index) => {
+            marks[subject] = Number(row[(usingClass10Format ? 5 : 8) + index] || 0);
+          });
+        }
+        const maxMarks = subjects.reduce((sum, subject) => sum + Number(maxMarksBySubject[subject] || 100), 0);
         const total = Object.values(marks).reduce((sum, mark) => sum + Number(mark || 0), 0);
-        const percentage = Math.round((total / (examSubjects.length * 100)) * 1000) / 10;
+        const percentage = maxMarks ? Math.round((total / maxMarks) * 1000) / 10 : 0;
         const result = enrichExamResultFromMaster({
           examName,
           classGroup,
-          roll: String(Number(row[2])).padStart(2, "0"),
-          name: row[3],
-          father: row[4] || "",
-          mother: row[5] || "",
-          dob: row[6] || "",
-          mobile: row[7] || "",
+          section,
+          admissionNo,
+          roll: String(Number(rollRaw)).padStart(2, "0"),
+          name,
+          father: rowValue(row, headerMap, ["Father Name", "Guardian/Father Name", "Guardian"], -1),
+          mother: rowValue(row, headerMap, ["Mother Name", "Mother"], -1),
+          dob: rowValue(row, headerMap, ["DOB", "Date of Birth"], -1),
+          mobile: rowValue(row, headerMap, ["Mobile", "Mobile Number", "Phone"], -1),
+          subjects,
           marks,
           total,
+          maxMarks,
           percentage,
-          result: row[16] || (percentage >= 33 ? "Pass" : "Fail")
+          rank: "",
+          result: rowValue(row, headerMap, ["Result"], -1) || (percentage >= 33 ? "Pass" : "Fail")
         });
-        const existingIndex = examResults.findIndex(item => item.examName === result.examName && item.classGroup === result.classGroup && item.roll === result.roll && item.name === result.name);
+        const existingIndex = examResults.findIndex(item => item.examName === result.examName && item.classGroup === result.classGroup && (item.admissionNo && item.admissionNo === result.admissionNo || item.roll === result.roll));
         if (existingIndex >= 0) examResults[existingIndex] = result;
         else examResults.push(result);
         added += 1;
       });
+      updateExamRanks();
       saveLocalData();
       renderExamResults();
       clearEntryFields(["examResultText", "examResultFile"]);
-      document.getElementById("examResultStatus").textContent = `${added} ${examName} result row(s) imported.`;
+      document.getElementById("examResultStatus").textContent = `${added} ${examName} result row(s) imported. Class A/B combined rank updated.`;
     }
 
     function importExamResultsFile() {
@@ -10807,7 +10932,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
     }
 
     function resultMessage(result) {
-      return `Dear Parent/Student,\nThe ${result.examName || "examination"} result details of your ward are given below:\nStudent's Name: ${result.name}\nFather's Name: ${result.father}\nMother's Name: ${result.mother}\nDate of Birth: ${result.dob}\nSubject-wise Marks:\n${examSubjects.map((subject, index) => `${index + 1}.${subject}: ${result.marks[subject]}`).join("\n")}\n\nTotal Marks: ${result.total}\nPercentage: ${result.percentage}%\nResult: ${result.result}\nPlease check the above details carefully. In case of any discrepancy or clarification, kindly contact the school.\nFrom:\nExamination Department\nOAV, Badi\nShared by:\nClass Teacher`;
+      return `Dear Parent/Student,\nThe ${result.examName || "examination"} result details of your ward are given below:\nStudent's Name: ${result.name}\nFather's Name: ${result.father}\nMother's Name: ${result.mother}\nDate of Birth: ${result.dob}\nSubject-wise Marks:\n${(result.subjects || examSubjects).map((subject, index) => `${index + 1}.${subject}: ${result.marks[subject] || 0}`).join("\n")}\n\nTotal Marks Secured: ${result.total}/${result.maxMarks || ((result.subjects || examSubjects).length * 100)}\nPercentage: ${result.percentage}%\nRank in Class: ${result.rank || "-"}\nResult: ${result.result}\nPlease check the above details carefully. In case of any discrepancy or clarification, kindly contact the school.\nFrom:\nExamination Department\nOAV, Badi\nShared by:\nClass Teacher`;
     }
 
     function resultWhatsappLink(result) {
@@ -10821,14 +10946,21 @@ function currentReportData(type = document.getElementById("reportType").value) {
       const rows = examResults
         .map((result, index) => ({ result, index }))
         .filter(item => (filter === "All" || item.result.classGroup === filter) && (!examName || (item.result.examName || examName) === examName));
+      updateExamRanks();
       document.getElementById("examResultRows").innerHTML = rows.length
-        ? rows.map(({ result, index }) => `<tr><td>${result.classGroup}</td><td>${result.examName || ""}</td><td>${Number(result.roll)}</td><td>${result.name}</td><td>${result.father || ""}</td><td>${result.mother || ""}</td><td>${result.dob || ""}</td><td>${result.total}</td><td>${result.percentage}%</td><td>${result.result}</td><td>${result.mobile}</td><td><button class="secondary send-result" data-index="${index}">WhatsApp</button></td></tr>`).join("")
-        : `<tr><td colspan="12">No exam results imported yet.</td></tr>`;
+        ? rows.map(({ result, index }) => {
+          const sendButton = canSendExamResult(result) ? `<button class="secondary send-result" data-index="${index}">WhatsApp</button>` : `<span class="subtle">View only</span>`;
+          return `<tr><td>${result.classGroup}</td><td>${result.section || examSectionFromClassGroup(result.classGroup)}</td><td>${result.examName || ""}</td><td>${result.admissionNo || ""}</td><td>${Number(result.roll)}</td><td>${result.name}</td><td>${result.father || ""}</td><td>${result.mobile || ""}</td><td>${result.total}/${result.maxMarks || ((result.subjects || examSubjects).length * 100)}</td><td>${result.percentage}%</td><td>${result.rank || ""}</td><td>${result.result}</td><td>${sendButton}</td></tr>`;
+        }).join("")
+        : `<tr><td colspan="13">No exam results imported yet.</td></tr>`;
     }
 
     function downloadExamTemplate() {
-      downloadCsv("exam-result-template.csv", [
-        ["Class", "Section", "Roll", "Student Name", "Father Name", "Mother Name", "DOB", "Mobile", ...examSubjects, "Result"]
+      downloadCsv("class-ix-x-exam-result-template.csv", [
+        ["Admission No", "Name", "Roll No", "Class", "Section", "ENGLISH", "ODIA", "MATHEMATICS", "SCIENCE", "SOCIAL SCIENCE", "I.T.-SKILL", "PHYSICAL EDUCATION"],
+        ["", "", "", "", "", 40, 40, 40, 40, 40, 40, 40],
+        ["2022-23/063", "AKANKSHYA PANIGRAHI", 1, "Class X", "A", 0, 0, 0, 0, 0, 0, 0],
+        ["2022-23/050", "ALILI MEHER", 2, "Class IX", "B", 0, 0, 0, 0, 0, 0, 0]
       ]);
     }
 
@@ -14204,6 +14336,12 @@ function currentReportData(type = document.getElementById("reportType").value) {
   </script>
 </body>
 </html>
+
+
+
+
+
+
 
 
 
