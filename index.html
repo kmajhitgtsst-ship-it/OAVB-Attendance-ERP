@@ -6193,12 +6193,12 @@
           </div>
           <div class="field">
             <label for="examResultText">Paste CSV rows</label>
-            <textarea id="examResultText" placeholder="Class IX/X template: Admission No, Name, Roll No, Class, Section, ENGLISH, ODIA, MATHEMATICS, SCIENCE, SOCIAL SCIENCE, I.T.-SKILL, PHYSICAL EDUCATION&#10;2022-23/063, AKANKSHYA PANIGRAHI, 1, Class X, A, 36.5, 31, 30, 37, 37.5, 35, 38"></textarea>
+            <textarea id="examResultText" placeholder="Class IX/X template: Name, Roll No, Class, Section, ENGLISH, ODIA, MATHEMATICS, SCIENCE, SOCIAL SCIENCE, I.T.-SKILL, PHYSICAL EDUCATION&#10;AKANKSHYA PANIGRAHI, 1, Class X, A, 36.5, 31, 30, 37, 37.5, 35, 38"></textarea>
           </div>
           <p class="success-note" id="examResultStatus">Paste or import marks, then send WhatsApp result messages.</p>
           <div class="table-wrap" style="margin-top: 14px;">
             <table>
-              <thead><tr><th>Class</th><th>Section</th><th>Exam</th><th>Admission No.</th><th>Roll</th><th>Student</th><th>Father</th><th>Mobile</th><th>Total Mark Secured</th><th>%</th><th>Rank in Class</th><th>Result</th><th>Action</th></tr></thead>
+              <thead><tr><th>Class</th><th>Section</th><th>Exam</th><th>Admission No.</th><th>Roll</th><th>Student</th><th>Father</th><th>Mother</th><th>DOB</th><th>Mobile</th><th>Total Mark Secured</th><th>%</th><th>Rank in Class</th><th>Result</th><th>Action</th></tr></thead>
               <tbody id="examResultRows"></tbody>
             </table>
           </div>
@@ -10836,7 +10836,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
       const maxMarksBySubject = {};
       subjects.forEach(subject => { maxMarksBySubject[subject] = 100; });
       const maxMarksRow = subjectColumns.length
-        ? dataRows.find(row => !String(rowValue(row, headerMap, ["Roll No", "Roll Number", "Roll"], usingClass10Format ? 2 : 2) || "").trim() && subjectColumns.some(({ index }) => Number(row[index] || 0) > 0))
+        ? dataRows.find(row => !String(rowValue(row, headerMap, ["Roll No", "Roll Number", "Roll"], usingClass10Format ? 1 : 2) || "").trim() && subjectColumns.some(({ index }) => Number(row[index] || 0) > 0))
         : null;
       if (maxMarksRow) {
         subjectColumns.forEach(({ subject, index }) => {
@@ -10849,12 +10849,12 @@ function currentReportData(type = document.getElementById("reportType").value) {
 
       dataRows.forEach(row => {
         if (row === maxMarksRow) return;
-        const admissionNo = rowValue(row, headerMap, ["Admission No", "Admission Number", "Adm No"], usingClass10Format ? 0 : -1);
-        const name = rowValue(row, headerMap, ["Student Name", "Name"], usingClass10Format ? 1 : 3);
-        const rollRaw = rowValue(row, headerMap, ["Roll No", "Roll Number", "Roll"], usingClass10Format ? 2 : 2);
+        const admissionNo = rowValue(row, headerMap, ["Admission No", "Admission Number", "Adm No"], -1);
+        const name = rowValue(row, headerMap, ["Student Name", "Name"], usingClass10Format ? 0 : 3);
+        const rollRaw = rowValue(row, headerMap, ["Roll No", "Roll Number", "Roll"], usingClass10Format ? 1 : 2);
         if (Number.isNaN(Number(rollRaw))) return;
-        const section = String(rowValue(row, headerMap, ["Section", "Sec"], usingClass10Format ? 4 : 1) || "A").toUpperCase();
-        const classValue = rowValue(row, headerMap, ["Class"], usingClass10Format ? 3 : 0) || "Class X";
+        const section = String(rowValue(row, headerMap, ["Section", "Sec"], usingClass10Format ? 3 : 1) || "A").toUpperCase();
+        const classValue = rowValue(row, headerMap, ["Class"], usingClass10Format ? 2 : 0) || "Class X";
         const classGroup = String(classValue).includes("-") || String(classValue).includes("SCIENCE") ? normalizeClassName(classValue) : `${normalizeClassName(classValue)}-${section}`;
         const allowedImport = activeUser.role !== "teacher" || !activeUser.classKey || classGroup === activeUser.classKey || examBaseClass(classGroup) === examBaseClass(activeUser.classKey);
         if (!allowedImport) return;
@@ -10867,7 +10867,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
           });
         } else {
           subjects.forEach((subject, index) => {
-            marks[subject] = Number(row[(usingClass10Format ? 5 : 8) + index] || 0);
+            marks[subject] = Number(row[(usingClass10Format ? 4 : 8) + index] || 0);
           });
         }
         const maxMarks = subjects.reduce((sum, subject) => sum + Number(maxMarksBySubject[subject] || 100), 0);
@@ -10880,10 +10880,10 @@ function currentReportData(type = document.getElementById("reportType").value) {
           admissionNo,
           roll: String(Number(rollRaw)).padStart(2, "0"),
           name,
-          father: rowValue(row, headerMap, ["Father Name", "Guardian/Father Name", "Guardian"], -1),
-          mother: rowValue(row, headerMap, ["Mother Name", "Mother"], -1),
-          dob: rowValue(row, headerMap, ["DOB", "Date of Birth"], -1),
-          mobile: rowValue(row, headerMap, ["Mobile", "Mobile Number", "Phone"], -1),
+          father: "",
+          mother: "",
+          dob: "",
+          mobile: "",
           subjects,
           marks,
           total,
@@ -10950,17 +10950,17 @@ function currentReportData(type = document.getElementById("reportType").value) {
       document.getElementById("examResultRows").innerHTML = rows.length
         ? rows.map(({ result, index }) => {
           const sendButton = canSendExamResult(result) ? `<button class="secondary send-result" data-index="${index}">WhatsApp</button>` : `<span class="subtle">View only</span>`;
-          return `<tr><td>${result.classGroup}</td><td>${result.section || examSectionFromClassGroup(result.classGroup)}</td><td>${result.examName || ""}</td><td>${result.admissionNo || ""}</td><td>${Number(result.roll)}</td><td>${result.name}</td><td>${result.father || ""}</td><td>${result.mobile || ""}</td><td>${result.total}/${result.maxMarks || ((result.subjects || examSubjects).length * 100)}</td><td>${result.percentage}%</td><td>${result.rank || ""}</td><td>${result.result}</td><td>${sendButton}</td></tr>`;
+          return `<tr><td>${result.classGroup}</td><td>${result.section || examSectionFromClassGroup(result.classGroup)}</td><td>${result.examName || ""}</td><td>${result.admissionNo || ""}</td><td>${Number(result.roll)}</td><td>${result.name}</td><td>${result.father || ""}</td><td>${result.mother || ""}</td><td>${result.dob || ""}</td><td>${result.mobile || ""}</td><td>${result.total}/${result.maxMarks || ((result.subjects || examSubjects).length * 100)}</td><td>${result.percentage}%</td><td>${result.rank || ""}</td><td>${result.result}</td><td>${sendButton}</td></tr>`;
         }).join("")
-        : `<tr><td colspan="13">No exam results imported yet.</td></tr>`;
+        : `<tr><td colspan="15">No exam results imported yet.</td></tr>`;
     }
 
     function downloadExamTemplate() {
       downloadCsv("class-ix-x-exam-result-template.csv", [
-        ["Admission No", "Name", "Roll No", "Class", "Section", "ENGLISH", "ODIA", "MATHEMATICS", "SCIENCE", "SOCIAL SCIENCE", "I.T.-SKILL", "PHYSICAL EDUCATION"],
-        ["", "", "", "", "", 40, 40, 40, 40, 40, 40, 40],
-        ["2022-23/063", "AKANKSHYA PANIGRAHI", 1, "Class X", "A", 0, 0, 0, 0, 0, 0, 0],
-        ["2022-23/050", "ALILI MEHER", 2, "Class IX", "B", 0, 0, 0, 0, 0, 0, 0]
+        ["Name", "Roll No", "Class", "Section", "ENGLISH", "ODIA", "MATHEMATICS", "SCIENCE", "SOCIAL SCIENCE", "I.T.-SKILL", "PHYSICAL EDUCATION"],
+        ["", "", "", "", 40, 40, 40, 40, 40, 40, 40],
+        ["AKANKSHYA PANIGRAHI", 1, "Class X", "A", 0, 0, 0, 0, 0, 0, 0],
+        ["ALILI MEHER", 2, "Class IX", "B", 0, 0, 0, 0, 0, 0, 0]
       ]);
     }
 
