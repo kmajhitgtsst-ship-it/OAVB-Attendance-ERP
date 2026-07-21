@@ -5976,6 +5976,7 @@
             <button class="secondary" id="shareDailyTimetableFormat">Share / Download Daily</button>
             <button class="secondary" id="downloadWeeklyTimetableExcel">Weekly Time Table Excel</button>
             <button class="secondary" id="downloadDayWiseTeacherExcel">Day Wise Teacher Excel</button>
+            <button class="secondary" id="downloadTeacherWallpaperImages">Teacher Mobile Wallpapers</button>
             <button class="secondary" id="downloadSubjectClassExcel">Subject-Class Excel</button>
             <button class="secondary" id="printWeeklyTimetablePdf">Weekly Time Table PDF</button>
           </div>
@@ -12250,6 +12251,190 @@ function currentReportData(type = document.getElementById("reportType").value) {
       ]);
     }
 
+    function matchingTimetableSegments(value, code) {
+      const raw = String(value || "").trim();
+      if (!raw) return "";
+      const pieces = raw.split(/\s*(?:\/|\+|:)\s*/).map(item => item.trim()).filter(Boolean);
+      const matched = pieces.filter(item => extractTeacherCodes(item).includes(code));
+      return matched.length ? matched.join(" / ") : raw;
+    }
+
+    function teacherWallpaperSchedule(rows, code) {
+      const schedule = Object.fromEntries(TIMETABLE_DAY_ORDER.map(day => [day, []]));
+      rows.forEach(row => {
+        const day = String(row.day || "").trim().toUpperCase();
+        if (!schedule[day]) return;
+        row.periods.slice(0, TIMETABLE_PERIOD_COUNT).forEach((cell, periodIndex) => {
+          if (!extractTeacherCodes(cell).includes(code)) return;
+          schedule[day].push({
+            period: periodIndex + 1,
+            time: timetablePeriodTimes[activeTimetableTimeMode]?.[periodIndex] || "",
+            className: row.className,
+            subject: matchingTimetableSegments(cell, code)
+          });
+        });
+      });
+      Object.values(schedule).forEach(items => items.sort((a, b) => a.period - b.period || a.className.localeCompare(b.className)));
+      return schedule;
+    }
+
+    function drawWrappedCanvasText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 3) {
+      const words = String(text || "").split(/\s+/).filter(Boolean);
+      let line = "";
+      let lines = 0;
+      for (const word of words) {
+        const test = line ? `${line} ${word}` : word;
+        if (ctx.measureText(test).width > maxWidth && line) {
+          ctx.fillText(line, x, y);
+          y += lineHeight;
+          lines += 1;
+          line = word;
+          if (lines >= maxLines - 1) break;
+        } else {
+          line = test;
+        }
+      }
+      if (line && lines < maxLines) {
+        ctx.fillText(line, x, y);
+        y += lineHeight;
+      }
+      return y;
+    }
+
+    function canvasRoundRect(ctx, x, y, width, height, radius) {
+      const r = Math.min(radius, width / 2, height / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + width - r, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + r);
+      ctx.lineTo(x + width, y + height - r);
+      ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+      ctx.lineTo(x + r, y + height);
+      ctx.quadraticCurveTo(x, y + height, x, y + height - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    function downloadTeacherWallpaperImage(code) {
+      const rows = currentTimetableRows();
+      const teacherName = teacherNameByCode(code) || code;
+      const schedule = teacherWallpaperSchedule(rows, code);
+      const canvas = document.createElement("canvas");
+      canvas.width = 1080;
+      canvas.height = 1920;
+      const ctx = canvas.getContext("2d");
+
+      const gradient = ctx.createLinearGradient(0, 0, 1080, 1920);
+      gradient.addColorStop(0, "#082f49");
+      gradient.addColorStop(0.45, "#0f766e");
+      gradient.addColorStop(1, "#eff6ff");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = "rgba(255,255,255,0.96)";
+      canvasRoundRect(ctx, 48, 48, 984, 1824, 38);
+      ctx.fill();
+
+      ctx.fillStyle = "#0f172a";
+      ctx.font = "800 58px Arial";
+      ctx.fillText("OAV BADI ERP", 82, 126);
+      ctx.font = "700 36px Arial";
+      ctx.fillStyle = "#1e40af";
+      ctx.fillText("Teacher Weekly Mobile Timetable", 82, 178);
+
+      ctx.fillStyle = "#0f172a";
+      ctx.font = "900 54px Arial";
+      drawWrappedCanvasText(ctx, `${teacherName} (${code})`, 82, 262, 900, 60, 2);
+      ctx.font = "700 30px Arial";
+      ctx.fillStyle = "#475569";
+      ctx.fillText(`Mode: ${activeTimetableTimeMode === "morning" ? "Morning" : "Regular"} | Generated: ${displayDateLong(new Date().toISOString().slice(0, 10))}`, 82, 342);
+
+      const dayColors = {
+        MONDAY: "#dbeafe",
+        TUESDAY: "#dcfce7",
+        WEDNESDAY: "#fef3c7",
+        THURSDAY: "#ede9fe",
+        FRIDAY: "#fce7f3",
+        SATURDAY: "#e0f2fe"
+      };
+      let y = 390;
+      TIMETABLE_DAY_ORDER.forEach(day => {
+        const items = schedule[day] || [];
+        const cardHeight = Math.max(170, 92 + Math.min(items.length, 5) * 58);
+        ctx.fillStyle = dayColors[day] || "#f8fafc";
+        canvasRoundRect(ctx, 82, y, 916, cardHeight, 24);
+        ctx.fill();
+        ctx.strokeStyle = "#cbd5e1";
+        ctx.lineWidth = 2;
+        canvasRoundRect(ctx, 82, y, 916, cardHeight, 24);
+        ctx.stroke();
+
+        ctx.fillStyle = "#0f172a";
+        ctx.font = "900 38px Arial";
+        ctx.fillText(day[0] + day.slice(1).toLowerCase(), 112, y + 52);
+
+        if (!items.length) {
+          ctx.font = "700 30px Arial";
+          ctx.fillStyle = "#64748b";
+          ctx.fillText("No class allotted", 112, y + 110);
+        } else {
+          ctx.font = "800 28px Arial";
+          let itemY = y + 100;
+          items.slice(0, 6).forEach(item => {
+            ctx.fillStyle = "#1d4ed8";
+            ctx.fillText(`P${item.period}`, 112, itemY);
+            ctx.fillStyle = "#334155";
+            ctx.fillText(item.time || "-", 170, itemY);
+            ctx.fillStyle = "#0f172a";
+            ctx.fillText(item.className, 365, itemY);
+            ctx.fillStyle = "#111827";
+            drawWrappedCanvasText(ctx, item.subject, 520, itemY, 440, 32, 1);
+            itemY += 58;
+          });
+          if (items.length > 6) {
+            ctx.fillStyle = "#dc2626";
+            ctx.font = "800 26px Arial";
+            ctx.fillText(`+ ${items.length - 6} more period(s)`, 112, itemY);
+          }
+        }
+        y += cardHeight + 24;
+      });
+
+      ctx.fillStyle = "#0f172a";
+      ctx.font = "700 26px Arial";
+      ctx.fillText("Use this PNG as mobile wallpaper or share in teacher group.", 82, 1835);
+
+      const link = document.createElement("a");
+      link.download = `teacher-wallpaper-${code}-${new Date().toISOString().slice(0, 10)}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    }
+
+    function downloadTeacherWallpaperImages() {
+      const rows = currentTimetableRows();
+      const options = teacherOptionPool(rows).map(item => item.code);
+      if (!options.length) {
+        document.getElementById("timeTableStatus").textContent = "No teacher code found in the timetable. Enter cells like MATH (AM), then try again.";
+        return;
+      }
+      const activeTeacher = teachers.find(teacher => teacher[0] === activeUser.teacher);
+      const defaultCode = teacherCode(activeTeacher) || options[0];
+      const requested = (prompt(`Enter teacher code for mobile wallpaper, or type ALL for every teacher.\nAvailable: ${options.join(", ")}`, defaultCode) || "").trim().toUpperCase();
+      if (!requested) return;
+      if (requested === "ALL") {
+        options.forEach((code, index) => setTimeout(() => downloadTeacherWallpaperImage(code), index * 350));
+        document.getElementById("timeTableStatus").textContent = `${options.length} teacher mobile wallpaper image(s) are downloading.`;
+        return;
+      }
+      if (!options.includes(requested)) {
+        document.getElementById("timeTableStatus").textContent = `${requested} teacher code was not found in the current timetable.`;
+        return;
+      }
+      downloadTeacherWallpaperImage(requested);
+      document.getElementById("timeTableStatus").textContent = `${requested} teacher mobile wallpaper downloaded.`;
+    }
+
     function downloadSubjectClassExcel() {
       const rows = currentTimetableRows();
       downloadExcelWorkbook("subject-class-weekly-periods.xls", [
@@ -13908,6 +14093,12 @@ function currentReportData(type = document.getElementById("reportType").value) {
       document.getElementById("timeTableWeeklyPanel").classList.remove("hidden");
       renderTimetableAudit();
       downloadDayWiseTeacherExcel();
+    });
+
+    document.getElementById("downloadTeacherWallpaperImages").addEventListener("click", () => {
+      document.getElementById("timeTableWeeklyPanel").classList.remove("hidden");
+      renderTimetableAudit();
+      downloadTeacherWallpaperImages();
     });
 
     document.getElementById("downloadSubjectClassExcel").addEventListener("click", () => {
