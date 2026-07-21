@@ -12346,28 +12346,28 @@ function currentReportData(type = document.getElementById("reportType").value) {
       ctx.fill();
 
       ctx.fillStyle = "#0f172a";
-      ctx.font = "900 54px Arial";
-      ctx.fillText("OAV BADI ERP", 84, 112);
-      ctx.font = "800 34px Arial";
+      ctx.font = "900 52px Arial";
+      ctx.fillText("OAV BADI ERP", 84, 104);
+      ctx.font = "800 32px Arial";
       ctx.fillStyle = "#2563eb";
-      ctx.fillText("Teacher Day-Wise Weekly Time Table", 84, 158);
+      ctx.fillText("Teacher Day-Wise Weekly Time Table", 84, 146);
 
       ctx.textAlign = "right";
       ctx.fillStyle = "#0f172a";
-      ctx.font = "900 46px Arial";
-      ctx.fillText(`${teacherName} (${code})`, 1836, 112);
-      ctx.font = "700 28px Arial";
+      ctx.font = "900 44px Arial";
+      ctx.fillText(`${teacherName} (${code})`, 1836, 104);
+      ctx.font = "700 27px Arial";
       ctx.fillStyle = "#475569";
-      ctx.fillText(`${activeTimetableTimeMode === "morning" ? "Morning" : "Regular"} | ${displayDateLong(new Date().toISOString().slice(0, 10))}`, 1836, 156);
+      ctx.fillText(`${activeTimetableTimeMode === "morning" ? "Morning" : "Regular"} | ${displayDateLong(new Date().toISOString().slice(0, 10))}`, 1836, 146);
       ctx.textAlign = "left";
 
-      const x0 = 84;
-      const y0 = 220;
-      const tableWidth = 1752;
-      const dayColumnWidth = 210;
+      const x0 = 36;
+      const y0 = 185;
+      const tableWidth = 1848;
+      const dayColumnWidth = 190;
       const periodWidth = (tableWidth - dayColumnWidth) / TIMETABLE_PERIOD_COUNT;
-      const headerHeight = 104;
-      const rowHeight = 112;
+      const headerHeight = 92;
+      const rowHeight = 130;
       const tableHeight = headerHeight + TIMETABLE_DAY_ORDER.length * rowHeight;
       const dayColors = ["#e0f2fe", "#dcfce7", "#fef3c7", "#ede9fe", "#fce7f3", "#dbeafe"];
       const periodLabels = ["1ST", "2ND", "3RD", "4TH", "5TH", "6TH", "7TH", "8TH"];
@@ -12404,6 +12404,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
         ctx.fillRect(x0, y, tableWidth, rowHeight);
         ctx.fillStyle = "#0f172a";
         ctx.font = "900 29px Arial";
+        ctx.textAlign = "center";
         ctx.fillText(day[0] + day.slice(1).toLowerCase(), x0 + dayColumnWidth / 2, y + 68);
         Array.from({ length: TIMETABLE_PERIOD_COUNT }, (_, periodIndex) => {
           const x = x0 + dayColumnWidth + periodIndex * periodWidth;
@@ -12412,10 +12413,11 @@ function currentReportData(type = document.getElementById("reportType").value) {
             ? items.map(item => `${item.className}: ${item.subject}`).join(" | ")
             : "";
           ctx.fillStyle = items.length > 1 ? "#fff7ed" : "rgba(255,255,255,0.72)";
-          ctx.fillRect(x + 8, y + 12, periodWidth - 16, rowHeight - 24);
+          ctx.fillRect(x + 8, y + 10, periodWidth - 16, rowHeight - 20);
+          ctx.textAlign = "left";
           ctx.fillStyle = items.length > 1 ? "#9a3412" : "#111827";
-          ctx.font = items.length > 1 ? "900 20px Arial" : "900 22px Arial";
-          drawWrappedCanvasText(ctx, text || "-", x + 18, y + 42, periodWidth - 36, 26, 3);
+          ctx.font = items.length > 1 ? "900 19px Arial" : "900 21px Arial";
+          drawWrappedCanvasText(ctx, text || "-", x + 18, y + 38, periodWidth - 36, 27, 4);
         });
       });
 
@@ -12435,11 +12437,6 @@ function currentReportData(type = document.getElementById("reportType").value) {
         ctx.lineTo(x0 + tableWidth, y);
         ctx.stroke();
       }
-
-      ctx.textAlign = "left";
-      ctx.fillStyle = "#0f172a";
-      ctx.font = "800 26px Arial";
-      ctx.fillText("Tip: Set this landscape image as wallpaper or share it in the teacher group.", 84, 982);
 
       const link = document.createElement("a");
       link.download = `teacher-landscape-wallpaper-${code}-${new Date().toISOString().slice(0, 10)}.png`;
