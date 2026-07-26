@@ -5084,7 +5084,6 @@
       }
     }
   </style>
-  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 </head>
 <body class="login-only">
   <div class="update-banner" id="updateBanner">New update found. Reloading automatically...</div>
@@ -5975,9 +5974,6 @@
             </div>
             <button class="secondary" id="shareDailyTimetableFormat">Share / Download Daily</button>
             <button class="secondary" id="downloadWeeklyTimetableExcel">Weekly Time Table Excel</button>
-            <button class="secondary" id="downloadDayWiseTeacherExcel">Day Wise Teacher Excel</button>
-            <button class="secondary" id="downloadTeacherWallpaperImages">Teacher Mobile Wallpapers</button>
-            <button class="secondary" id="downloadSubjectClassExcel">Subject-Class Excel</button>
             <button class="secondary" id="printWeeklyTimetablePdf">Weekly Time Table PDF</button>
           </div>
           <div class="card" style="margin-top: 14px;">
@@ -6014,7 +6010,6 @@
                 <h2>Daily Arrangement</h2>
                 <div class="toolbar">
                   <button class="secondary" id="shareDailyArrangement">Share Daily Arrangement</button>
-                  <button class="secondary" id="downloadDailyArrangementExcel">Daily Arrangement Excel</button>
                   <button class="secondary" id="shareTodayTimetable">Share Today's Time Table</button>
                   <button class="secondary" id="resetDailyArrangement">Reset Daily Arrangement</button>
                   <button class="secondary" id="toggleDailyArrangement">Hide Daily Arrangement</button>
@@ -6029,10 +6024,7 @@
             <div class="table-wrap" id="timeTableWorkloadPanel">
               <div class="section-title">
                 <h2>Workload Summary</h2>
-                <div class="toolbar">
-                  <button class="secondary" id="downloadWorkloadSummaryExcel">Workload Excel</button>
-                  <button class="secondary" id="toggleWorkloadSummary">Hide Workload Summary</button>
-                </div>
+                <button class="secondary" id="toggleWorkloadSummary">Hide Workload Summary</button>
               </div>
               <table>
                 <thead><tr><th>Teacher Code</th><th>Original Today</th><th>Original Weekly</th><th>Today Arrangement</th><th>This Week Arrangement</th><th>This Month Arrangement</th></tr></thead>
@@ -6043,19 +6035,10 @@
           <div class="table-wrap" id="teacherDayAllocationPanel" style="margin-top: 14px;">
             <div class="section-title">
               <h2>Day Wise Teacher Period Allocation</h2>
-              <div class="toolbar">
-                <button class="secondary" id="downloadTeacherDayAllocationExcel">Teacher Allocation Excel</button>
-                <button class="secondary" id="toggleTeacherDayAllocation">Hide Day Wise Teacher Allocation</button>
-              </div>
+              <button class="secondary" id="toggleTeacherDayAllocation">Hide Day Wise Teacher Allocation</button>
             </div>
             <div id="teacherDayAllocationContent">
               <p class="success-note">Shows which teacher has how many allotted periods on each day. Optional cells with multiple teachers are counted for each teacher.</p>
-              <h3>Day Wise Teacher Class Count</h3>
-              <table>
-                <thead><tr><th>Day</th><th>Teacher Code</th><th>Teacher Name</th><th>Total Classes / Periods</th><th>Classes / Periods</th></tr></thead>
-                <tbody id="dayWiseTeacherClassRows"></tbody>
-              </table>
-              <h3>Teacher Weekly Summary</h3>
               <table>
                 <thead><tr><th>Teacher Code</th><th>Teacher Name</th><th>Monday</th><th>Tuesday</th><th>Wednesday</th><th>Thursday</th><th>Friday</th><th>Saturday</th><th>Total</th><th>Classes / Periods</th></tr></thead>
                 <tbody id="teacherDayAllocationRows"></tbody>
@@ -6065,10 +6048,7 @@
           <div class="table-wrap" id="timeTableConflictPanel" style="margin-top: 14px;">
             <div class="section-title">
               <h2>Conflict / Compliance</h2>
-              <div class="toolbar">
-                <button class="secondary" id="downloadConflictComplianceExcel">Conflict Excel</button>
-                <button class="secondary" id="toggleConflictCompliance">Hide Conflict / Compliance</button>
-              </div>
+              <button class="secondary" id="toggleConflictCompliance">Hide Conflict / Compliance</button>
             </div>
             <div id="timeTableConflictContent">
               <p class="conflict-note clear" id="timeTableConflictStatus">No conflict found yet.</p>
@@ -6081,10 +6061,7 @@
           <div class="table-wrap" id="subjectPeriodPanel" style="margin-top: 14px;">
             <div class="section-title">
               <h2>Subject Wise Period Count</h2>
-              <div class="toolbar">
-                <button class="secondary" id="downloadSubjectPeriodExcel">Subject Period Excel</button>
-                <button class="secondary" id="toggleSubjectPeriod">Hide Subject Wise Period Count</button>
-              </div>
+              <button class="secondary" id="toggleSubjectPeriod">Hide Subject Wise Period Count</button>
             </div>
             <div id="subjectPeriodContent">
               <table>
@@ -6096,10 +6073,7 @@
           <div class="table-wrap" id="classSubjectPeriodPanel" style="margin-top: 14px;">
             <div class="section-title">
               <h2>Class Wise Subject Period Count</h2>
-              <div class="toolbar">
-                <button class="secondary" id="downloadClassSubjectPeriodExcel">Class Subject Excel</button>
-                <button class="secondary" id="toggleClassSubjectPeriod">Hide Class Wise Subject Period Count</button>
-              </div>
+              <button class="secondary" id="toggleClassSubjectPeriod">Hide Class Wise Subject Period Count</button>
             </div>
             <div id="classSubjectPeriodContent">
               <p class="success-note">Shows which subject is allotted how many weekly periods/days in each class. Optional cells like HINDI (TH)/SANS (DP) are counted separately.</p>
@@ -6112,10 +6086,7 @@
           <div class="table-wrap" id="sectionSubjectBalancePanel" style="margin-top: 14px;">
             <div class="section-title">
               <h2>A/B Section Subject Balance</h2>
-              <div class="toolbar">
-                <button class="secondary" id="downloadSectionSubjectBalanceExcel">A/B Balance Excel</button>
-                <button class="secondary" id="toggleSectionSubjectBalance">Hide A/B Section Balance</button>
-              </div>
+              <button class="secondary" id="toggleSectionSubjectBalance">Hide A/B Section Balance</button>
             </div>
             <div id="sectionSubjectBalanceContent">
               <p class="success-note">Checks whether A and B sections of the same class have equal weekly subject periods.</p>
@@ -6126,10 +6097,7 @@
             </div>
           </div>
           <div class="table-wrap hidden" id="timeTableTodayPanel" style="margin-top: 14px;">
-            <div class="section-title">
-              <h2>Today's Time Table</h2>
-              <button class="secondary" id="downloadTodayTimeTableExcel">Today's Time Table Excel</button>
-            </div>
+            <h2>Today's Time Table</h2>
             <table>
               <thead><tr id="timeTableTodayHeader"><th>Day</th><th>Class</th><th>Period 1</th><th>Period 2</th><th>Period 3</th><th>Period 4</th><th>Period 5</th><th>Period 6</th><th>Period 7</th><th>Period 8</th></tr></thead>
               <tbody id="timeTableTodayRows"></tbody>
@@ -6185,21 +6153,21 @@
             </div>
             <div class="field">
               <label for="examResultFile">CSV File</label>
-              <input id="examResultFile" type="file" accept=".csv,.txt,.xls,.xlsx">
+              <input id="examResultFile" type="file" accept=".csv,.txt">
             </div>
             <button class="secondary" id="importExamResults">Import Results</button>
-            <button class="secondary" id="importExamResultsFile">Upload Excel / CSV</button>
+            <button class="secondary" id="importExamResultsFile">Upload CSV</button>
             <button class="secondary" id="downloadExamTemplate">Download Template</button>
             <button class="secondary" id="resetExamResults">Reset / Delete Results</button>
           </div>
           <div class="field">
             <label for="examResultText">Paste CSV rows</label>
-            <textarea id="examResultText" placeholder="Class IX/X template: Name, Roll No, Class, Section, ENGLISH, ODIA, MATHEMATICS, SCIENCE, SOCIAL SCIENCE, I.T.-SKILL, PHYSICAL EDUCATION&#10;AKANKSHYA PANIGRAHI, 1, Class X, A, 36.5, 31, 30, 37, 37.5, 35, 38"></textarea>
+            <textarea id="examResultText" placeholder="Class,Section,Roll,Student Name,Father Name,Mother Name,DOB,Mobile,English,Odia,Hindi,Sanskrit,Mathematics,Science,Social Science,ICT,Result&#10;Class VI,A,1,SAI SANGAM MUND,Father Name,Mother Name,01/01/2014,+91 9876543210,78,80,75,70,82,79,76,85,Pass"></textarea>
           </div>
           <p class="success-note" id="examResultStatus">Paste or import marks, then send WhatsApp result messages.</p>
           <div class="table-wrap" style="margin-top: 14px;">
             <table>
-              <thead><tr><th>Class</th><th>Section</th><th>Exam</th><th>Admission No.</th><th>Roll</th><th>Student</th><th>Father</th><th>Mother</th><th>DOB</th><th>Mobile</th><th>Total Mark Secured</th><th>%</th><th>Rank in Class</th><th>Result</th><th>Action</th></tr></thead>
+              <thead><tr><th>Class</th><th>Exam</th><th>Roll</th><th>Student</th><th>Father</th><th>Mother</th><th>DOB</th><th>Total</th><th>%</th><th>Result</th><th>Mobile</th><th>Action</th></tr></thead>
               <tbody id="examResultRows"></tbody>
             </table>
           </div>
@@ -9162,29 +9130,17 @@
         return;
       }
 
-      const lowerName = file.name.toLowerCase();
+      if (!file.name.toLowerCase().endsWith(".csv")) {
+        document.getElementById(statusId).textContent = `${file.name} selected, but this static prototype imports CSV only. Open the template in WPS, use Save As CSV, then import that CSV file. XLSX import will work in backend version.`;
+        return;
+      }
+
       const reader = new FileReader();
       reader.onload = () => {
-        if (lowerName.endsWith(".xlsx") || lowerName.endsWith(".xls")) {
-          if (!window.XLSX) {
-            document.getElementById(statusId).textContent = "Excel reader is loading or unavailable. Please refresh once, or save the sheet as CSV and upload again.";
-            return;
-          }
-          const workbook = XLSX.read(new Uint8Array(reader.result), { type: "array" });
-          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-          document.getElementById(targetId).value = XLSX.utils.sheet_to_csv(firstSheet, { blankrows: false });
-          callback();
-          return;
-        }
-        if (!lowerName.endsWith(".csv") && !lowerName.endsWith(".txt")) {
-          document.getElementById(statusId).textContent = "Please upload a CSV, TXT, XLS, or XLSX file.";
-          return;
-        }
         document.getElementById(targetId).value = reader.result;
         callback();
       };
-      if (lowerName.endsWith(".xlsx") || lowerName.endsWith(".xls")) reader.readAsArrayBuffer(file);
-      else reader.readAsText(file);
+      reader.readAsText(file);
     }
 
     function mdmCategoryForClass(key) {
@@ -9784,13 +9740,6 @@
       const safeSheetName = name => String(name || "Sheet").replace(/[\\/?*[\]:]/g, " ").slice(0, 31) || "Sheet";
       const cellValue = cell => (cell && typeof cell === "object" && !Array.isArray(cell)) ? cell.value : cell;
       const cellStyle = cell => (cell && typeof cell === "object" && !Array.isArray(cell) && cell.styleId) ? cell.styleId : "";
-      const cellAttrs = cell => {
-        if (!cell || typeof cell !== "object" || Array.isArray(cell)) return "";
-        const attrs = [];
-        if (cell.index) attrs.push(`ss:Index="${escapeXml(cell.index)}"`);
-        if (cell.mergeDown) attrs.push(`ss:MergeDown="${escapeXml(cell.mergeDown)}"`);
-        return attrs.length ? ` ${attrs.join(" ")}` : "";
-      };
       const teacherStyles = [...new Map(teachers.map(teacher => [teacherExcelStyleId(teacherCode(teacher)), teacherColor(teacher)])).entries()]
         .filter(([styleId]) => styleId)
         .map(([styleId, color]) => `<Style ss:ID="${escapeXml(styleId)}"><Font ss:Bold="1"/><Interior ss:Color="${escapeXml(color)}" ss:Pattern="Solid"/></Style>`)
@@ -9798,7 +9747,7 @@
       const worksheetXml = sheet => {
         const rows = (sheet.rows || []).map(row => `<Row>${row.map(cell => {
           const styleId = cellStyle(cell);
-          return `<Cell${cellAttrs(cell)}${styleId ? ` ss:StyleID="${escapeXml(styleId)}"` : ""}><Data ss:Type="String">${escapeXml(cellValue(cell))}</Data></Cell>`;
+          return `<Cell${styleId ? ` ss:StyleID="${escapeXml(styleId)}"` : ""}><Data ss:Type="String">${escapeXml(cellValue(cell))}</Data></Cell>`;
         }).join("")}</Row>`).join("");
         return `<Worksheet ss:Name="${escapeXml(safeSheetName(sheet.name))}"><Table>${rows}</Table></Worksheet>`;
       };
@@ -9810,9 +9759,6 @@
  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
 <Styles>
   <Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Vertical="Center"/><Font ss:FontName="Calibri" ss:Size="11"/></Style>
-  <Style ss:ID="ReportHeader"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
-  <Style ss:ID="ReportCell"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Font ss:FontName="Calibri" ss:Size="11"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
-  <Style ss:ID="ReportSubject"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
   ${teacherStyles}
 </Styles>
 ${sheets.map(worksheetXml).join("")}
@@ -10724,185 +10670,73 @@ function currentReportData(type = document.getElementById("reportType").value) {
     }
 
     const examSubjects = ["English", "Odia", "Hindi", "Sanskrit", "Mathematics", "Science", "Social Science", "ICT"];
-    const class10ExamSubjects = ["English", "Odia", "Mathematics", "Science", "Social Science", "I.T.-Skill", "Physical Education"];
-    const examSubjectAliases = {
-      "english": "English",
-      "odia": "Odia",
-      "hindi": "Hindi",
-      "sanskrit": "Sanskrit",
-      "mathematics": "Mathematics",
-      "math": "Mathematics",
-      "science": "Science",
-      "socialscience": "Social Science",
-      "socialstudies": "Social Science",
-      "sst": "Social Science",
-      "ict": "ICT",
-      "it": "I.T.-Skill",
-      "itskill": "I.T.-Skill",
-      "itskills": "I.T.-Skill",
-      "physicaleducation": "Physical Education",
-      "phe": "Physical Education"
-    };
 
     function populateExamClassOptions() {
       const select = document.getElementById("examResultClass");
       if (!select) return;
       const selected = select.value || "All";
       const keys = Object.keys(classData).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-      const options = keys.map(key => `<option>${key}</option>`).join("");
-      select.innerHTML = `<option>All</option>${options}`;
-      select.value = [...select.options].some(option => option.value === selected) ? selected : "All";
+      const allowedKeys = activeUser.role === "teacher" && activeUser.classKey ? keys.filter(key => key === activeUser.classKey) : keys;
+      const options = allowedKeys.map(key => `<option>${key}</option>`).join("");
+      select.innerHTML = activeUser.role === "teacher" && activeUser.classKey ? options : `<option>All</option>${options}`;
+      select.value = [...select.options].some(option => option.value === selected) ? selected : (allowedKeys[0] || "All");
     }
 
-    function findStudentMasterRecord(classGroup, roll, name, admissionNo = "") {
+    function findStudentMasterRecord(classGroup, roll, name) {
       const list = classData[classGroup] || [];
       const paddedRoll = String(Number(roll || 0)).padStart(2, "0");
-      const normalizedAdmission = String(admissionNo || "").trim().toLowerCase();
-      return (normalizedAdmission && list.find(student => studentAdmissionNo(student).toLowerCase() === normalizedAdmission))
-        || list.find(student => String(student[0]).padStart(2, "0") === paddedRoll)
+      return list.find(student => String(student[0]).padStart(2, "0") === paddedRoll)
         || list.find(student => String(student[1] || "").trim().toLowerCase() === String(name || "").trim().toLowerCase());
     }
 
     function enrichExamResultFromMaster(result) {
-      const master = findStudentMasterRecord(result.classGroup, result.roll, result.name, result.admissionNo);
+      const master = findStudentMasterRecord(result.classGroup, result.roll, result.name);
       if (!master) return result;
-      result.admissionNo = result.admissionNo || studentAdmissionNo(master) || "";
       result.name = result.name || master[1] || "";
       result.father = result.father || master[6] || "";
       result.mother = result.mother || "";
       result.dob = result.dob || "";
       result.mobile = result.mobile || master[7] || "";
-      const meta = studentMeta(master);
-      result.mother = result.mother || meta.mother || "";
-      result.dob = result.dob || meta.dob || "";
       return result;
     }
 
-    function examBaseClass(classGroup) {
-      const text = String(classGroup || "").trim();
-      if (text.includes("SCIENCE")) return text;
-      return text.replace(/-[A-Z]$/, "");
-    }
-
-    function examSectionFromClassGroup(classGroup, fallback = "") {
-      const text = String(classGroup || "").trim();
-      if (text.includes("SCIENCE")) return fallback || "";
-      const match = text.match(/-([A-Z])$/);
-      return match ? match[1] : (fallback || "A");
-    }
-
-    function resolveExamSubject(header) {
-      const normalized = normalizeHeaderName(header);
-      return examSubjectAliases[normalized] || null;
-    }
-
-    function updateExamRanks() {
-      const groups = {};
-      examResults.forEach(result => {
-        const key = `${result.examName || "EXAM"}|${examBaseClass(result.classGroup)}`;
-        if (!groups[key]) groups[key] = [];
-        groups[key].push(result);
-      });
-      Object.values(groups).forEach(group => {
-        group
-          .sort((a, b) => Number(b.total || 0) - Number(a.total || 0) || String(a.roll || "").localeCompare(String(b.roll || ""), undefined, { numeric: true }))
-          .forEach((result, index, sorted) => {
-            result.rank = index > 0 && Number(result.total || 0) === Number(sorted[index - 1].total || 0) ? sorted[index - 1].rank : index + 1;
-          });
-      });
-    }
-
-    function canSendExamResult(result) {
-      if (activeUser.role !== "teacher") return true;
-      if (!activeUser.classKey) return false;
-      return result.classGroup === activeUser.classKey;
-    }
-
     function importExamResults() {
-      const rawRows = parseCsvLines(document.getElementById("examResultText").value, 1, { keepHeader: true });
-      if (!rawRows.length) {
-        document.getElementById("examResultStatus").textContent = "No valid result row found.";
-        return;
-      }
-      const headerIndex = rawRows.findIndex(row => row.some(cell => /admission|roll|student|name|english|odia|mathematics/i.test(cell || "")));
-      const header = headerIndex >= 0 ? rawRows[headerIndex] : [];
-      const dataRows = headerIndex >= 0 ? rawRows.slice(headerIndex + 1) : rawRows;
-      const headerMap = {};
-      header.forEach((cell, index) => { headerMap[normalizeHeaderName(cell)] = index; });
-      const subjectColumns = header
-        .map((cell, index) => ({ subject: resolveExamSubject(cell), index }))
-        .filter(item => item.subject);
-      const usingClass10Format = subjectColumns.some(item => class10ExamSubjects.includes(item.subject));
-      const subjects = usingClass10Format ? class10ExamSubjects : examSubjects;
-      const maxMarksBySubject = {};
-      subjects.forEach(subject => { maxMarksBySubject[subject] = 100; });
-      const maxMarksRow = subjectColumns.length
-        ? dataRows.find(row => !String(rowValue(row, headerMap, ["Roll No", "Roll Number", "Roll"], usingClass10Format ? 1 : 2) || "").trim() && subjectColumns.some(({ index }) => Number(row[index] || 0) > 0))
-        : null;
-      if (maxMarksRow) {
-        subjectColumns.forEach(({ subject, index }) => {
-          const max = Number(maxMarksRow[index] || 0);
-          if (max > 0) maxMarksBySubject[subject] = max;
-        });
-      }
-      const examName = document.getElementById("examName").value || "EXAM";
+      const rows = parseCsvLines(document.getElementById("examResultText").value, 17);
       let added = 0;
-
-      dataRows.forEach(row => {
-        if (row === maxMarksRow) return;
-        const admissionNo = rowValue(row, headerMap, ["Admission No", "Admission Number", "Adm No"], -1);
-        const name = rowValue(row, headerMap, ["Student Name", "Name"], usingClass10Format ? 0 : 3);
-        const rollRaw = rowValue(row, headerMap, ["Roll No", "Roll Number", "Roll"], usingClass10Format ? 1 : 2);
-        if (Number.isNaN(Number(rollRaw))) return;
-        const section = String(rowValue(row, headerMap, ["Section", "Sec"], usingClass10Format ? 3 : 1) || "A").toUpperCase();
-        const classValue = rowValue(row, headerMap, ["Class"], usingClass10Format ? 2 : 0) || "Class X";
-        const classGroup = String(classValue).includes("-") || String(classValue).includes("SCIENCE") ? normalizeClassName(classValue) : `${normalizeClassName(classValue)}-${section}`;
-        const allowedImport = activeUser.role !== "teacher" || !activeUser.classKey || classGroup === activeUser.classKey || examBaseClass(classGroup) === examBaseClass(activeUser.classKey);
-        if (!allowedImport) return;
-
+      const examName = document.getElementById("examName").value || "EXAM";
+      rows.forEach(row => {
+        if (/^class$/i.test(row[0] || "") || Number.isNaN(Number(row[2]))) return;
+        const classGroup = row[0].includes("-") || row[0].includes("SCIENCE") ? row[0] : `${normalizeClassName(row[0])}-${String(row[1] || "A").toUpperCase()}`;
+        if (activeUser.role === "teacher" && activeUser.classKey && classGroup !== activeUser.classKey) return;
         const marks = {};
-        subjects.forEach(subject => { marks[subject] = 0; });
-        if (subjectColumns.length) {
-          subjectColumns.forEach(({ subject, index }) => {
-            marks[subject] = Number(row[index] || 0);
-          });
-        } else {
-          subjects.forEach((subject, index) => {
-            marks[subject] = Number(row[(usingClass10Format ? 4 : 8) + index] || 0);
-          });
-        }
-        const maxMarks = subjects.reduce((sum, subject) => sum + Number(maxMarksBySubject[subject] || 100), 0);
+        examSubjects.forEach((subject, index) => {
+          marks[subject] = Number(row[8 + index] || 0);
+        });
         const total = Object.values(marks).reduce((sum, mark) => sum + Number(mark || 0), 0);
-        const percentage = maxMarks ? Math.round((total / maxMarks) * 1000) / 10 : 0;
+        const percentage = Math.round((total / (examSubjects.length * 100)) * 1000) / 10;
         const result = enrichExamResultFromMaster({
           examName,
           classGroup,
-          section,
-          admissionNo,
-          roll: String(Number(rollRaw)).padStart(2, "0"),
-          name,
-          father: "",
-          mother: "",
-          dob: "",
-          mobile: "",
-          subjects,
+          roll: String(Number(row[2])).padStart(2, "0"),
+          name: row[3],
+          father: row[4] || "",
+          mother: row[5] || "",
+          dob: row[6] || "",
+          mobile: row[7] || "",
           marks,
           total,
-          maxMarks,
           percentage,
-          rank: "",
-          result: rowValue(row, headerMap, ["Result"], -1) || (percentage >= 33 ? "Pass" : "Fail")
+          result: row[16] || (percentage >= 33 ? "Pass" : "Fail")
         });
-        const existingIndex = examResults.findIndex(item => item.examName === result.examName && item.classGroup === result.classGroup && (item.admissionNo && item.admissionNo === result.admissionNo || item.roll === result.roll));
+        const existingIndex = examResults.findIndex(item => item.examName === result.examName && item.classGroup === result.classGroup && item.roll === result.roll && item.name === result.name);
         if (existingIndex >= 0) examResults[existingIndex] = result;
         else examResults.push(result);
         added += 1;
       });
-      updateExamRanks();
       saveLocalData();
       renderExamResults();
       clearEntryFields(["examResultText", "examResultFile"]);
-      document.getElementById("examResultStatus").textContent = `${added} ${examName} result row(s) imported. Class A/B combined rank updated.`;
+      document.getElementById("examResultStatus").textContent = `${added} ${examName} result row(s) imported.`;
     }
 
     function importExamResultsFile() {
@@ -10933,7 +10767,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
     }
 
     function resultMessage(result) {
-      return `Dear Parent/Student,\nThe ${result.examName || "examination"} result details of your ward are given below:\nStudent's Name: ${result.name}\nFather's Name: ${result.father}\nMother's Name: ${result.mother}\nDate of Birth: ${result.dob}\nSubject-wise Marks:\n${(result.subjects || examSubjects).map((subject, index) => `${index + 1}.${subject}: ${result.marks[subject] || 0}`).join("\n")}\n\nTotal Marks Secured: ${result.total}/${result.maxMarks || ((result.subjects || examSubjects).length * 100)}\nPercentage: ${result.percentage}%\nRank in Class: ${result.rank || "-"}\nResult: ${result.result}\nPlease check the above details carefully. In case of any discrepancy or clarification, kindly contact the school.\nFrom:\nExamination Department\nOAV, Badi\nShared by:\nClass Teacher`;
+      return `Dear Parent/Student,\nThe ${result.examName || "examination"} result details of your ward are given below:\nStudent's Name: ${result.name}\nFather's Name: ${result.father}\nMother's Name: ${result.mother}\nDate of Birth: ${result.dob}\nSubject-wise Marks:\n${examSubjects.map((subject, index) => `${index + 1}.${subject}: ${result.marks[subject]}`).join("\n")}\n\nTotal Marks: ${result.total}\nPercentage: ${result.percentage}%\nResult: ${result.result}\nPlease check the above details carefully. In case of any discrepancy or clarification, kindly contact the school.\nFrom:\nExamination Department\nOAV, Badi\nShared by:\nClass Teacher`;
     }
 
     function resultWhatsappLink(result) {
@@ -10947,21 +10781,14 @@ function currentReportData(type = document.getElementById("reportType").value) {
       const rows = examResults
         .map((result, index) => ({ result, index }))
         .filter(item => (filter === "All" || item.result.classGroup === filter) && (!examName || (item.result.examName || examName) === examName));
-      updateExamRanks();
       document.getElementById("examResultRows").innerHTML = rows.length
-        ? rows.map(({ result, index }) => {
-          const sendButton = canSendExamResult(result) ? `<button class="secondary send-result" data-index="${index}">WhatsApp</button>` : `<span class="subtle">View only</span>`;
-          return `<tr><td>${result.classGroup}</td><td>${result.section || examSectionFromClassGroup(result.classGroup)}</td><td>${result.examName || ""}</td><td>${result.admissionNo || ""}</td><td>${Number(result.roll)}</td><td>${result.name}</td><td>${result.father || ""}</td><td>${result.mother || ""}</td><td>${result.dob || ""}</td><td>${result.mobile || ""}</td><td>${result.total}/${result.maxMarks || ((result.subjects || examSubjects).length * 100)}</td><td>${result.percentage}%</td><td>${result.rank || ""}</td><td>${result.result}</td><td>${sendButton}</td></tr>`;
-        }).join("")
-        : `<tr><td colspan="15">No exam results imported yet.</td></tr>`;
+        ? rows.map(({ result, index }) => `<tr><td>${result.classGroup}</td><td>${result.examName || ""}</td><td>${Number(result.roll)}</td><td>${result.name}</td><td>${result.father || ""}</td><td>${result.mother || ""}</td><td>${result.dob || ""}</td><td>${result.total}</td><td>${result.percentage}%</td><td>${result.result}</td><td>${result.mobile}</td><td><button class="secondary send-result" data-index="${index}">WhatsApp</button></td></tr>`).join("")
+        : `<tr><td colspan="12">No exam results imported yet.</td></tr>`;
     }
 
     function downloadExamTemplate() {
-      downloadCsv("class-ix-x-exam-result-template.csv", [
-        ["Name", "Roll No", "Class", "Section", "ENGLISH", "ODIA", "MATHEMATICS", "SCIENCE", "SOCIAL SCIENCE", "I.T.-SKILL", "PHYSICAL EDUCATION"],
-        ["", "", "", "", 40, 40, 40, 40, 40, 40, 40],
-        ["AKANKSHYA PANIGRAHI", 1, "Class X", "A", 0, 0, 0, 0, 0, 0, 0],
-        ["ALILI MEHER", 2, "Class IX", "B", 0, 0, 0, 0, 0, 0, 0]
+      downloadCsv("exam-result-template.csv", [
+        ["Class", "Section", "Roll", "Student Name", "Father Name", "Mother Name", "DOB", "Mobile", ...examSubjects, "Result"]
       ]);
     }
 
@@ -11660,47 +11487,13 @@ function currentReportData(type = document.getElementById("reportType").value) {
         .sort((a, b) => a.code.localeCompare(b.code));
     }
 
-    function dayWiseTeacherClassSummary(rows = currentTimetableRows()) {
-      const map = new Map();
-      rows.forEach(row => row.periods.forEach((cell, periodIndex) => {
-        extractTeacherCodes(cell).forEach(code => {
-          const day = String(row.day || "").trim().toUpperCase();
-          if (!day) return;
-          const key = `${day}|${code}`;
-          if (!map.has(key)) {
-            map.set(key, {
-              day,
-              code,
-              name: teacherNameByCode(code),
-              count: 0,
-              classes: new Set()
-            });
-          }
-          const item = map.get(key);
-          item.count += 1;
-          item.classes.add(`${normalizeTimetableClassName(row.className)} P${periodIndex + 1}`);
-        });
-      }));
-      return [...map.values()]
-        .map(item => ({ ...item, classes: [...item.classes].join(", ") }))
-        .sort((a, b) => {
-          const dayDiff = TIMETABLE_DAY_ORDER.indexOf(a.day) - TIMETABLE_DAY_ORDER.indexOf(b.day);
-          return dayDiff || b.count - a.count || a.code.localeCompare(b.code);
-        });
-    }
-
     function renderTeacherDayAllocation(rows = currentTimetableRows()) {
       const body = document.getElementById("teacherDayAllocationRows");
-      const dayBody = document.getElementById("dayWiseTeacherClassRows");
-      if (!body && !dayBody) return;
+      if (!body) return;
       const summary = teacherDayAllocationSummary(rows);
-      if (body) body.innerHTML = summary.length
+      body.innerHTML = summary.length
         ? summary.map(item => `<tr><td>${htmlSafe(item.code)}</td><td>${htmlSafe(item.name || "-")}</td>${TIMETABLE_DAY_ORDER.map(day => `<td>${item.days[day] || 0}</td>`).join("")}<td>${item.total}</td><td>${htmlSafe(item.classes)}</td></tr>`).join("")
         : `<tr><td colspan="10">No teacher allotment found yet.</td></tr>`;
-      const daySummary = dayWiseTeacherClassSummary(rows);
-      if (dayBody) dayBody.innerHTML = daySummary.length
-        ? daySummary.map(item => `<tr><td>${htmlSafe(item.day[0] + item.day.slice(1).toLowerCase())}</td><td>${htmlSafe(item.code)}</td><td>${htmlSafe(item.name || "-")}</td><td>${item.count}</td><td>${htmlSafe(item.classes)}</td></tr>`).join("")
-        : `<tr><td colspan="5">No day-wise teacher class count found yet.</td></tr>`;
     }
 
     function timetableBaseSection(className) {
@@ -11800,33 +11593,6 @@ function currentReportData(type = document.getElementById("reportType").value) {
             return `<tr><td><strong>${htmlSafe(subjectCell)}</strong></td><td>${htmlSafe(item.className)}</td><td>${item.count}</td><td>${htmlSafe(item.code || "-")}</td><td>${htmlSafe(item.days)}</td></tr>`;
           }).join("")
         : `<tr><td colspan="5">No class-wise subject period found yet.</td></tr>`;
-    }
-
-    function imageStyleClassSubjectRows(rows = currentTimetableRows()) {
-      const summary = classSubjectPeriodSummary(rows);
-      const grouped = new Map();
-      summary.forEach(item => {
-        if (!grouped.has(item.subject)) grouped.set(item.subject, []);
-        grouped.get(item.subject).push(item);
-      });
-      const output = [];
-      grouped.forEach((items, subject) => {
-        items.forEach((item, index) => {
-          if (index === 0) {
-            output.push([
-              { value: subject, styleId: "ReportSubject", mergeDown: Math.max(0, items.length - 1) },
-              { value: item.className, styleId: "ReportCell" },
-              { value: item.count, styleId: "ReportCell" }
-            ]);
-          } else {
-            output.push([
-              { value: item.className, styleId: "ReportCell", index: 2 },
-              { value: item.count, styleId: "ReportCell" }
-            ]);
-          }
-        });
-      });
-      return output;
     }
 
     function timetableConflictCellSet(rows = currentTimetableRows()) {
@@ -12112,7 +11878,6 @@ function currentReportData(type = document.getElementById("reportType").value) {
       const subjectSummary = subjectPeriodSummary(rows);
       const classSubjectSummary = classSubjectPeriodSummary(rows);
       const teacherDaySummary = teacherDayAllocationSummary(rows);
-      const dayWiseTeacherSummary = dayWiseTeacherClassSummary(rows);
       const sectionBalanceSummary = sectionSubjectBalanceSummary(rows);
       downloadExcelWorkbook("time-table-audit-arrangement.xls", [
         {
@@ -12140,30 +11905,6 @@ function currentReportData(type = document.getElementById("reportType").value) {
               item.total,
               item.classes
             ])
-          ]
-        },
-        {
-          name: "Day Wise Teacher Count",
-          rows: [
-            ["Day", "Teacher Code", "Teacher Name", "Total Classes / Periods", "Classes / Periods"],
-            ...dayWiseTeacherSummary.map(item => [
-              item.day[0] + item.day.slice(1).toLowerCase(),
-              { value: item.code, styleId: teacherExcelStyleId(item.code) },
-              item.name || "",
-              item.count,
-              item.classes
-            ])
-          ]
-        },
-        {
-          name: "Image Format Subject Count",
-          rows: [
-            [
-              { value: "SUBJECTS", styleId: "ReportHeader" },
-              { value: "CLASS-SEC", styleId: "ReportHeader" },
-              { value: "WEEKLY PERIODS", styleId: "ReportHeader" }
-            ],
-            ...imageStyleClassSubjectRows(rows)
           ]
         },
         {
@@ -12215,418 +11956,6 @@ function currentReportData(type = document.getElementById("reportType").value) {
 
     function downloadWholeSchoolTimeTableExcel() {
       downloadTimetableExcel();
-    }
-
-    function downloadDayWiseTeacherExcel() {
-      const rows = currentTimetableRows();
-      const teacherDaySummary = teacherDayAllocationSummary(rows);
-      const dayWiseTeacherSummary = dayWiseTeacherClassSummary(rows);
-      downloadExcelWorkbook("day-wise-teacher-class-count.xls", [
-        {
-          name: "Day Wise Teacher Count",
-          rows: [
-            ["Day", "Teacher Code", "Teacher Name", "Total Classes / Periods", "Classes / Periods"],
-            ...dayWiseTeacherSummary.map(item => [
-              item.day[0] + item.day.slice(1).toLowerCase(),
-              { value: item.code, styleId: teacherExcelStyleId(item.code) },
-              item.name || "",
-              item.count,
-              item.classes
-            ])
-          ]
-        },
-        {
-          name: "Teacher Weekly Summary",
-          rows: [
-            ["Teacher Code", "Teacher Name", ...TIMETABLE_DAY_ORDER.map(day => day[0] + day.slice(1).toLowerCase()), "Total", "Classes / Periods"],
-            ...teacherDaySummary.map(item => [
-              { value: item.code, styleId: teacherExcelStyleId(item.code) },
-              item.name || "",
-              ...TIMETABLE_DAY_ORDER.map(day => item.days[day] || 0),
-              item.total,
-              item.classes
-            ])
-          ]
-        }
-      ]);
-    }
-
-    function matchingTimetableSegments(value, code) {
-      const raw = String(value || "").trim();
-      if (!raw) return "";
-      const pieces = raw.split(/\s*(?:\/|\+|:)\s*/).map(item => item.trim()).filter(Boolean);
-      const matched = pieces.filter(item => extractTeacherCodes(item).includes(code));
-      return matched.length ? matched.join(" / ") : raw;
-    }
-
-    function teacherWallpaperSchedule(rows, code) {
-      const schedule = Object.fromEntries(TIMETABLE_DAY_ORDER.map(day => [day, []]));
-      rows.forEach(row => {
-        const day = String(row.day || "").trim().toUpperCase();
-        if (!schedule[day]) return;
-        row.periods.slice(0, TIMETABLE_PERIOD_COUNT).forEach((cell, periodIndex) => {
-          if (!extractTeacherCodes(cell).includes(code)) return;
-          schedule[day].push({
-            period: periodIndex + 1,
-            time: timetablePeriodTimes[activeTimetableTimeMode]?.[periodIndex] || "",
-            className: row.className,
-            subject: matchingTimetableSegments(cell, code)
-          });
-        });
-      });
-      Object.values(schedule).forEach(items => items.sort((a, b) => a.period - b.period || a.className.localeCompare(b.className)));
-      return schedule;
-    }
-
-    function drawWrappedCanvasText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 3) {
-      const words = String(text || "").split(/\s+/).filter(Boolean);
-      let line = "";
-      let lines = 0;
-      for (const word of words) {
-        const test = line ? `${line} ${word}` : word;
-        if (ctx.measureText(test).width > maxWidth && line) {
-          ctx.fillText(line, x, y);
-          y += lineHeight;
-          lines += 1;
-          line = word;
-          if (lines >= maxLines - 1) break;
-        } else {
-          line = test;
-        }
-      }
-      if (line && lines < maxLines) {
-        ctx.fillText(line, x, y);
-        y += lineHeight;
-      }
-      return y;
-    }
-
-    function canvasRoundRect(ctx, x, y, width, height, radius) {
-      const r = Math.min(radius, width / 2, height / 2);
-      ctx.beginPath();
-      ctx.moveTo(x + r, y);
-      ctx.lineTo(x + width - r, y);
-      ctx.quadraticCurveTo(x + width, y, x + width, y + r);
-      ctx.lineTo(x + width, y + height - r);
-      ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
-      ctx.lineTo(x + r, y + height);
-      ctx.quadraticCurveTo(x, y + height, x, y + height - r);
-      ctx.lineTo(x, y + r);
-      ctx.quadraticCurveTo(x, y, x + r, y);
-      ctx.closePath();
-    }
-
-    function downloadTeacherWallpaperImage(code) {
-      const rows = currentTimetableRows();
-      const teacherName = teacherNameByCode(code) || code;
-      const schedule = teacherWallpaperSchedule(rows, code);
-      const canvas = document.createElement("canvas");
-      canvas.width = 1920;
-      canvas.height = 1080;
-      const ctx = canvas.getContext("2d");
-
-      const gradient = ctx.createLinearGradient(0, 0, 1920, 1080);
-      gradient.addColorStop(0, "#0f172a");
-      gradient.addColorStop(0.48, "#0f766e");
-      gradient.addColorStop(1, "#2563eb");
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      ctx.fillStyle = "rgba(255,255,255,0.10)";
-      ctx.beginPath();
-      ctx.arc(1640, 170, 250, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = "rgba(255,255,255,0.08)";
-      ctx.beginPath();
-      ctx.arc(250, 950, 300, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = "rgba(255,255,255,0.96)";
-      canvasRoundRect(ctx, 42, 42, 1836, 996, 34);
-      ctx.fill();
-
-      ctx.fillStyle = "#0f172a";
-      ctx.font = "900 52px Arial";
-      ctx.fillText("OAV BADI ERP", 84, 104);
-      ctx.font = "800 32px Arial";
-      ctx.fillStyle = "#2563eb";
-      ctx.fillText("Teacher Day-Wise Weekly Time Table", 84, 146);
-
-      ctx.textAlign = "right";
-      ctx.fillStyle = "#0f172a";
-      ctx.font = "900 44px Arial";
-      ctx.fillText(`${teacherName} (${code})`, 1836, 104);
-      ctx.font = "700 27px Arial";
-      ctx.fillStyle = "#475569";
-      ctx.fillText(`${activeTimetableTimeMode === "morning" ? "Morning" : "Regular"} | ${displayDateLong(new Date().toISOString().slice(0, 10))}`, 1836, 146);
-      ctx.textAlign = "left";
-
-      const x0 = 36;
-      const y0 = 185;
-      const tableWidth = 1848;
-      const dayColumnWidth = 190;
-      const periodWidth = (tableWidth - dayColumnWidth) / TIMETABLE_PERIOD_COUNT;
-      const headerHeight = 92;
-      const rowHeight = 130;
-      const tableHeight = headerHeight + TIMETABLE_DAY_ORDER.length * rowHeight;
-      const dayColors = ["#e0f2fe", "#dcfce7", "#fef3c7", "#ede9fe", "#fce7f3", "#dbeafe"];
-      const periodLabels = ["1ST", "2ND", "3RD", "4TH", "5TH", "6TH", "7TH", "8TH"];
-
-      ctx.fillStyle = "#ffffff";
-      canvasRoundRect(ctx, x0, y0, tableWidth, tableHeight, 22);
-      ctx.fill();
-      ctx.lineWidth = 3;
-      ctx.strokeStyle = "#0f766e";
-      canvasRoundRect(ctx, x0, y0, tableWidth, tableHeight, 22);
-      ctx.stroke();
-
-      ctx.fillStyle = "#0f766e";
-      canvasRoundRect(ctx, x0, y0, tableWidth, headerHeight, 22);
-      ctx.fill();
-      ctx.fillStyle = "rgba(255,255,255,0.10)";
-      ctx.fillRect(x0, y0 + 58, tableWidth, 46);
-
-      ctx.textAlign = "center";
-      ctx.fillStyle = "#ffffff";
-      ctx.font = "900 34px Arial";
-      ctx.fillText("DAYS", x0 + dayColumnWidth / 2, y0 + 54);
-      Array.from({ length: TIMETABLE_PERIOD_COUNT }, (_, index) => {
-        const x = x0 + dayColumnWidth + index * periodWidth;
-        ctx.fillText(periodLabels[index] || `${index + 1}TH`, x + periodWidth / 2, y0 + 45);
-        ctx.font = "800 18px Arial";
-        ctx.fillText(timetablePeriodTimes[activeTimetableTimeMode]?.[index] || "", x + periodWidth / 2, y0 + 78);
-        ctx.font = "900 34px Arial";
-      });
-
-      TIMETABLE_DAY_ORDER.forEach((day, dayIndex) => {
-        const y = y0 + headerHeight + dayIndex * rowHeight;
-        ctx.fillStyle = dayColors[dayIndex % dayColors.length];
-        ctx.fillRect(x0, y, tableWidth, rowHeight);
-        ctx.fillStyle = "#0f172a";
-        ctx.font = "900 29px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText(day[0] + day.slice(1).toLowerCase(), x0 + dayColumnWidth / 2, y + 68);
-        Array.from({ length: TIMETABLE_PERIOD_COUNT }, (_, periodIndex) => {
-          const x = x0 + dayColumnWidth + periodIndex * periodWidth;
-          const items = (schedule[day] || []).filter(item => item.period === periodIndex + 1);
-          const text = items.length
-            ? items.map(item => `${item.className}: ${item.subject}`).join(" | ")
-            : "";
-          ctx.fillStyle = items.length > 1 ? "#fff7ed" : "rgba(255,255,255,0.72)";
-          ctx.fillRect(x + 8, y + 10, periodWidth - 16, rowHeight - 20);
-          ctx.textAlign = "left";
-          ctx.fillStyle = items.length > 1 ? "#9a3412" : "#111827";
-          ctx.font = items.length > 1 ? "900 19px Arial" : "900 21px Arial";
-          drawWrappedCanvasText(ctx, text || "-", x + 18, y + 38, periodWidth - 36, 27, 4);
-        });
-      });
-
-      ctx.strokeStyle = "#0f766e";
-      ctx.lineWidth = 2;
-      for (let i = 0; i <= TIMETABLE_PERIOD_COUNT; i += 1) {
-        const x = x0 + dayColumnWidth + i * periodWidth;
-        ctx.beginPath();
-        ctx.moveTo(x, y0);
-        ctx.lineTo(x, y0 + tableHeight);
-        ctx.stroke();
-      }
-      for (let i = 0; i <= TIMETABLE_DAY_ORDER.length; i += 1) {
-        const y = y0 + headerHeight + i * rowHeight;
-        ctx.beginPath();
-        ctx.moveTo(x0, y);
-        ctx.lineTo(x0 + tableWidth, y);
-        ctx.stroke();
-      }
-
-      const link = document.createElement("a");
-      link.download = `teacher-landscape-wallpaper-${code}-${new Date().toISOString().slice(0, 10)}.png`;
-      link.href = canvas.toDataURL("image/png");
-      link.click();
-    }
-
-    function downloadTeacherWallpaperImages() {
-      const rows = currentTimetableRows();
-      const options = teacherOptionPool(rows).map(item => item.code);
-      if (!options.length) {
-        document.getElementById("timeTableStatus").textContent = "No teacher code found in the timetable. Enter cells like MATH (AM), then try again.";
-        return;
-      }
-      const activeTeacher = teachers.find(teacher => teacher[0] === activeUser.teacher);
-      const defaultCode = teacherCode(activeTeacher) || options[0];
-      const requested = (prompt(`Enter teacher code for mobile wallpaper, or type ALL for every teacher.\nAvailable: ${options.join(", ")}`, defaultCode) || "").trim().toUpperCase();
-      if (!requested) return;
-      if (requested === "ALL") {
-        options.forEach((code, index) => setTimeout(() => downloadTeacherWallpaperImage(code), index * 350));
-        document.getElementById("timeTableStatus").textContent = `${options.length} teacher mobile wallpaper image(s) are downloading.`;
-        return;
-      }
-      if (!options.includes(requested)) {
-        document.getElementById("timeTableStatus").textContent = `${requested} teacher code was not found in the current timetable.`;
-        return;
-      }
-      downloadTeacherWallpaperImage(requested);
-      document.getElementById("timeTableStatus").textContent = `${requested} teacher mobile wallpaper downloaded.`;
-    }
-
-    function downloadSubjectClassExcel() {
-      const rows = currentTimetableRows();
-      downloadExcelWorkbook("subject-class-weekly-periods.xls", [
-        {
-          name: "Subject Class Periods",
-          rows: [
-            [
-              { value: "SUBJECTS", styleId: "ReportHeader" },
-              { value: "CLASS-SEC", styleId: "ReportHeader" },
-              { value: "WEEKLY PERIODS", styleId: "ReportHeader" }
-            ],
-            ...imageStyleClassSubjectRows(rows)
-          ]
-        }
-      ]);
-    }
-
-    function downloadDailyArrangementExcel() {
-      const rows = renderTimetableArrangement(currentTimetableRows());
-      downloadExcelWorkbook(`daily-arrangement-${arrangementDate()}.xls`, [
-        {
-          name: "Daily Arrangement",
-          rows: [
-            ["Date", displayDateLong(arrangementDate())],
-            ["Day", timetableTodayName()],
-            [],
-            ["Day", "Class", "Period", "Absent Teacher", "Original Period", "Best Suggestion", "Selected Duty", "Weekly/Monthly Load"],
-            ...rows.map(row => [
-              row.day,
-              row.className,
-              row.period,
-              { value: row.absent, styleId: teacherExcelStyleId(row.absent) },
-              timetableExcelCell(row.original),
-              timetableExcelCell(row.best),
-              { value: arrangementSubjectLabel(timetableArrangementSelections[arrangementKey(row)] || row.selected || row.best || ""), styleId: teacherExcelStyleId(timetableArrangementSelections[arrangementKey(row)] || row.selected || row.best || "") },
-              row.load
-            ])
-          ]
-        }
-      ]);
-    }
-
-    function downloadWorkloadSummaryExcel() {
-      const rows = currentTimetableRows();
-      const dailyWorkload = timetableDailyWorkload(rows);
-      const weeklyWorkload = timetableWeeklyWorkload(rows);
-      const codes = teacherOptionPool(rows).map(item => item.code);
-      downloadExcelWorkbook(`timetable-workload-summary-${arrangementDate()}.xls`, [
-        {
-          name: "Workload Summary",
-          rows: [
-            ["Date", displayDateLong(arrangementDate())],
-            ["Day", timetableTodayName()],
-            [],
-            ["Teacher Code", "Teacher Name", "Original Today", "Original Weekly", "Today Arrangement", "This Week Arrangement", "This Month Arrangement"],
-            ...codes.map(code => {
-              const counts = arrangementCounts(code);
-              return [
-                { value: code, styleId: teacherExcelStyleId(code) },
-                teacherNameByCode(code),
-                dailyWorkload[code] || 0,
-                weeklyWorkload[code] || 0,
-                counts.today,
-                counts.week,
-                counts.month
-              ];
-            })
-          ]
-        }
-      ]);
-    }
-
-    function downloadTeacherDayAllocationExcel() {
-      downloadDayWiseTeacherExcel();
-    }
-
-    function downloadConflictComplianceExcel() {
-      const conflicts = timetableConflictDetails(currentTimetableRows());
-      downloadExcelWorkbook(`timetable-conflict-compliance-${arrangementDate()}.xls`, [
-        {
-          name: "Conflict Compliance",
-          rows: [
-            ["Generated Date", displayDateLong(arrangementDate())],
-            ["Status", conflicts.length ? `${conflicts.length} conflict(s) found` : "No conflict found"],
-            [],
-            ["Day", "Period", "Teacher Code", "Teacher Name", "Classes", "Status"],
-            ...(conflicts.length ? conflicts.map(item => [
-              item.day,
-              item.period,
-              { value: item.code, styleId: teacherExcelStyleId(item.code) },
-              teacherNameByCode(item.code),
-              item.classes,
-              "Conflict"
-            ]) : [["-", "-", "-", "-", "-", "No teacher double-booking conflict found"]])
-          ]
-        }
-      ]);
-    }
-
-    function downloadSubjectPeriodExcel() {
-      const summary = subjectPeriodSummary(currentTimetableRows());
-      downloadExcelWorkbook("subject-wise-period-count.xls", [
-        {
-          name: "Subject Period Count",
-          rows: [
-            ["Subject", "Teacher Code", "Teacher Name", "Total Weekly Periods", "Classes"],
-            ...summary.map(item => [
-              item.subject,
-              { value: item.code, styleId: teacherExcelStyleId(item.code) },
-              teacherNameByCode(item.code),
-              item.count,
-              item.classes
-            ])
-          ]
-        }
-      ]);
-    }
-
-    function downloadClassSubjectPeriodExcel() {
-      const summary = classSubjectPeriodSummary(currentTimetableRows());
-      downloadExcelWorkbook("class-wise-subject-period-count.xls", [
-        {
-          name: "Class Subject Count",
-          rows: [
-            ["Subjects", "Class-Sec", "Weekly Periods", "Teacher Code", "Days"],
-            ...summary.map((item, index, list) => [
-              index > 0 && list[index - 1].subject === item.subject ? "" : item.subject,
-              item.className,
-              item.count,
-              item.code,
-              item.days
-            ])
-          ]
-        },
-        {
-          name: "Image Format",
-          rows: [
-            [
-              { value: "SUBJECTS", styleId: "ReportHeader" },
-              { value: "CLASS-SEC", styleId: "ReportHeader" },
-              { value: "WEEKLY PERIODS", styleId: "ReportHeader" }
-            ],
-            ...imageStyleClassSubjectRows(currentTimetableRows())
-          ]
-        }
-      ]);
-    }
-
-    function downloadSectionSubjectBalanceExcel() {
-      const summary = sectionSubjectBalanceSummary(currentTimetableRows());
-      downloadExcelWorkbook("ab-section-subject-balance.xls", [
-        {
-          name: "AB Subject Balance",
-          rows: [
-            ["Class", "Subject", "A Section Periods", "B Section Periods", "Status"],
-            ...summary.map(item => [item.className, item.subject, item.A, item.B, item.status])
-          ]
-        }
-      ]);
     }
 
     function todayTimetableExportRows() {
@@ -14030,10 +13359,6 @@ function currentReportData(type = document.getElementById("reportType").value) {
       shareDailyArrangement();
     });
 
-    document.getElementById("downloadDailyArrangementExcel").addEventListener("click", () => {
-      downloadDailyArrangementExcel();
-    });
-
     document.getElementById("shareTodayTimetable").addEventListener("click", () => {
       shareTodayTimetable();
     });
@@ -14050,48 +13375,24 @@ function currentReportData(type = document.getElementById("reportType").value) {
       togglePanelVisibility("timeTableWorkloadRows", "toggleWorkloadSummary", "Workload Summary");
     });
 
-    document.getElementById("downloadWorkloadSummaryExcel").addEventListener("click", () => {
-      downloadWorkloadSummaryExcel();
-    });
-
     document.getElementById("toggleTeacherDayAllocation").addEventListener("click", () => {
       togglePanelVisibility("teacherDayAllocationContent", "toggleTeacherDayAllocation", "Day Wise Teacher Allocation");
-    });
-
-    document.getElementById("downloadTeacherDayAllocationExcel").addEventListener("click", () => {
-      downloadTeacherDayAllocationExcel();
     });
 
     document.getElementById("toggleConflictCompliance").addEventListener("click", () => {
       togglePanelVisibility("timeTableConflictContent", "toggleConflictCompliance", "Conflict / Compliance");
     });
 
-    document.getElementById("downloadConflictComplianceExcel").addEventListener("click", () => {
-      downloadConflictComplianceExcel();
-    });
-
     document.getElementById("toggleSubjectPeriod").addEventListener("click", () => {
       togglePanelVisibility("subjectPeriodContent", "toggleSubjectPeriod", "Subject Wise Period Count");
-    });
-
-    document.getElementById("downloadSubjectPeriodExcel").addEventListener("click", () => {
-      downloadSubjectPeriodExcel();
     });
 
     document.getElementById("toggleClassSubjectPeriod").addEventListener("click", () => {
       togglePanelVisibility("classSubjectPeriodContent", "toggleClassSubjectPeriod", "Class Wise Subject Period Count");
     });
 
-    document.getElementById("downloadClassSubjectPeriodExcel").addEventListener("click", () => {
-      downloadClassSubjectPeriodExcel();
-    });
-
     document.getElementById("toggleSectionSubjectBalance").addEventListener("click", () => {
       togglePanelVisibility("sectionSubjectBalanceContent", "toggleSectionSubjectBalance", "A/B Section Balance");
-    });
-
-    document.getElementById("downloadSectionSubjectBalanceExcel").addEventListener("click", () => {
-      downloadSectionSubjectBalanceExcel();
     });
 
     document.getElementById("showWeeklyTimetable").addEventListener("click", () => {
@@ -14112,32 +13413,10 @@ function currentReportData(type = document.getElementById("reportType").value) {
       runDailyTimetableExport();
     });
 
-    document.getElementById("downloadTodayTimeTableExcel").addEventListener("click", () => {
-      downloadTodayTimetableExcel();
-    });
-
     document.getElementById("downloadWeeklyTimetableExcel").addEventListener("click", () => {
       document.getElementById("timeTableWeeklyPanel").classList.remove("hidden");
       renderTimetableAudit();
       downloadWholeSchoolTimeTableExcel();
-    });
-
-    document.getElementById("downloadDayWiseTeacherExcel").addEventListener("click", () => {
-      document.getElementById("timeTableWeeklyPanel").classList.remove("hidden");
-      renderTimetableAudit();
-      downloadDayWiseTeacherExcel();
-    });
-
-    document.getElementById("downloadTeacherWallpaperImages").addEventListener("click", () => {
-      document.getElementById("timeTableWeeklyPanel").classList.remove("hidden");
-      renderTimetableAudit();
-      downloadTeacherWallpaperImages();
-    });
-
-    document.getElementById("downloadSubjectClassExcel").addEventListener("click", () => {
-      document.getElementById("timeTableWeeklyPanel").classList.remove("hidden");
-      renderTimetableAudit();
-      downloadSubjectClassExcel();
     });
 
     document.getElementById("printWeeklyTimetablePdf").addEventListener("click", () => {
@@ -14560,12 +13839,6 @@ function currentReportData(type = document.getElementById("reportType").value) {
   </script>
 </body>
 </html>
-
-
-
-
-
-
 
 
 
