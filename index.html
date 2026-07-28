@@ -12411,11 +12411,11 @@ function currentReportData(type = document.getElementById("reportType").value) {
       const teacherName = teacherNameByCode(code) || code;
       const schedule = teacherWallpaperSchedule(rows, code);
       const canvas = document.createElement("canvas");
-      canvas.width = 1080;
-      canvas.height = 2400;
+      canvas.width = 2400;
+      canvas.height = 1080;
       const ctx = canvas.getContext("2d");
 
-      const gradient = ctx.createLinearGradient(0, 0, 1080, 2400);
+      const gradient = ctx.createLinearGradient(0, 0, 2400, 1080);
       gradient.addColorStop(0, "#0f172a");
       gradient.addColorStop(0.48, "#0f766e");
       gradient.addColorStop(1, "#2563eb");
@@ -12424,36 +12424,37 @@ function currentReportData(type = document.getElementById("reportType").value) {
 
       ctx.fillStyle = "rgba(255,255,255,0.10)";
       ctx.beginPath();
-      ctx.arc(930, 180, 250, 0, Math.PI * 2);
+      ctx.arc(2180, 130, 260, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = "rgba(255,255,255,0.08)";
       ctx.beginPath();
-      ctx.arc(120, 2220, 330, 0, Math.PI * 2);
+      ctx.arc(180, 970, 330, 0, Math.PI * 2);
       ctx.fill();
 
+      ctx.textAlign = "left";
       ctx.fillStyle = "#ffffff";
-      ctx.font = "900 52px Arial";
-      ctx.textAlign = "center";
-      ctx.fillText("OAV BADI ERP", canvas.width / 2, 92);
-      ctx.font = "800 30px Arial";
+      ctx.font = "900 50px Arial";
+      ctx.fillText("OAV BADI ERP", 58, 72);
+      ctx.font = "800 28px Arial";
       ctx.fillStyle = "#bfdbfe";
-      ctx.fillText("TEACHER WEEKLY TIME TABLE", canvas.width / 2, 138);
+      ctx.fillText("TEACHER WEEKLY TIME TABLE", 58, 112);
 
-      ctx.font = "900 42px Arial";
+      ctx.textAlign = "right";
       ctx.fillStyle = "#ffffff";
-      ctx.fillText(`${teacherName} (${code})`, canvas.width / 2, 205);
-      ctx.font = "700 25px Arial";
+      ctx.font = "900 42px Arial";
+      ctx.fillText(`${teacherName} (${code})`, 2342, 72);
+      ctx.font = "800 25px Arial";
       ctx.fillStyle = "#dbeafe";
-      ctx.fillText(`${activeTimetableTimeMode === "morning" ? "Morning" : "Regular"} Schedule`, canvas.width / 2, 244);
+      ctx.fillText(`${activeTimetableTimeMode === "morning" ? "Morning" : "Regular"} Schedule`, 2342, 110);
 
       const x0 = 30;
-      const y0 = 510;
-      const tableWidth = 1020;
-      const periodColumnWidth = 164;
-      const dayWidth = (tableWidth - periodColumnWidth) / TIMETABLE_DAY_ORDER.length;
-      const headerHeight = 104;
-      const rowHeight = 190;
-      const tableHeight = headerHeight + TIMETABLE_PERIOD_COUNT * rowHeight;
+      const y0 = 170;
+      const tableWidth = 2340;
+      const dayColumnWidth = 190;
+      const periodWidth = (tableWidth - dayColumnWidth) / TIMETABLE_PERIOD_COUNT;
+      const headerHeight = 82;
+      const rowHeight = 116;
+      const tableHeight = headerHeight + TIMETABLE_DAY_ORDER.length * rowHeight;
       const dayColors = ["#e0f2fe", "#dcfce7", "#fef3c7", "#ede9fe", "#fce7f3", "#dbeafe"];
       const periodLabels = ["1ST", "2ND", "3RD", "4TH", "5TH", "6TH", "7TH", "8TH"];
 
@@ -12469,55 +12470,53 @@ function currentReportData(type = document.getElementById("reportType").value) {
       canvasRoundRect(ctx, x0, y0, tableWidth, headerHeight, 22);
       ctx.fill();
       ctx.fillStyle = "rgba(255,255,255,0.10)";
-      ctx.fillRect(x0, y0 + 58, tableWidth, 46);
+      ctx.fillRect(x0, y0 + 48, tableWidth, 34);
 
       ctx.textAlign = "center";
       ctx.fillStyle = "#ffffff";
-      ctx.font = "900 27px Arial";
-      ctx.fillText("PERIOD", x0 + periodColumnWidth / 2, y0 + 62);
-      TIMETABLE_DAY_ORDER.forEach((day, dayIndex) => {
-        const x = x0 + periodColumnWidth + dayIndex * dayWidth;
-        ctx.font = "900 22px Arial";
-        ctx.fillText(day.slice(0, 3), x + dayWidth / 2, y0 + 62);
+      ctx.font = "900 29px Arial";
+      ctx.fillText("DAYS", x0 + dayColumnWidth / 2, y0 + 48);
+      Array.from({ length: TIMETABLE_PERIOD_COUNT }, (_, periodIndex) => {
+        const x = x0 + dayColumnWidth + periodIndex * periodWidth;
+        ctx.font = "900 28px Arial";
+        ctx.fillText(periodLabels[periodIndex] || `${periodIndex + 1}TH`, x + periodWidth / 2, y0 + 38);
+        ctx.font = "800 17px Arial";
+        ctx.fillText(timetablePeriodTimes[activeTimetableTimeMode]?.[periodIndex] || "", x + periodWidth / 2, y0 + 67);
       });
 
-      Array.from({ length: TIMETABLE_PERIOD_COUNT }, (_, periodIndex) => {
-        const y = y0 + headerHeight + periodIndex * rowHeight;
-        ctx.fillStyle = periodIndex % 2 ? "#f8fafc" : "#eef6ff";
+      TIMETABLE_DAY_ORDER.forEach((day, dayIndex) => {
+        const y = y0 + headerHeight + dayIndex * rowHeight;
+        ctx.fillStyle = dayColors[dayIndex % dayColors.length];
         ctx.fillRect(x0, y, tableWidth, rowHeight);
         ctx.fillStyle = "#0f172a";
-        ctx.font = "900 30px Arial";
+        ctx.font = "900 27px Arial";
         ctx.textAlign = "center";
-        ctx.fillText(periodLabels[periodIndex] || `${periodIndex + 1}TH`, x0 + periodColumnWidth / 2, y + 70);
-        ctx.font = "800 19px Arial";
-        ctx.fillStyle = "#475569";
-        ctx.fillText(timetablePeriodTimes[activeTimetableTimeMode]?.[periodIndex] || "", x0 + periodColumnWidth / 2, y + 105);
-
-        TIMETABLE_DAY_ORDER.forEach((day, dayIndex) => {
-          const x = x0 + periodColumnWidth + dayIndex * dayWidth;
+        ctx.fillText(day[0] + day.slice(1).toLowerCase(), x0 + dayColumnWidth / 2, y + 67);
+        Array.from({ length: TIMETABLE_PERIOD_COUNT }, (_, periodIndex) => {
+          const x = x0 + dayColumnWidth + periodIndex * periodWidth;
           const items = (schedule[day] || []).filter(item => item.period === periodIndex + 1);
           const text = items.length
             ? items.map(item => `${item.className}: ${item.subject}`).join(" | ")
             : "";
           ctx.fillStyle = items.length > 1 ? "#ffedd5" : dayColors[dayIndex % dayColors.length];
-          ctx.fillRect(x + 5, y + 6, dayWidth - 10, rowHeight - 12);
+          ctx.fillRect(x + 5, y + 6, periodWidth - 10, rowHeight - 12);
           ctx.textAlign = "center";
           ctx.fillStyle = items.length > 1 ? "#9a3412" : "#111827";
-          ctx.font = items.length > 1 ? "900 19px Arial" : "900 21px Arial";
-          drawWrappedCanvasText(ctx, text || "-", x + dayWidth / 2, y + 48, dayWidth - 18, 30, 5);
+          ctx.font = items.length > 1 ? "900 18px Arial" : "900 20px Arial";
+          drawWrappedCanvasText(ctx, text || "-", x + periodWidth / 2, y + 35, periodWidth - 22, 25, 4);
         });
       });
 
       ctx.strokeStyle = "#0f766e";
       ctx.lineWidth = 2;
-      for (let i = 0; i <= TIMETABLE_DAY_ORDER.length; i += 1) {
-        const x = x0 + periodColumnWidth + i * dayWidth;
+      for (let i = 0; i <= TIMETABLE_PERIOD_COUNT; i += 1) {
+        const x = x0 + dayColumnWidth + i * periodWidth;
         ctx.beginPath();
         ctx.moveTo(x, y0);
         ctx.lineTo(x, y0 + tableHeight);
         ctx.stroke();
       }
-      for (let i = 0; i <= TIMETABLE_PERIOD_COUNT; i += 1) {
+      for (let i = 0; i <= TIMETABLE_DAY_ORDER.length; i += 1) {
         const y = y0 + headerHeight + i * rowHeight;
         ctx.beginPath();
         ctx.moveTo(x0, y);
@@ -12527,14 +12526,14 @@ function currentReportData(type = document.getElementById("reportType").value) {
 
       ctx.textAlign = "center";
       ctx.fillStyle = "#ffffff";
-      ctx.font = "800 27px Arial";
-      ctx.fillText("Odisha Adarsha Vidyalaya, Badi", canvas.width / 2, 2220);
-      ctx.font = "700 22px Arial";
+      ctx.font = "800 24px Arial";
+      ctx.fillText("Odisha Adarsha Vidyalaya, Badi", canvas.width / 2, 1002);
+      ctx.font = "700 18px Arial";
       ctx.fillStyle = "#dbeafe";
-      ctx.fillText(`Generated ${displayDateLong(new Date().toISOString().slice(0, 10))}`, canvas.width / 2, 2260);
+      ctx.fillText(`Generated ${displayDateLong(new Date().toISOString().slice(0, 10))}`, canvas.width / 2, 1033);
 
       const link = document.createElement("a");
-      link.download = `teacher-mobile-wallpaper-${code}-${new Date().toISOString().slice(0, 10)}.png`;
+      link.download = `teacher-landscape-wallpaper-${code}-${new Date().toISOString().slice(0, 10)}.png`;
       link.href = canvas.toDataURL("image/png");
       link.click();
     }
