@@ -14359,14 +14359,17 @@ function currentReportData(type = document.getElementById("reportType").value) {
       document.getElementById("ucSaveStatus").textContent = `Certificate saved for ${record.scheme}. Entry fields cleared.`;
     }
 
-    function printUtilisationCertificate(record = updateUtilisationPreview()) {
+    function printUtilisationCertificate(record) {
+      const printRecord = record && typeof record === "object" && "scheme" in record
+        ? record
+        : updateUtilisationPreview();
       const popup = window.open("", "_blank");
       if (!popup) {
         alert("Allow pop-ups to print or save the certificate as PDF.");
         return;
       }
       popup.opener = null;
-      popup.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>OGFR-23 - ${ucEscape(record.scheme)}</title><style>@page{size:A4 portrait;margin:10mm}body{font-family:"Times New Roman",serif;color:#111;line-height:1.35;font-size:12px}.uc-title-box{width:max-content;margin:0 auto 6px;padding:6px 28px;border:2px solid #111;text-align:center}h2,h3{text-align:center;margin:4px 0}p{margin:7px 0;text-align:justify}table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:10px}th,td{border:1px solid #111;padding:4px;text-align:center;vertical-align:middle;overflow-wrap:anywhere}.uc-signature{width:250px;margin:25px 0 0 auto}</style></head><body>${utilisationPreviewHtml(record)}<script>window.onload=()=>window.print();<\/script></body></html>`);
+      popup.document.write(`<!doctype html><html><head><meta charset="utf-8"><title></title><style>@page{size:A4 portrait;margin:0}html,body{margin:0;padding:0;background:#fff}body{box-sizing:border-box;width:210mm;min-height:297mm;padding:10mm;font-family:"Times New Roman",serif;color:#111;line-height:1.35;font-size:12px;-webkit-print-color-adjust:exact;print-color-adjust:exact}.uc-title-box{width:max-content;margin:0 auto 6px;padding:6px 28px;border:2px solid #111;text-align:center}h2,h3{text-align:center;margin:4px 0}p{margin:7px 0;text-align:justify}table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:10px}th,td{border:1px solid #111;padding:4px;text-align:center;vertical-align:middle;overflow-wrap:anywhere}.uc-signature{width:250px;margin:25px 0 0 auto}</style></head><body>${utilisationPreviewHtml(printRecord)}<script>window.onload=()=>{document.title="";setTimeout(()=>window.print(),100)};<\/script></body></html>`);
       popup.document.close();
     }
 
@@ -14480,8 +14483,8 @@ function currentReportData(type = document.getElementById("reportType").value) {
         resetUtilisationEntry();
       }
     });
-    document.getElementById("ucPrintButton")?.addEventListener("click", printUtilisationCertificate);
-    document.getElementById("ucExcelButton")?.addEventListener("click", downloadUtilisationExcel);
+    document.getElementById("ucPrintButton")?.addEventListener("click", () => printUtilisationCertificate());
+    document.getElementById("ucExcelButton")?.addEventListener("click", () => downloadUtilisationExcel());
 
     document.getElementById("ucSavedRows")?.addEventListener("click", event => {
       const loadButton = event.target.closest(".uc-load-record");
