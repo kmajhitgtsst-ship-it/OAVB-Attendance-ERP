@@ -5083,6 +5083,105 @@
         font-size: calc(19px * var(--mobile-ui-scale)) !important;
       }
     }
+
+    .uc-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(180px, 1fr));
+      gap: 12px;
+    }
+
+    .uc-grid .wide {
+      grid-column: span 2;
+    }
+
+    .uc-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(180px, 1fr));
+      gap: 12px;
+      margin: 14px 0;
+    }
+
+    .uc-summary > div {
+      border: 1px solid #cbd8e6;
+      border-left: 4px solid #1769e0;
+      padding: 12px;
+      background: #f8fbff;
+    }
+
+    .uc-summary strong {
+      display: block;
+      margin-top: 5px;
+      font-size: 24px;
+      color: #0b355f;
+    }
+
+    .uc-preview {
+      max-width: 980px;
+      margin: 16px auto 0;
+      padding: 30px;
+      border: 1px solid #aab7c4;
+      background: #fff;
+      color: #111;
+      font-family: "Times New Roman", serif;
+      line-height: 1.45;
+    }
+
+    .uc-title-box {
+      width: max-content;
+      margin: 0 auto 8px;
+      padding: 8px 34px;
+      border: 2px solid #111;
+      text-align: center;
+    }
+
+    .uc-preview h2,
+    .uc-preview h3 {
+      margin: 4px 0;
+      text-align: center;
+    }
+
+    .uc-preview p {
+      margin: 9px 0;
+      text-align: justify;
+    }
+
+    .uc-preview table {
+      width: 100%;
+      margin: 8px 0 14px;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 13px;
+    }
+
+    .uc-preview th,
+    .uc-preview td {
+      padding: 5px;
+      border: 1px solid #111;
+      text-align: center;
+      vertical-align: middle;
+      overflow-wrap: anywhere;
+    }
+
+    .uc-signature {
+      width: 280px;
+      margin: 28px 0 0 auto;
+    }
+
+    @media (max-width: 900px) {
+      .uc-grid,
+      .uc-summary {
+        grid-template-columns: 1fr;
+      }
+
+      .uc-grid .wide {
+        grid-column: auto;
+      }
+
+      .uc-preview {
+        padding: 16px;
+        overflow-x: auto;
+      }
+    }
   </style>
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 </head>
@@ -5113,6 +5212,7 @@
         <button class="nav-button" data-page="timetable">Time Table</button>
         <button class="nav-button" data-page="examresults">Exam Results</button>
         <button class="nav-button" data-page="reports">Reports</button>
+        <button class="nav-button" data-page="utilisation">Utilisation Certificate</button>
         <button class="nav-button" data-page="modules">ERP Modules</button>
         <button class="nav-button" data-page="settings">Settings</button>
       </nav>
@@ -6280,6 +6380,134 @@
         </div>
       </section>
 
+      <section id="utilisation" class="page hidden">
+        <header>
+          <div>
+            <h1>Utilisation Certificate</h1>
+            <p class="subtle">Prepare, save, print, and export FORM OGFR-23 scheme-wise.</p>
+            <p class="subtle" id="ucCurrentDateDay"></p>
+          </div>
+          <div class="action-row">
+            <button class="secondary" id="ucPrintButton" type="button">Print / Save PDF</button>
+            <button class="secondary" id="ucExcelButton" type="button">Download Excel</button>
+          </div>
+        </header>
+
+        <div class="card">
+          <div class="section-title">
+            <div>
+              <h2>Scheme List</h2>
+              <p class="subtle">Add the 43 scheme names here. No demo scheme is included.</p>
+            </div>
+            <button class="secondary" id="ucSchemeTemplateButton" type="button">Download Scheme CSV Template</button>
+          </div>
+          <div class="uc-grid" style="margin-top: 12px;">
+            <div class="field wide">
+              <label>Scheme</label>
+              <select id="ucSchemeSelect"><option value="">Select scheme</option></select>
+            </div>
+            <div class="field">
+              <label>Add One Scheme</label>
+              <input id="ucNewScheme" placeholder="Enter scheme name">
+            </div>
+            <div class="field" style="align-self: end;">
+              <button class="secondary" id="ucAddSchemeButton" type="button">Add Scheme</button>
+            </div>
+            <div class="field wide">
+              <label>Bulk Scheme List</label>
+              <textarea id="ucSchemeBulk" rows="3" placeholder="Paste one scheme name per line"></textarea>
+            </div>
+            <div class="field" style="align-self: end;">
+              <button class="secondary" id="ucImportSchemesButton" type="button">Import Scheme List</button>
+            </div>
+            <div class="field" style="align-self: end;">
+              <button class="secondary" id="ucDeleteSchemeButton" type="button">Delete Selected Scheme</button>
+            </div>
+          </div>
+          <p class="success-note" id="ucSchemeStatus">Add or import the official scheme list.</p>
+        </div>
+
+        <div class="card" style="margin-top: 14px;">
+          <h2>Certificate Details</h2>
+          <div class="uc-grid" style="margin-top: 12px;">
+            <div class="field wide"><label>Name of Department / School</label><input id="ucDepartment" value="Odisha Adarsha Vidyalaya, Badi"></div>
+            <div class="field wide"><label>Grantee</label><input id="ucGrantee" value="Principal, OAV Badi"></div>
+            <div class="field wide"><label>Purpose / Scheme Details</label><input id="ucPurpose" placeholder="Purpose for which the grant was sanctioned"></div>
+            <div class="field wide"><label>Sanctioning Department</label><input id="ucSanctioningDepartment" value="S&amp;ME Department, Government of Odisha"></div>
+            <div class="field"><label>Financial Year</label><input id="ucFinancialYear" placeholder="2026-27"></div>
+            <div class="field"><label>Next Financial Year</label><input id="ucNextFinancialYear" placeholder="2027-28"></div>
+            <div class="field"><label>Certificate Date</label><input id="ucCertificateDate" type="date"></div>
+            <div class="field">
+              <label>Balance Treatment</label>
+              <select id="ucBalanceTreatment">
+                <option value="carry">Carry forward to next year</option>
+                <option value="surrender">Surrendered to Government</option>
+                <option value="adjust">Adjusted towards next grant</option>
+              </select>
+            </div>
+          </div>
+
+          <h3 style="margin-top: 18px;">Table-1: Current Year</h3>
+          <div class="uc-grid">
+            <div class="field wide"><label>Sanction No. &amp; Date</label><input id="ucCurrentSanction" placeholder="Sanction number and date"></div>
+            <div class="field"><label>Fund Received / Sanctioned Amount (Rs.)</label><input id="ucCurrentReceived" type="number" min="0" step="0.01" value="0"></div>
+            <div class="field"><label>Adjusted towards GIA / Loan (Rs.)</label><input id="ucCurrentAdjusted" type="number" min="0" step="0.01" value="0"></div>
+            <div class="field"><label>Amount Utilised (Rs.)</label><input id="ucCurrentUtilised" type="number" min="0" step="0.01" value="0"></div>
+            <div class="field"><label>Deposited Back (Rs.)</label><input id="ucCurrentDeposited" type="number" min="0" step="0.01" value="0"></div>
+            <div class="field wide"><label>Remarks</label><input id="ucCurrentRemarks"></div>
+          </div>
+
+          <h3 style="margin-top: 18px;">Table-2: Previous Year</h3>
+          <div class="uc-grid">
+            <div class="field wide"><label>Sanction No. &amp; Date</label><input id="ucPreviousSanction" placeholder="Previous year sanction number and date"></div>
+            <div class="field"><label>Previous Sanctioned Amount (Rs.)</label><input id="ucPreviousSanctioned" type="number" min="0" step="0.01" value="0"></div>
+            <div class="field"><label>Opening Unspent Balance (Rs.)</label><input id="ucPreviousOpening" type="number" min="0" step="0.01" value="0"></div>
+            <div class="field"><label>Amount Utilised (Rs.)</label><input id="ucPreviousUtilised" type="number" min="0" step="0.01" value="0"></div>
+            <div class="field"><label>Deposited Back (Rs.)</label><input id="ucPreviousDeposited" type="number" min="0" step="0.01" value="0"></div>
+            <div class="field"><label>Adjusted towards GIA / Loan (Rs.)</label><input id="ucPreviousAdjusted" type="number" min="0" step="0.01" value="0"></div>
+            <div class="field wide"><label>Remarks</label><input id="ucPreviousRemarks"></div>
+          </div>
+
+          <div class="uc-grid" style="margin-top: 14px;">
+            <div class="field"><label>Treasury Challan No.</label><input id="ucChallanNo"></div>
+            <div class="field"><label>Treasury Challan Date</label><input id="ucChallanDate" type="date"></div>
+            <div class="field wide"><label>Kinds of Checks Exercised</label><textarea id="ucChecks" rows="3" placeholder="Enter checks verified before certification"></textarea></div>
+            <div class="field"><label>Signing Authority</label><input id="ucSigner" value="Principal"></div>
+            <div class="field"><label>Designation</label><input id="ucDesignation" value="Principal"></div>
+          </div>
+
+          <div class="uc-summary">
+            <div><span>Fund Received</span><strong id="ucReceivedSummary">Rs. 0.00</strong></div>
+            <div><span>Total Utilised</span><strong id="ucUtilisedSummary">Rs. 0.00</strong></div>
+            <div><span>Total Balance</span><strong id="ucBalanceSummary">Rs. 0.00</strong></div>
+          </div>
+
+          <div class="action-row">
+            <button class="primary" id="ucUpdatePreviewButton" type="button">Update Preview</button>
+            <button class="primary" id="ucSaveButton" type="button">Save Certificate</button>
+            <button class="secondary" id="ucResetButton" type="button">Reset Entry</button>
+          </div>
+          <p class="success-note" id="ucSaveStatus">Fill the details and update the preview.</p>
+        </div>
+
+        <div class="card" style="margin-top: 14px;">
+          <h2>OGFR-23 Preview</h2>
+          <div id="ucPreview" class="uc-preview"></div>
+        </div>
+
+        <div class="card" style="margin-top: 14px;">
+          <div class="section-title">
+            <div><h2>Saved Certificates</h2><p class="subtle">Scheme-wise certificate history stored with the ERP data.</p></div>
+          </div>
+          <div class="table-wrap" style="margin-top: 12px;">
+            <table>
+              <thead><tr><th>Date</th><th>Financial Year</th><th>Scheme</th><th>Received</th><th>Utilised</th><th>Balance</th><th>Action</th></tr></thead>
+              <tbody id="ucSavedRows"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
       <section id="modules" class="page hidden">
         <header>
           <div>
@@ -6432,7 +6660,9 @@
       "oavBadiMdmSettings",
       "oavBadiTimetableArrangementRecords",
       "oavBadiTimetableArrangementSelections",
-      "oavBadiAuditLogs"
+      "oavBadiAuditLogs",
+      "oavBadiUtilisationSchemes",
+      "oavBadiUtilisationCertificates"
     ];
     const CLOUD_TS_KEY = "oavBadiCloudUpdatedAt";
     const REMEMBERED_LOGIN_KEY = "oavBadiRememberedLogin";
@@ -6477,6 +6707,8 @@
     const timetableArrangementSelections = {};
     const auditLogs = [];
     const savedStockBackups = [];
+    const utilisationSchemes = [];
+    const utilisationCertificates = [];
     const TIMETABLE_PERIOD_COUNT = 8;
     const timetablePeriodTimes = {
       normal: ["09:00-09:45", "09:45-10:30", "10:45-11:30", "11:30-12:15", "01:00-01:45", "01:45-02:30", "02:30-03:15", "03:15-04:00"],
@@ -6513,6 +6745,8 @@
       localStorage.setItem("oavBadiTimetableArrangementSelections", JSON.stringify(timetableArrangementSelections));
       localStorage.setItem("oavBadiAuditLogs", JSON.stringify(auditLogs));
       localStorage.setItem("oavBadiTimetablePeriodTimes", JSON.stringify(timetablePeriodTimes));
+      localStorage.setItem("oavBadiUtilisationSchemes", JSON.stringify(utilisationSchemes));
+      localStorage.setItem("oavBadiUtilisationCertificates", JSON.stringify(utilisationCertificates));
       if (cloudSyncReady && !cloudApplyingRemote) {
         localStorage.setItem(CLOUD_TS_KEY, String(Date.now()));
         scheduleCloudPush();
@@ -6537,6 +6771,8 @@
       const savedTimetableArrangementSelections = localStorage.getItem("oavBadiTimetableArrangementSelections");
       const savedAuditLogs = localStorage.getItem("oavBadiAuditLogs");
       const savedTimetablePeriodTimes = localStorage.getItem("oavBadiTimetablePeriodTimes");
+      const savedUtilisationSchemes = localStorage.getItem("oavBadiUtilisationSchemes");
+      const savedUtilisationCertificates = localStorage.getItem("oavBadiUtilisationCertificates");
 
       if (savedClassData) {
         const parsed = JSON.parse(savedClassData);
@@ -6618,6 +6854,16 @@
       if (savedAuditLogs) {
         auditLogs.length = 0;
         JSON.parse(savedAuditLogs).forEach(log => auditLogs.push(log));
+      }
+
+      if (savedUtilisationSchemes) {
+        utilisationSchemes.length = 0;
+        JSON.parse(savedUtilisationSchemes).forEach(scheme => utilisationSchemes.push(scheme));
+      }
+
+      if (savedUtilisationCertificates) {
+        utilisationCertificates.length = 0;
+        JSON.parse(savedUtilisationCertificates).forEach(record => utilisationCertificates.push(record));
       }
 
       syncTeacherAssignmentsFromMaster();
@@ -6926,7 +7172,7 @@
     }
 
     function allowedPagesFor(role, teacherName = "") {
-      if (role === "principal") return ["dashboard", "studentmaster", "attendance", "staff", "mdm", "timetable", "examresults", "reports", "modules", "settings"];
+      if (role === "principal") return ["dashboard", "studentmaster", "attendance", "staff", "mdm", "timetable", "examresults", "reports", "utilisation", "modules", "settings"];
       if (role === "teacher") return ["dashboard", "attendance", "mdm", "timetable", "reports"];
       const staff = teachers.find(teacher => teacher[0] === teacherName);
       const staffRole = String(staff?.[1] || "").toLowerCase();
@@ -6936,7 +7182,7 @@
       if (/time\s*table|timetable/.test(staffRole)) ["timetable", "reports"].forEach(page => pages.add(page));
       if (/academic/.test(staffRole)) ["studentmaster", "attendance", "reports"].forEach(page => pages.add(page));
       if (/exam/.test(staffRole)) ["examresults", "reports"].forEach(page => pages.add(page));
-      if (/office|clerk|assistant|staff/.test(staffRole)) ["studentmaster", "staff", "reports"].forEach(page => pages.add(page));
+      if (/office|clerk|assistant|staff|account|finance/.test(staffRole)) ["studentmaster", "staff", "reports", "utilisation"].forEach(page => pages.add(page));
       return [...pages];
     }
 
@@ -7304,6 +7550,9 @@
       if (page === "reports") {
         populateReportClassOptions();
         renderReport();
+      }
+      if (page === "utilisation") {
+        renderUtilisationModule();
       }
       if (page === "examresults") {
         populateExamClassOptions();
@@ -13670,6 +13919,410 @@ function currentReportData(type = document.getElementById("reportType").value) {
       renderLongRangeMonthGrid();
     }
 
+    function ucEscape(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function ucNumber(id) {
+      return Math.max(0, Number(document.getElementById(id)?.value || 0));
+    }
+
+    function ucMoney(value) {
+      return `Rs. ${Number(value || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    function ucCellAmount(value) {
+      const number = Number(value || 0);
+      return number > 0 ? number.toLocaleString("en-IN", { maximumFractionDigits: 2 }) : "Nil";
+    }
+
+    function ucAmountWords(value) {
+      const number = Math.round(Number(value || 0));
+      if (!number) return "Nil";
+      const ones = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
+      const tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+      const twoDigits = amount => amount < 20 ? ones[amount] : `${tens[Math.floor(amount / 10)]}${amount % 10 ? ` ${ones[amount % 10]}` : ""}`;
+      const underThousand = amount => {
+        const hundred = Math.floor(amount / 100);
+        const rest = amount % 100;
+        return `${hundred ? `${ones[hundred]} Hundred` : ""}${hundred && rest ? " " : ""}${rest ? twoDigits(rest) : ""}`.trim();
+      };
+      let remaining = number;
+      const parts = [];
+      [["Crore", 10000000], ["Lakh", 100000], ["Thousand", 1000]].forEach(([label, divisor]) => {
+        const part = Math.floor(remaining / divisor);
+        if (part) {
+          parts.push(`${underThousand(part)} ${label}`);
+          remaining %= divisor;
+        }
+      });
+      if (remaining) parts.push(underThousand(remaining));
+      return `${parts.join(" ")} Rupees Only`;
+    }
+
+    function ucDateText(value) {
+      if (!value) return "-";
+      const date = new Date(`${value}T00:00:00`);
+      return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" });
+    }
+
+    function ucDefaultYears(dateValue = todayIsoDate()) {
+      const date = new Date(`${dateValue}T00:00:00`);
+      const year = date.getFullYear();
+      const startYear = date.getMonth() >= 3 ? year : year - 1;
+      return {
+        current: `${startYear}-${String(startYear + 1).slice(-2)}`,
+        next: `${startYear + 1}-${String(startYear + 2).slice(-2)}`
+      };
+    }
+
+    function utilisationFormRecord() {
+      const currentReceived = ucNumber("ucCurrentReceived");
+      const currentAdjusted = ucNumber("ucCurrentAdjusted");
+      const currentUtilised = ucNumber("ucCurrentUtilised");
+      const currentDeposited = ucNumber("ucCurrentDeposited");
+      const previousSanctioned = ucNumber("ucPreviousSanctioned");
+      const previousOpening = ucNumber("ucPreviousOpening");
+      const previousUtilised = ucNumber("ucPreviousUtilised");
+      const previousDeposited = ucNumber("ucPreviousDeposited");
+      const previousAdjusted = ucNumber("ucPreviousAdjusted");
+      const currentBalance = Math.max(0, currentReceived - currentUtilised - currentDeposited);
+      const previousBalance = Math.max(0, previousOpening - previousUtilised - previousDeposited - previousAdjusted);
+      return {
+        id: document.getElementById("ucSaveButton").dataset.recordId || `UC-${Date.now()}`,
+        savedAt: new Date().toISOString(),
+        scheme: document.getElementById("ucSchemeSelect").value.trim(),
+        department: document.getElementById("ucDepartment").value.trim(),
+        grantee: document.getElementById("ucGrantee").value.trim(),
+        purpose: document.getElementById("ucPurpose").value.trim(),
+        sanctioningDepartment: document.getElementById("ucSanctioningDepartment").value.trim(),
+        financialYear: document.getElementById("ucFinancialYear").value.trim(),
+        nextFinancialYear: document.getElementById("ucNextFinancialYear").value.trim(),
+        certificateDate: document.getElementById("ucCertificateDate").value,
+        balanceTreatment: document.getElementById("ucBalanceTreatment").value,
+        currentSanction: document.getElementById("ucCurrentSanction").value.trim(),
+        currentReceived,
+        currentAdjusted,
+        currentUtilised,
+        currentDeposited,
+        currentRemarks: document.getElementById("ucCurrentRemarks").value.trim(),
+        currentBalance,
+        previousSanction: document.getElementById("ucPreviousSanction").value.trim(),
+        previousSanctioned,
+        previousOpening,
+        previousUtilised,
+        previousDeposited,
+        previousAdjusted,
+        previousRemarks: document.getElementById("ucPreviousRemarks").value.trim(),
+        previousBalance,
+        challanNo: document.getElementById("ucChallanNo").value.trim(),
+        challanDate: document.getElementById("ucChallanDate").value,
+        checks: document.getElementById("ucChecks").value.trim(),
+        signer: document.getElementById("ucSigner").value.trim(),
+        designation: document.getElementById("ucDesignation").value.trim(),
+        totalUtilised: currentUtilised + previousUtilised,
+        totalBalance: currentBalance + previousBalance
+      };
+    }
+
+    function utilisationPreviewHtml(record = utilisationFormRecord()) {
+      const treatment = record.balanceTreatment === "surrender"
+        ? `has been surrendered to the Government (vide challan no. ${ucEscape(record.challanNo || "-")} dated ${ucEscape(ucDateText(record.challanDate))}).`
+        : record.balanceTreatment === "adjust"
+          ? `will be adjusted towards the Grant-in-aid/Loan payable in the next financial year ${ucEscape(record.nextFinancialYear || "-")}.`
+          : `will be carried over to the next financial year ${ucEscape(record.nextFinancialYear || "-")}.`;
+      const checks = record.checks
+        ? record.checks.split(/\r?\n/).filter(Boolean).map((check, index) => `${index + 1}. ${ucEscape(check)}`).join("<br>")
+        : "1. Cash book and supporting vouchers verified.<br>2. Sanction conditions and expenditure records checked.<br>3. Bank/Treasury entries reconciled.<br>4. Expenditure found related to the sanctioned purpose.";
+      return `
+        <div class="uc-title-box"><strong>FORM OGFR-23</strong><br>[See Rule 306 (iii) (a)]</div>
+        <h2>Form of Utilization Certificate</h2>
+        <p><strong>Name of Department:</strong> ${ucEscape(record.department || "-")}</p>
+        <p><strong>1.</strong> Certified that a sum of Rs. <strong>${ucCellAmount(record.currentUtilised)}</strong>
+        (UC Amount) (Rupees <strong>${ucEscape(ucAmountWords(record.currentUtilised))}</strong>) has been utilized under the scheme
+        <strong>${ucEscape(record.scheme || "-")}</strong> (${ucEscape(record.purpose || "Scheme purpose")}) by
+        <strong>${ucEscape(record.grantee || "-")}</strong> out of Grant-in-aid/Loan of Rs.
+        <strong>${ucCellAmount(record.currentReceived)}</strong> (Rupees ${ucEscape(ucAmountWords(record.currentReceived))})
+        sanctioned by <strong>${ucEscape(record.sanctioningDepartment || "-")}</strong> during the financial year
+        <strong>${ucEscape(record.financialYear || "-")}</strong> as indicated below in Table-1.</p>
+        <p><strong>2.</strong> Out of Rs. <strong>${ucCellAmount(record.previousOpening)}</strong>
+        (Rupees ${ucEscape(ucAmountWords(record.previousOpening))}) remaining unspent balance of previous years,
+        a sum of Rs. <strong>${ucCellAmount(record.previousUtilised)}</strong>
+        (Rupees ${ucEscape(ucAmountWords(record.previousUtilised))}) has been utilized as indicated below in Table-2.</p>
+        <p><strong>3.</strong> The utilization has been made for the purpose it was sanctioned and a balance of Rs.
+        <strong>${ucCellAmount(record.totalBalance)}</strong> (Rupees ${ucEscape(ucAmountWords(record.totalBalance))}) ${treatment}</p>
+        <h3>Table-1<br><small>(Details of Current Year)</small></h3>
+        <table>
+          <thead><tr><th>Sl. No.</th><th>Sanction No. &amp; Date</th><th>Sanctioned Amount</th><th>Amount adjusted towards GIA / Loan payable</th><th>Amount utilized during the year</th><th>Amount deposited back by Treasury Challan</th><th>Balance<br>7=(3-(5+6))</th><th>Remarks</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>${ucEscape(record.currentSanction || "-")}</td><td>${ucCellAmount(record.currentReceived)}</td><td>${ucCellAmount(record.currentAdjusted)}</td><td>${ucCellAmount(record.currentUtilised)}</td><td>${ucCellAmount(record.currentDeposited)}</td><td>${ucCellAmount(record.currentBalance)}</td><td>${ucEscape(record.currentRemarks || "")}</td></tr>
+            <tr><th colspan="2">Total</th><th>${ucCellAmount(record.currentReceived)}</th><th>${ucCellAmount(record.currentAdjusted)}</th><th>${ucCellAmount(record.currentUtilised)}</th><th>${ucCellAmount(record.currentDeposited)}</th><th>${ucCellAmount(record.currentBalance)}</th><th></th></tr>
+          </tbody>
+        </table>
+        <h3>Table-2<br><small>(Details of Previous Years)</small></h3>
+        <table>
+          <thead><tr><th>Sl. No.</th><th>Sanction No. &amp; Date</th><th>Sanctioned Amount</th><th>Unspent balance at the close of previous year</th><th>Amount utilized during the year</th><th>Amount deposited back by Treasury Challan</th><th>Amount adjusted towards GIA / Loan payable</th><th>Balance<br>8=4-(5+6+7)</th><th>Remarks</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>${ucEscape(record.previousSanction || "-")}</td><td>${ucCellAmount(record.previousSanctioned)}</td><td>${ucCellAmount(record.previousOpening)}</td><td>${ucCellAmount(record.previousUtilised)}</td><td>${ucCellAmount(record.previousDeposited)}</td><td>${ucCellAmount(record.previousAdjusted)}</td><td>${ucCellAmount(record.previousBalance)}</td><td>${ucEscape(record.previousRemarks || "")}</td></tr>
+            <tr><th colspan="2">Total</th><th>${ucCellAmount(record.previousSanctioned)}</th><th>${ucCellAmount(record.previousOpening)}</th><th>${ucCellAmount(record.previousUtilised)}</th><th>${ucCellAmount(record.previousDeposited)}</th><th>${ucCellAmount(record.previousAdjusted)}</th><th>${ucCellAmount(record.previousBalance)}</th><th></th></tr>
+          </tbody>
+        </table>
+        <p><strong>4.</strong> Certified that I have satisfied myself that the conditions on which the grants-in-aid/loan was sanctioned have been duly fulfilled and that I have exercised the following checks to see that the money was actually utilized for the purpose for which it was sanctioned.</p>
+        <p><strong>Kinds of checks exercised:</strong><br>${checks}</p>
+        <div class="uc-signature"><strong>Signature:</strong> ____________________<br><strong>Name:</strong> ${ucEscape(record.signer || "-")}<br><strong>Designation:</strong> ${ucEscape(record.designation || "-")}<br><strong>Date:</strong> ${ucEscape(ucDateText(record.certificateDate))}</div>
+      `;
+    }
+
+    function updateUtilisationPreview() {
+      const record = utilisationFormRecord();
+      document.getElementById("ucReceivedSummary").textContent = ucMoney(record.currentReceived);
+      document.getElementById("ucUtilisedSummary").textContent = ucMoney(record.totalUtilised);
+      document.getElementById("ucBalanceSummary").textContent = ucMoney(record.totalBalance);
+      document.getElementById("ucPreview").innerHTML = utilisationPreviewHtml(record);
+      return record;
+    }
+
+    function renderUtilisationSchemes(selected = document.getElementById("ucSchemeSelect")?.value || "") {
+      const select = document.getElementById("ucSchemeSelect");
+      if (!select) return;
+      select.innerHTML = `<option value="">Select scheme</option>${utilisationSchemes
+        .slice()
+        .sort((a, b) => a.localeCompare(b))
+        .map(scheme => `<option value="${ucEscape(scheme)}">${ucEscape(scheme)}</option>`)
+        .join("")}`;
+      if (utilisationSchemes.includes(selected)) select.value = selected;
+    }
+
+    function addUtilisationSchemes(names) {
+      let added = 0;
+      names.map(name => String(name || "").trim()).filter(Boolean).forEach(name => {
+        if (!utilisationSchemes.some(existing => existing.toLowerCase() === name.toLowerCase())) {
+          utilisationSchemes.push(name);
+          added += 1;
+        }
+      });
+      saveLocalData();
+      renderUtilisationSchemes();
+      document.getElementById("ucSchemeStatus").textContent = `${added} scheme(s) added. Total schemes: ${utilisationSchemes.length}.`;
+    }
+
+    function renderUtilisationRecords() {
+      const tbody = document.getElementById("ucSavedRows");
+      if (!tbody) return;
+      tbody.innerHTML = utilisationCertificates.length
+        ? utilisationCertificates.slice().reverse().map(record => `
+          <tr>
+            <td>${ucEscape(ucDateText(record.certificateDate))}</td>
+            <td>${ucEscape(record.financialYear)}</td>
+            <td>${ucEscape(record.scheme)}</td>
+            <td>${ucMoney(record.currentReceived)}</td>
+            <td>${ucMoney(record.totalUtilised)}</td>
+            <td>${ucMoney(record.totalBalance)}</td>
+            <td><button class="secondary uc-load-record" data-id="${ucEscape(record.id)}" type="button">Load</button> <button class="secondary uc-delete-record" data-id="${ucEscape(record.id)}" type="button">Delete</button></td>
+          </tr>`).join("")
+        : `<tr><td colspan="7">No utilization certificate saved.</td></tr>`;
+    }
+
+    function setUtilisationForm(record) {
+      const values = {
+        ucSchemeSelect: record.scheme, ucDepartment: record.department, ucGrantee: record.grantee,
+        ucPurpose: record.purpose, ucSanctioningDepartment: record.sanctioningDepartment,
+        ucFinancialYear: record.financialYear, ucNextFinancialYear: record.nextFinancialYear,
+        ucCertificateDate: record.certificateDate, ucBalanceTreatment: record.balanceTreatment,
+        ucCurrentSanction: record.currentSanction, ucCurrentReceived: record.currentReceived,
+        ucCurrentAdjusted: record.currentAdjusted, ucCurrentUtilised: record.currentUtilised,
+        ucCurrentDeposited: record.currentDeposited, ucCurrentRemarks: record.currentRemarks,
+        ucPreviousSanction: record.previousSanction, ucPreviousSanctioned: record.previousSanctioned,
+        ucPreviousOpening: record.previousOpening, ucPreviousUtilised: record.previousUtilised,
+        ucPreviousDeposited: record.previousDeposited, ucPreviousAdjusted: record.previousAdjusted,
+        ucPreviousRemarks: record.previousRemarks, ucChallanNo: record.challanNo,
+        ucChallanDate: record.challanDate, ucChecks: record.checks, ucSigner: record.signer,
+        ucDesignation: record.designation
+      };
+      renderUtilisationSchemes(record.scheme);
+      Object.entries(values).forEach(([id, value]) => {
+        const field = document.getElementById(id);
+        if (field) field.value = value ?? "";
+      });
+      document.getElementById("ucSaveButton").dataset.recordId = record.id || "";
+      updateUtilisationPreview();
+      document.getElementById("ucSaveStatus").textContent = `Loaded ${record.scheme || "certificate"} for editing.`;
+    }
+
+    function resetUtilisationEntry(showStatus = true) {
+      const date = todayIsoDate();
+      const years = ucDefaultYears(date);
+      renderUtilisationSchemes();
+      document.getElementById("ucSchemeSelect").value = "";
+      document.getElementById("ucDepartment").value = "Odisha Adarsha Vidyalaya, Badi";
+      document.getElementById("ucGrantee").value = "Principal, OAV Badi";
+      document.getElementById("ucPurpose").value = "";
+      document.getElementById("ucSanctioningDepartment").value = "S&ME Department, Government of Odisha";
+      document.getElementById("ucFinancialYear").value = years.current;
+      document.getElementById("ucNextFinancialYear").value = years.next;
+      document.getElementById("ucCertificateDate").value = date;
+      document.getElementById("ucBalanceTreatment").value = "carry";
+      ["ucCurrentSanction", "ucCurrentRemarks", "ucPreviousSanction", "ucPreviousRemarks", "ucChallanNo", "ucChallanDate", "ucChecks"].forEach(id => document.getElementById(id).value = "");
+      ["ucCurrentReceived", "ucCurrentAdjusted", "ucCurrentUtilised", "ucCurrentDeposited", "ucPreviousSanctioned", "ucPreviousOpening", "ucPreviousUtilised", "ucPreviousDeposited", "ucPreviousAdjusted"].forEach(id => document.getElementById(id).value = "0");
+      document.getElementById("ucSigner").value = "Principal";
+      document.getElementById("ucDesignation").value = "Principal";
+      document.getElementById("ucSaveButton").dataset.recordId = "";
+      updateUtilisationPreview();
+      if (showStatus) document.getElementById("ucSaveStatus").textContent = "Entry fields reset. Saved certificates and scheme list are safe.";
+    }
+
+    function saveUtilisationCertificate() {
+      const record = updateUtilisationPreview();
+      if (!record.scheme) {
+        document.getElementById("ucSaveStatus").textContent = "Select or add a scheme before saving.";
+        return;
+      }
+      if (!record.financialYear) {
+        document.getElementById("ucSaveStatus").textContent = "Enter the financial year.";
+        return;
+      }
+      const index = utilisationCertificates.findIndex(item => item.id === record.id);
+      if (index >= 0) utilisationCertificates[index] = record;
+      else utilisationCertificates.push(record);
+      saveLocalData();
+      addAuditLog("Utilisation Certificate Saved", `${record.scheme}, FY ${record.financialYear}, balance ${ucMoney(record.totalBalance)}`, { page: "Utilisation Certificate" });
+      renderUtilisationRecords();
+      resetUtilisationEntry(false);
+      document.getElementById("ucSaveStatus").textContent = `Certificate saved for ${record.scheme}. Entry fields cleared.`;
+    }
+
+    function printUtilisationCertificate(record = updateUtilisationPreview()) {
+      const popup = window.open("", "_blank");
+      if (!popup) {
+        alert("Allow pop-ups to print or save the certificate as PDF.");
+        return;
+      }
+      popup.opener = null;
+      popup.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>OGFR-23 - ${ucEscape(record.scheme)}</title><style>@page{size:A4 portrait;margin:10mm}body{font-family:"Times New Roman",serif;color:#111;line-height:1.35;font-size:12px}.uc-title-box{width:max-content;margin:0 auto 6px;padding:6px 28px;border:2px solid #111;text-align:center}h2,h3{text-align:center;margin:4px 0}p{margin:7px 0;text-align:justify}table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:10px}th,td{border:1px solid #111;padding:4px;text-align:center;vertical-align:middle;overflow-wrap:anywhere}.uc-signature{width:250px;margin:25px 0 0 auto}</style></head><body>${utilisationPreviewHtml(record)}<script>window.onload=()=>window.print();<\/script></body></html>`);
+      popup.document.close();
+    }
+
+    function downloadUtilisationExcel(record = updateUtilisationPreview()) {
+      const filenameScheme = (record.scheme || "scheme").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase();
+      downloadExcelWorkbook(`OGFR-23-${filenameScheme || "certificate"}-${record.financialYear || "FY"}.xls`, [
+        {
+          name: "Certificate Summary",
+          rows: [
+            ["FORM OGFR-23", "Utilization Certificate"],
+            ["Scheme", record.scheme],
+            ["Purpose", record.purpose],
+            ["Department / School", record.department],
+            ["Grantee", record.grantee],
+            ["Sanctioning Department", record.sanctioningDepartment],
+            ["Financial Year", record.financialYear],
+            ["Certificate Date", ucDateText(record.certificateDate)],
+            ["Fund Received", record.currentReceived],
+            ["Total Utilised", record.totalUtilised],
+            ["Total Balance", record.totalBalance],
+            ["Balance Treatment", record.balanceTreatment]
+          ]
+        },
+        {
+          name: "Table-1 Current Year",
+          rows: [
+            ["Sl. No.", "Sanction No. & Date", "Sanctioned Amount", "Adjusted towards GIA / Loan", "Amount Utilised", "Deposited Back", "Balance", "Remarks"],
+            ["1", record.currentSanction, record.currentReceived, record.currentAdjusted, record.currentUtilised, record.currentDeposited, record.currentBalance, record.currentRemarks]
+          ]
+        },
+        {
+          name: "Table-2 Previous Year",
+          rows: [
+            ["Sl. No.", "Sanction No. & Date", "Sanctioned Amount", "Opening Unspent Balance", "Amount Utilised", "Deposited Back", "Adjusted towards GIA / Loan", "Balance", "Remarks"],
+            ["1", record.previousSanction, record.previousSanctioned, record.previousOpening, record.previousUtilised, record.previousDeposited, record.previousAdjusted, record.previousBalance, record.previousRemarks]
+          ]
+        }
+      ]);
+    }
+
+    function renderUtilisationModule() {
+      const date = todayIsoDate();
+      document.getElementById("ucCurrentDateDay").textContent = new Date(`${date}T00:00:00`).toLocaleDateString("en-IN", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
+      if (!document.getElementById("ucCertificateDate").value) resetUtilisationEntry(false);
+      renderUtilisationSchemes(document.getElementById("ucSchemeSelect").value);
+      renderUtilisationRecords();
+      updateUtilisationPreview();
+    }
+
+    document.getElementById("ucAddSchemeButton")?.addEventListener("click", () => {
+      const input = document.getElementById("ucNewScheme");
+      addUtilisationSchemes([input.value]);
+      input.value = "";
+    });
+
+    document.getElementById("ucImportSchemesButton")?.addEventListener("click", () => {
+      const input = document.getElementById("ucSchemeBulk");
+      const schemes = input.value.split(/\r?\n/).map(value => value.trim()).filter(Boolean);
+      if (!schemes.length) {
+        alert("Enter at least one scheme name, one scheme per line.");
+        return;
+      }
+      addUtilisationSchemes(schemes);
+      input.value = "";
+    });
+
+    document.getElementById("ucDeleteSchemeButton")?.addEventListener("click", () => {
+      const scheme = document.getElementById("ucSchemeSelect").value;
+      if (!scheme) {
+        alert("Select a scheme to delete.");
+        return;
+      }
+      if (!confirm(`Delete the scheme "${scheme}"? Saved certificates will not be deleted.`)) return;
+      const index = utilisationSchemes.indexOf(scheme);
+      if (index >= 0) utilisationSchemes.splice(index, 1);
+      saveLocalData();
+      renderUtilisationSchemes();
+      updateUtilisationPreview();
+    });
+
+    document.getElementById("ucSchemeTemplateButton")?.addEventListener("click", () => {
+      const blob = new Blob(["Scheme Name\r\n"], { type: "text/csv;charset=utf-8" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "OAV-Badi-Utilisation-Scheme-Template.csv";
+      link.click();
+      URL.revokeObjectURL(link.href);
+    });
+
+    document.querySelectorAll("#utilisation input, #utilisation select, #utilisation textarea").forEach(field => {
+      field.addEventListener("input", updateUtilisationPreview);
+      field.addEventListener("change", updateUtilisationPreview);
+    });
+
+    document.getElementById("ucUpdatePreviewButton")?.addEventListener("click", updateUtilisationPreview);
+    document.getElementById("ucSaveButton")?.addEventListener("click", saveUtilisationCertificate);
+    document.getElementById("ucResetButton")?.addEventListener("click", () => {
+      if (confirm("Clear the current Utilisation Certificate entry? Saved certificates will remain available.")) {
+        resetUtilisationEntry();
+      }
+    });
+    document.getElementById("ucPrintButton")?.addEventListener("click", printUtilisationCertificate);
+    document.getElementById("ucExcelButton")?.addEventListener("click", downloadUtilisationExcel);
+
+    document.getElementById("ucSavedRows")?.addEventListener("click", event => {
+      const loadButton = event.target.closest(".uc-load-record");
+      if (loadButton) {
+        const record = utilisationCertificates.find(item => item.id === loadButton.dataset.id);
+        if (record) setUtilisationForm(record);
+        return;
+      }
+      const deleteButton = event.target.closest(".uc-delete-record");
+      if (!deleteButton) return;
+      const index = utilisationCertificates.findIndex(item => item.id === deleteButton.dataset.id);
+      if (index < 0 || !confirm("Delete this saved Utilisation Certificate?")) return;
+      utilisationCertificates.splice(index, 1);
+      saveLocalData();
+      renderUtilisationRecords();
+    });
+
     document.querySelectorAll(".nav-button").forEach(button => {
       button.addEventListener("click", () => {
         showPage(button.dataset.page);
@@ -14640,6 +15293,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
     renderRecentData();
     populateReportClassOptions();
     renderReport();
+    renderUtilisationModule();
     populateExamClassOptions();
     renderExamResults();
     renderPeriodTimeInputs();
