@@ -6397,9 +6397,9 @@
           <div class="section-title">
             <div>
               <h2>Scheme List</h2>
-              <p class="subtle">Add the 43 scheme names here. No demo scheme is included.</p>
+              <p class="subtle">The official 43-scheme list is ready. Select a scheme to auto-fill its available fund figures, or import an updated Excel/CSV list.</p>
             </div>
-            <button class="secondary" id="ucSchemeTemplateButton" type="button">Download Scheme CSV Template</button>
+            <button class="secondary" id="ucSchemeTemplateButton" type="button">Download Scheme Excel Template</button>
           </div>
           <div class="uc-grid" style="margin-top: 12px;">
             <div class="field wide">
@@ -6423,8 +6423,15 @@
             <div class="field" style="align-self: end;">
               <button class="secondary" id="ucDeleteSchemeButton" type="button">Delete Selected Scheme</button>
             </div>
+            <div class="field wide">
+              <label>Import Scheme Excel / CSV</label>
+              <input id="ucSchemeFile" type="file" accept=".xlsx,.xls,.csv">
+            </div>
+            <div class="field" style="align-self: end;">
+              <button class="secondary" id="ucSchemeFileImportButton" type="button">Import Excel / CSV</button>
+            </div>
           </div>
-          <p class="success-note" id="ucSchemeStatus">Add or import the official scheme list.</p>
+          <p class="success-note" id="ucSchemeStatus">43 official schemes are available.</p>
         </div>
 
         <div class="card" style="margin-top: 14px;">
@@ -6662,6 +6669,7 @@
       "oavBadiTimetableArrangementSelections",
       "oavBadiAuditLogs",
       "oavBadiUtilisationSchemes",
+      "oavBadiUtilisationSchemeData",
       "oavBadiUtilisationCertificates"
     ];
     const CLOUD_TS_KEY = "oavBadiCloudUpdatedAt";
@@ -6708,6 +6716,37 @@
     const auditLogs = [];
     const savedStockBackups = [];
     const utilisationSchemes = [];
+    const UTILISATION_SCHEME_REFERENCE = [
+      ["STAFF SALARY & ARREAR",0,0,0,0],["P TAX",78725,13600,57200,35125],
+      ["TDS",0,0,0,0],["SCIENCE LABORATORY",43163,10000,0,53163],
+      ["CONTINGENCY",117790.15,50000,116755,51035.15],["AC INSTALATION",100000,0,100000,0],
+      ["ELECTRICITY",46105.18,50000,88803,7302.18],["MDM UTENSIL",300000,0,0,300000],
+      ["G-IV STAFF SALARY",261804,484650,646200,100254],["GUEST FACULTY RENUMERATION",60985,582060,512429,130616],
+      ["BI-CYCLE",0,0,0,0],["SHOE & UNIFORM",24226,0,0,24226],["TEXT BOOK",29370,0,0,29370],
+      ["BANK INTEREST",26432.67,1433,0,27865.67],["ANNUAL SCHOOL GRANT",0,0,0,0],
+      ["ANNUAL LIBRARY GRANT",42295,0,0,42295],["LIBRARY EQUIPMENT",10881,0,0,10881],
+      ["ANNUAL SPORTS GRANT",17414,0,0,17414],["ANNUAL FUNCTION",0,5000,5000,0],
+      ["CBSE UPGRADATION",59500,0,0,59500],["CBSE EXAMINATION",26242,0,0,26242],
+      ["FURNITURE",0,0,0,0],["FIRE EXTINGUISER",14955,0,19966,-5011],
+      ["OAVS EXAMINATION",52531,69300,69550,52281],["OAVS ENTRANCE EXAM- SPD",2500,0,0,2500],
+      ["SMART CLASS UDAN",365,0,0,365],["LIBRARY SPD",57370,0,0,57370],
+      ["CLEARING CAMPUS- SPD",39002,0,0,39002],["FOUNDATION DAY OAVS",0,0,0,0],
+      ["TEACHER ORIENTATION",0,0,0,0],["MONTHLY NEWS",1100,0,0,1100],
+      ["ST SC STIPENT WEO",6120,0,0,6120],["ENVIRONMENTAL STUDIES",15000,0,0,15000],
+      ["KITCHEN GARDEN",5000,0,0,5000],["SELF DEPOSITS",0,0,0,0],
+      ["ZONAL LEVEL TRAINING",21092.8,0,0,21092.8],["ICONIC ENTRANCE EXAM",3200,0,0,3200],
+      ["ENERGY CLUB",0,10000,0,10000],["BANK CHARGES",0,0,141.6,-141.6],
+      ["BOYS HOSTEL",0,3143600,9227,3134373],["INCENATOR",0,15000,0,15000],
+      ["RESERVE FUND (FD)",-60000,162607,4280000,-4177393],["UNKNOWN",73975,0,0,73975]
+    ].map((row, index) => ({
+      serial: index + 1,
+      scheme: row[0],
+      previousFund: row[1],
+      currentReceived: row[2],
+      utilised: row[3],
+      balance: row[4]
+    }));
+    const utilisationSchemeData = {};
     const utilisationCertificates = [];
     const TIMETABLE_PERIOD_COUNT = 8;
     const timetablePeriodTimes = {
@@ -6746,6 +6785,7 @@
       localStorage.setItem("oavBadiAuditLogs", JSON.stringify(auditLogs));
       localStorage.setItem("oavBadiTimetablePeriodTimes", JSON.stringify(timetablePeriodTimes));
       localStorage.setItem("oavBadiUtilisationSchemes", JSON.stringify(utilisationSchemes));
+      localStorage.setItem("oavBadiUtilisationSchemeData", JSON.stringify(utilisationSchemeData));
       localStorage.setItem("oavBadiUtilisationCertificates", JSON.stringify(utilisationCertificates));
       if (cloudSyncReady && !cloudApplyingRemote) {
         localStorage.setItem(CLOUD_TS_KEY, String(Date.now()));
@@ -6772,6 +6812,7 @@
       const savedAuditLogs = localStorage.getItem("oavBadiAuditLogs");
       const savedTimetablePeriodTimes = localStorage.getItem("oavBadiTimetablePeriodTimes");
       const savedUtilisationSchemes = localStorage.getItem("oavBadiUtilisationSchemes");
+      const savedUtilisationSchemeData = localStorage.getItem("oavBadiUtilisationSchemeData");
       const savedUtilisationCertificates = localStorage.getItem("oavBadiUtilisationCertificates");
 
       if (savedClassData) {
@@ -6860,6 +6901,15 @@
         utilisationSchemes.length = 0;
         JSON.parse(savedUtilisationSchemes).forEach(scheme => utilisationSchemes.push(scheme));
       }
+      if (savedUtilisationSchemeData) {
+        Object.assign(utilisationSchemeData, JSON.parse(savedUtilisationSchemeData));
+      }
+      UTILISATION_SCHEME_REFERENCE.forEach(item => {
+        if (!utilisationSchemes.some(name => name.toLowerCase() === item.scheme.toLowerCase())) {
+          utilisationSchemes.push(item.scheme);
+        }
+        if (!utilisationSchemeData[item.scheme]) utilisationSchemeData[item.scheme] = { ...item };
+      });
 
       if (savedUtilisationCertificates) {
         utilisationCertificates.length = 0;
@@ -13990,8 +14040,8 @@ function currentReportData(type = document.getElementById("reportType").value) {
       const previousUtilised = ucNumber("ucPreviousUtilised");
       const previousDeposited = ucNumber("ucPreviousDeposited");
       const previousAdjusted = ucNumber("ucPreviousAdjusted");
-      const currentBalance = Math.max(0, currentReceived - currentUtilised - currentDeposited);
-      const previousBalance = Math.max(0, previousOpening - previousUtilised - previousDeposited - previousAdjusted);
+      const currentBalance = currentReceived - currentAdjusted - currentUtilised - currentDeposited;
+      const previousBalance = previousOpening - previousUtilised - previousDeposited - previousAdjusted;
       return {
         id: document.getElementById("ucSaveButton").dataset.recordId || `UC-${Date.now()}`,
         savedAt: new Date().toISOString(),
@@ -14108,6 +14158,120 @@ function currentReportData(type = document.getElementById("reportType").value) {
       saveLocalData();
       renderUtilisationSchemes();
       document.getElementById("ucSchemeStatus").textContent = `${added} scheme(s) added. Total schemes: ${utilisationSchemes.length}.`;
+    }
+
+    function normaliseSchemeHeader(value) {
+      return String(value || "").trim().toUpperCase().replace(/[^A-Z0-9]+/g, " ").trim();
+    }
+
+    function schemeRowValue(row, aliases) {
+      const entries = Object.entries(row || {});
+      const match = entries.find(([key]) => aliases.includes(normaliseSchemeHeader(key)));
+      return match ? match[1] : "";
+    }
+
+    function schemeNumber(value) {
+      const parsed = Number(String(value ?? "").replace(/,/g, "").trim());
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    function importUtilisationSchemeRows(rows) {
+      let imported = 0;
+      rows.forEach((row, index) => {
+        const scheme = String(schemeRowValue(row, ["SCHEME", "SCHEME NAME"]) || "").trim();
+        if (!scheme || normaliseSchemeHeader(scheme) === "SCHEME") return;
+        const previousFund = schemeNumber(schemeRowValue(row, ["PREVIOUS YEAR FUND", "PREVIOUS FUND"]));
+        const currentReceived = schemeNumber(schemeRowValue(row, ["FUND RECEIVED CURRENT YEAR", "CURRENT YEAR FUND", "CURRENT FUND RECEIVED"]));
+        const utilised = schemeNumber(schemeRowValue(row, ["FUND UTILISE", "FUND UTILISED", "AMOUNT UTILISED"]));
+        const suppliedBalance = schemeRowValue(row, ["BALANCE"]);
+        const balance = String(suppliedBalance ?? "").trim() === ""
+          ? previousFund + currentReceived - utilised
+          : schemeNumber(suppliedBalance);
+        const existing = utilisationSchemes.find(name => name.toLowerCase() === scheme.toLowerCase());
+        const storedName = existing || scheme;
+        if (!existing) utilisationSchemes.push(storedName);
+        utilisationSchemeData[storedName] = {
+          serial: schemeNumber(schemeRowValue(row, ["SL NO", "SL NO.", "SERIAL"])) || index + 1,
+          scheme: storedName,
+          previousFund,
+          currentReceived,
+          utilised,
+          balance
+        };
+        imported += 1;
+      });
+      if (!imported) throw new Error("No valid scheme rows found. Use the downloaded template columns.");
+      saveLocalData();
+      renderUtilisationSchemes();
+      document.getElementById("ucSchemeStatus").textContent = `${imported} scheme row(s) imported. Total schemes: ${utilisationSchemes.length}.`;
+    }
+
+    function applySelectedUtilisationScheme() {
+      const scheme = document.getElementById("ucSchemeSelect").value;
+      const data = utilisationSchemeData[scheme];
+      if (!data) {
+        updateUtilisationPreview();
+        return;
+      }
+      document.getElementById("ucPreviousOpening").value = data.previousFund;
+      document.getElementById("ucCurrentReceived").value = data.currentReceived;
+      document.getElementById("ucCurrentUtilised").value = data.utilised;
+      document.getElementById("ucPreviousUtilised").value = 0;
+      document.getElementById("ucPurpose").value = scheme;
+      document.getElementById("ucSchemeStatus").textContent =
+        `${scheme}: Previous fund ${ucMoney(data.previousFund)}, current received ${ucMoney(data.currentReceived)}, utilised ${ucMoney(data.utilised)}, balance ${ucMoney(data.balance)}.`;
+      updateUtilisationPreview();
+    }
+
+    function utilisationSchemeTemplateRows() {
+      return UTILISATION_SCHEME_REFERENCE.map(item => ({
+        "SL NO.": item.serial,
+        "SCHEME": item.scheme,
+        "PREVIOUS YEAR FUND": item.previousFund,
+        "FUND RECEIVED CURRENT YEAR": item.currentReceived,
+        "FUND UTILISE": item.utilised,
+        "BALANCE": item.balance
+      }));
+    }
+
+    function downloadUtilisationSchemeTemplate() {
+      const rows = utilisationSchemeTemplateRows();
+      if (window.XLSX) {
+        const worksheet = XLSX.utils.json_to_sheet(rows, {
+          header: ["SL NO.", "SCHEME", "PREVIOUS YEAR FUND", "FUND RECEIVED CURRENT YEAR", "FUND UTILISE", "BALANCE"]
+        });
+        worksheet["!cols"] = [{ wch: 9 }, { wch: 34 }, { wch: 22 }, { wch: 29 }, { wch: 18 }, { wch: 18 }];
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Scheme List");
+        XLSX.writeFile(workbook, "OAV-Badi-Utilisation-Scheme-Template.xlsx");
+        return;
+      }
+      downloadExcelWorkbook("OAV-Badi-Utilisation-Scheme-Template.xls", [{
+        name: "Scheme List",
+        rows: [
+          ["SL NO.", "SCHEME", "PREVIOUS YEAR FUND", "FUND RECEIVED CURRENT YEAR", "FUND UTILISE", "BALANCE"],
+          ...rows.map(row => Object.values(row))
+        ]
+      }]);
+    }
+
+    async function importUtilisationSchemeFile(file) {
+      if (!file) throw new Error("Choose an Excel or CSV file first.");
+      const extension = file.name.split(".").pop().toLowerCase();
+      if (extension === "csv") {
+        const lines = (await file.text()).split(/\r?\n/).filter(line => line.trim());
+        if (lines.length < 2) throw new Error("The CSV file has no scheme rows.");
+        const headers = parseCsvLine(lines[0]);
+        importUtilisationSchemeRows(lines.slice(1).map(line => {
+          const values = parseCsvLine(line);
+          return Object.fromEntries(headers.map((header, index) => [header, values[index] ?? ""]));
+        }));
+        return;
+      }
+      if (!window.XLSX) throw new Error("Excel reader is unavailable. Reload the page and try again.");
+      const workbook = XLSX.read(await file.arrayBuffer(), { type: "array" });
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      importUtilisationSchemeRows(XLSX.utils.sheet_to_json(firstSheet, { defval: "" }));
     }
 
     function renderUtilisationRecords() {
@@ -14275,22 +14439,34 @@ function currentReportData(type = document.getElementById("reportType").value) {
         alert("Select a scheme to delete.");
         return;
       }
+      if (UTILISATION_SCHEME_REFERENCE.some(item => item.scheme === scheme)) {
+        alert("Official schemes cannot be deleted. Import an updated template to change their financial figures.");
+        return;
+      }
       if (!confirm(`Delete the scheme "${scheme}"? Saved certificates will not be deleted.`)) return;
       const index = utilisationSchemes.indexOf(scheme);
       if (index >= 0) utilisationSchemes.splice(index, 1);
+      delete utilisationSchemeData[scheme];
       saveLocalData();
       renderUtilisationSchemes();
       updateUtilisationPreview();
     });
 
     document.getElementById("ucSchemeTemplateButton")?.addEventListener("click", () => {
-      const blob = new Blob(["Scheme Name\r\n"], { type: "text/csv;charset=utf-8" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = "OAV-Badi-Utilisation-Scheme-Template.csv";
-      link.click();
-      URL.revokeObjectURL(link.href);
+      downloadUtilisationSchemeTemplate();
     });
+
+    document.getElementById("ucSchemeFileImportButton")?.addEventListener("click", async () => {
+      const input = document.getElementById("ucSchemeFile");
+      try {
+        await importUtilisationSchemeFile(input.files?.[0]);
+        input.value = "";
+      } catch (error) {
+        alert(error.message || "The scheme file could not be imported.");
+      }
+    });
+
+    document.getElementById("ucSchemeSelect")?.addEventListener("change", applySelectedUtilisationScheme);
 
     document.querySelectorAll("#utilisation input, #utilisation select, #utilisation textarea").forEach(field => {
       field.addEventListener("input", updateUtilisationPreview);
