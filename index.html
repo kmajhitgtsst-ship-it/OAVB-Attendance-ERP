@@ -13987,12 +13987,20 @@ function currentReportData(type = document.getElementById("reportType").value) {
 
     function ucCellAmount(value) {
       const number = Number(value || 0);
-      return number > 0 ? number.toLocaleString("en-IN", { maximumFractionDigits: 2 }) : "Nil";
+      return number > 0
+        ? number.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        : "Nil";
     }
 
     function ucAmountWords(value) {
-      const number = Math.round(Number(value || 0));
-      if (!number) return "Nil";
+      const amount = Math.max(0, Number(value || 0));
+      if (!amount) return "Nil";
+      let number = Math.floor(amount);
+      let paise = Math.round((amount - number) * 100);
+      if (paise === 100) {
+        number += 1;
+        paise = 0;
+      }
       const ones = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
       const tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
       const twoDigits = amount => amount < 20 ? ones[amount] : `${tens[Math.floor(amount / 10)]}${amount % 10 ? ` ${ones[amount % 10]}` : ""}`;
@@ -14011,7 +14019,8 @@ function currentReportData(type = document.getElementById("reportType").value) {
         }
       });
       if (remaining) parts.push(underThousand(remaining));
-      return `${parts.join(" ")} Rupees Only`;
+      const rupeeWords = parts.join(" ") || "Zero";
+      return `${rupeeWords} Rupees${paise ? ` and ${twoDigits(paise)} Paise` : ""} Only`;
     }
 
     function ucDateText(value) {
@@ -14080,6 +14089,11 @@ function currentReportData(type = document.getElementById("reportType").value) {
     }
 
     function utilisationPreviewHtml(record = utilisationFormRecord()) {
+      const schemeName = String(record.scheme || "").trim();
+      const purposeName = String(record.purpose || "").trim();
+      const purposeSuffix = purposeName && purposeName.toLowerCase() !== schemeName.toLowerCase()
+        ? ` (${ucEscape(purposeName)})`
+        : "";
       const treatment = record.balanceTreatment === "surrender"
         ? `has been surrendered to the Government (vide challan no. ${ucEscape(record.challanNo || "-")} dated ${ucEscape(ucDateText(record.challanDate))}).`
         : record.balanceTreatment === "adjust"
@@ -14094,7 +14108,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
         <p><strong>Name of Department:</strong> ${ucEscape(record.department || "-")}</p>
         <p><strong>1.</strong> Certified that a sum of Rs. <strong>${ucCellAmount(record.currentUtilised)}</strong>
         (UC Amount) (Rupees <strong>${ucEscape(ucAmountWords(record.currentUtilised))}</strong>) has been utilized under the scheme
-        <strong>${ucEscape(record.scheme || "-")}</strong> (${ucEscape(record.purpose || "Scheme purpose")}) by
+        <strong>${ucEscape(schemeName || "-")}</strong>${purposeSuffix} by
         <strong>${ucEscape(record.grantee || "-")}</strong> out of Grant-in-aid/Loan of Rs.
         <strong>${ucCellAmount(record.currentReceived)}</strong> (Rupees ${ucEscape(ucAmountWords(record.currentReceived))})
         sanctioned by <strong>${ucEscape(record.sanctioningDepartment || "-")}</strong> during the financial year
@@ -14106,7 +14120,8 @@ function currentReportData(type = document.getElementById("reportType").value) {
         <p><strong>3.</strong> The utilization has been made for the purpose it was sanctioned and a balance of Rs.
         <strong>${ucCellAmount(record.totalBalance)}</strong> (Rupees ${ucEscape(ucAmountWords(record.totalBalance))}) ${treatment}</p>
         <h3>Table-1<br><small>(Details of Current Year)</small></h3>
-        <table>
+        <table class="uc-table uc-table-current">
+          <colgroup><col><col><col><col><col><col><col><col></colgroup>
           <thead><tr><th>Sl. No.</th><th>Sanction No. &amp; Date</th><th>Sanctioned Amount</th><th>Amount adjusted towards GIA / Loan payable</th><th>Amount utilized during the year</th><th>Amount deposited back by Treasury Challan</th><th>Balance<br>7=(3-(5+6))</th><th>Remarks</th></tr></thead>
           <tbody>
             <tr><td>1</td><td>${ucEscape(record.currentSanction || "-")}</td><td>${ucCellAmount(record.currentReceived)}</td><td>${ucCellAmount(record.currentAdjusted)}</td><td>${ucCellAmount(record.currentUtilised)}</td><td>${ucCellAmount(record.currentDeposited)}</td><td>${ucCellAmount(record.currentBalance)}</td><td>${ucEscape(record.currentRemarks || "")}</td></tr>
@@ -14114,7 +14129,8 @@ function currentReportData(type = document.getElementById("reportType").value) {
           </tbody>
         </table>
         <h3>Table-2<br><small>(Details of Previous Years)</small></h3>
-        <table>
+        <table class="uc-table uc-table-previous">
+          <colgroup><col><col><col><col><col><col><col><col><col></colgroup>
           <thead><tr><th>Sl. No.</th><th>Sanction No. &amp; Date</th><th>Sanctioned Amount</th><th>Unspent balance at the close of previous year</th><th>Amount utilized during the year</th><th>Amount deposited back by Treasury Challan</th><th>Amount adjusted towards GIA / Loan payable</th><th>Balance<br>8=4-(5+6+7)</th><th>Remarks</th></tr></thead>
           <tbody>
             <tr><td>1</td><td>${ucEscape(record.previousSanction || "-")}</td><td>${ucCellAmount(record.previousSanctioned)}</td><td>${ucCellAmount(record.previousOpening)}</td><td>${ucCellAmount(record.previousUtilised)}</td><td>${ucCellAmount(record.previousDeposited)}</td><td>${ucCellAmount(record.previousAdjusted)}</td><td>${ucCellAmount(record.previousBalance)}</td><td>${ucEscape(record.previousRemarks || "")}</td></tr>
@@ -14369,7 +14385,38 @@ function currentReportData(type = document.getElementById("reportType").value) {
         return;
       }
       popup.opener = null;
-      popup.document.write(`<!doctype html><html><head><meta charset="utf-8"><title></title><style>@page{size:A4 portrait;margin:0}html,body{margin:0;padding:0;background:#fff}body{box-sizing:border-box;width:210mm;min-height:297mm;padding:10mm;font-family:"Times New Roman",serif;color:#111;line-height:1.35;font-size:12px;-webkit-print-color-adjust:exact;print-color-adjust:exact}.uc-title-box{width:max-content;margin:0 auto 6px;padding:6px 28px;border:2px solid #111;text-align:center}h2,h3{text-align:center;margin:4px 0}p{margin:7px 0;text-align:justify}table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:10px}th,td{border:1px solid #111;padding:4px;text-align:center;vertical-align:middle;overflow-wrap:anywhere}.uc-signature{width:250px;margin:25px 0 0 auto}</style></head><body>${utilisationPreviewHtml(printRecord)}<script>window.onload=()=>{document.title="";setTimeout(()=>window.print(),100)};<\/script></body></html>`);
+      popup.document.write(`<!doctype html><html><head><meta charset="utf-8"><title></title><style>
+        @page{size:A4 portrait;margin:0}
+        *{box-sizing:border-box}
+        html,body{margin:0;padding:0;width:100%;background:#fff}
+        body{font-family:"Times New Roman",serif;color:#111;line-height:1.24;font-size:10.5px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+        .uc-print-sheet{width:190mm;max-width:190mm;margin:0 auto;padding:8mm 0 7mm;overflow:visible;break-after:avoid-page;page-break-after:avoid}
+        .uc-title-box{width:max-content;max-width:100%;margin:0 auto 5px;padding:5px 24px;border:2px solid #111;text-align:center}
+        h2,h3{text-align:center;margin:3px 0}
+        h2{font-size:16px}
+        h3{font-size:12px}
+        p{margin:5px 0;text-align:justify;overflow-wrap:anywhere}
+        .uc-table{width:100%;max-width:100%;border-collapse:collapse;table-layout:fixed;font-size:8px;margin:4px 0 6px}
+        .uc-table th,.uc-table td{border:1px solid #111;padding:2px 1.5px;text-align:center;vertical-align:middle;overflow-wrap:anywhere;word-break:normal}
+        .uc-table-current col:nth-child(1){width:6%}
+        .uc-table-current col:nth-child(2){width:14%}
+        .uc-table-current col:nth-child(3){width:12%}
+        .uc-table-current col:nth-child(4){width:15%}
+        .uc-table-current col:nth-child(5){width:14%}
+        .uc-table-current col:nth-child(6){width:15%}
+        .uc-table-current col:nth-child(7){width:12%}
+        .uc-table-current col:nth-child(8){width:12%}
+        .uc-table-previous col:nth-child(1){width:6%}
+        .uc-table-previous col:nth-child(2){width:12%}
+        .uc-table-previous col:nth-child(3){width:11%}
+        .uc-table-previous col:nth-child(4){width:13%}
+        .uc-table-previous col:nth-child(5){width:12%}
+        .uc-table-previous col:nth-child(6){width:14%}
+        .uc-table-previous col:nth-child(7){width:13%}
+        .uc-table-previous col:nth-child(8){width:10%}
+        .uc-table-previous col:nth-child(9){width:9%}
+        .uc-signature{width:58mm;margin:12px 0 0 auto}
+      </style></head><body><main class="uc-print-sheet">${utilisationPreviewHtml(printRecord)}</main><script>window.onload=()=>{document.title="";setTimeout(()=>window.print(),150)};<\/script></body></html>`);
       popup.document.close();
     }
 
