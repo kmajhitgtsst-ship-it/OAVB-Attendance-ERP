@@ -12732,24 +12732,27 @@ function currentReportData(type = document.getElementById("reportType").value) {
 
       ctx.textAlign = "left";
       ctx.fillStyle = "#ffffff";
-      ctx.font = "900 50px Arial";
-      ctx.fillText("OAV BADI ERP", 58, 72);
-      ctx.font = "800 28px Arial";
+      ctx.font = "900 52px Arial";
+      ctx.fillText("OAV BADI ERP", 160, 66);
+      ctx.font = "800 27px Arial";
       ctx.fillStyle = "#bfdbfe";
-      ctx.fillText("TEACHER WEEKLY TIME TABLE", 58, 112);
+      ctx.fillText("TEACHER WEEKLY TIME TABLE", 160, 104);
+      ctx.font = "800 21px Arial";
+      ctx.fillStyle = "#a7f3d0";
+      ctx.fillText("Powered by DETH", 160, 138);
 
       ctx.textAlign = "right";
       ctx.fillStyle = "#ffffff";
-      ctx.font = "900 42px Arial";
-      ctx.fillText(`${teacherName} (${code})`, 2342, 72);
-      ctx.font = "800 25px Arial";
+      ctx.font = "900 44px Arial";
+      ctx.fillText(`${teacherName} (${code})`, 2240, 68);
+      ctx.font = "800 26px Arial";
       ctx.fillStyle = "#dbeafe";
-      ctx.fillText(`${activeTimetableTimeMode === "morning" ? "Morning" : "Regular"} Schedule`, 2342, 110);
+      ctx.fillText(`${activeTimetableTimeMode === "morning" ? "Morning" : "Regular"} Schedule`, 2240, 108);
 
-      const x0 = 30;
-      const y0 = 170;
-      const tableWidth = 2340;
-      const dayColumnWidth = 190;
+      const x0 = 140;
+      const y0 = 164;
+      const tableWidth = 2120;
+      const dayColumnWidth = 180;
       const periodWidth = (tableWidth - dayColumnWidth) / TIMETABLE_PERIOD_COUNT;
       const headerHeight = 82;
       const rowHeight = 116;
@@ -12801,8 +12804,11 @@ function currentReportData(type = document.getElementById("reportType").value) {
           ctx.fillRect(x + 5, y + 6, periodWidth - 10, rowHeight - 12);
           ctx.textAlign = "center";
           ctx.fillStyle = items.length > 1 ? "#9a3412" : "#111827";
-          ctx.font = items.length > 1 ? "900 18px Arial" : "900 20px Arial";
-          drawWrappedCanvasText(ctx, text || "-", x + periodWidth / 2, y + 35, periodWidth - 22, 25, 4);
+          ctx.font = items.length > 1 ? "900 21px Arial" : "900 23px Arial";
+          const measuredLines = Math.min(4, Math.max(1, Math.ceil(ctx.measureText(text || "-").width / Math.max(1, periodWidth - 26))));
+          const lineHeight = items.length > 1 ? 23 : 26;
+          const textStartY = y + Math.max(30, (rowHeight - measuredLines * lineHeight) / 2 + lineHeight);
+          drawWrappedCanvasText(ctx, text || "-", x + periodWidth / 2, textStartY, periodWidth - 26, lineHeight, 4);
         });
       });
 
@@ -14302,7 +14308,11 @@ function currentReportData(type = document.getElementById("reportType").value) {
             <td>${ucMoney(record.currentReceived)}</td>
             <td>${ucMoney(record.totalUtilised)}</td>
             <td>${ucMoney(record.totalBalance)}</td>
-            <td><button class="secondary uc-load-record" data-id="${ucEscape(record.id)}" type="button">Load</button> <button class="secondary uc-delete-record" data-id="${ucEscape(record.id)}" type="button">Delete</button></td>
+            <td>
+              <button class="secondary uc-load-record" data-id="${ucEscape(record.id)}" type="button">Load</button>
+              <button class="secondary uc-delete-record" data-id="${ucEscape(record.id)}" type="button">Delete</button>
+              <button class="primary uc-print-record" data-id="${ucEscape(record.id)}" type="button">Print</button>
+            </td>
           </tr>`).join("")
         : `<tr><td colspan="7">No utilization certificate saved.</td></tr>`;
     }
@@ -14538,6 +14548,12 @@ function currentReportData(type = document.getElementById("reportType").value) {
       if (loadButton) {
         const record = utilisationCertificates.find(item => item.id === loadButton.dataset.id);
         if (record) setUtilisationForm(record);
+        return;
+      }
+      const printButton = event.target.closest(".uc-print-record");
+      if (printButton) {
+        const record = utilisationCertificates.find(item => item.id === printButton.dataset.id);
+        if (record) printUtilisationCertificate(record);
         return;
       }
       const deleteButton = event.target.closest(".uc-delete-record");
