@@ -12749,10 +12749,10 @@ function currentReportData(type = document.getElementById("reportType").value) {
       ctx.fillStyle = "#dbeafe";
       ctx.fillText(`${activeTimetableTimeMode === "morning" ? "Morning" : "Regular"} Schedule`, 2240, 108);
 
-      const x0 = 140;
+      const x0 = 250;
       const y0 = 164;
-      const tableWidth = 2120;
-      const dayColumnWidth = 180;
+      const tableWidth = 1900;
+      const dayColumnWidth = 160;
       const periodWidth = (tableWidth - dayColumnWidth) / TIMETABLE_PERIOD_COUNT;
       const headerHeight = 82;
       const rowHeight = 116;
@@ -12797,16 +12797,15 @@ function currentReportData(type = document.getElementById("reportType").value) {
         Array.from({ length: TIMETABLE_PERIOD_COUNT }, (_, periodIndex) => {
           const x = x0 + dayColumnWidth + periodIndex * periodWidth;
           const items = (schedule[day] || []).filter(item => item.period === periodIndex + 1);
-          const text = items.length
-            ? items.map(item => `${item.className}: ${item.subject}`).join(" | ")
-            : "";
-          ctx.fillStyle = items.length > 1 ? "#ffedd5" : dayColors[dayIndex % dayColors.length];
+          const classNames = [...new Set(items.map(item => String(item.className || "").trim()).filter(Boolean))];
+          const text = classNames.join(" / ");
+          ctx.fillStyle = classNames.length > 1 ? "#ffedd5" : dayColors[dayIndex % dayColors.length];
           ctx.fillRect(x + 5, y + 6, periodWidth - 10, rowHeight - 12);
           ctx.textAlign = "center";
-          ctx.fillStyle = items.length > 1 ? "#9a3412" : "#111827";
-          ctx.font = items.length > 1 ? "900 21px Arial" : "900 23px Arial";
+          ctx.fillStyle = classNames.length > 1 ? "#9a3412" : "#111827";
+          ctx.font = classNames.length > 1 ? "900 27px Arial" : "900 32px Arial";
           const measuredLines = Math.min(4, Math.max(1, Math.ceil(ctx.measureText(text || "-").width / Math.max(1, periodWidth - 26))));
-          const lineHeight = items.length > 1 ? 23 : 26;
+          const lineHeight = classNames.length > 1 ? 29 : 34;
           const textStartY = y + Math.max(30, (rowHeight - measuredLines * lineHeight) / 2 + lineHeight);
           drawWrappedCanvasText(ctx, text || "-", x + periodWidth / 2, textStartY, periodWidth - 26, lineHeight, 4);
         });
