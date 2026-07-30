@@ -6668,6 +6668,7 @@
       "oavBadiTimetableArrangementRecords",
       "oavBadiTimetableArrangementSelections",
       "oavBadiAuditLogs",
+      "oavBadiTimetablePeriodTimes",
       "oavBadiUtilisationSchemes",
       "oavBadiUtilisationSchemeData",
       "oavBadiUtilisationCertificates"
@@ -6676,7 +6677,8 @@
     const REMEMBERED_LOGIN_KEY = "oavBadiRememberedLogin";
     const ACTIVE_SESSION_KEY = "oavBadiActiveSession";
     const MOBILE_ZOOM_KEY = "oavBadiMobileUiScale";
-    const PER_DEVICE_KEYS = new Set([REMEMBERED_LOGIN_KEY, ACTIVE_SESSION_KEY, MOBILE_ZOOM_KEY]);
+    const TIMETABLE_TIME_MODE_KEY = "oavBadiTimetableTimeMode";
+    const PER_DEVICE_KEYS = new Set([REMEMBERED_LOGIN_KEY, ACTIVE_SESSION_KEY, MOBILE_ZOOM_KEY, TIMETABLE_TIME_MODE_KEY]);
     let cloudSyncReady = false;
     let cloudSyncTimer = null;
     let cloudApplyingRemote = false;
@@ -6763,7 +6765,7 @@
     let activeUser = { role: "guest", teacher: "", classKey: "", pages: [] };
     let loggedIn = false;
     let adminSession = false;
-    let activeTimetableTimeMode = "normal";
+    let activeTimetableTimeMode = localStorage.getItem(TIMETABLE_TIME_MODE_KEY) === "morning" ? "morning" : "normal";
     const UI_SESSION_BASE_KEY = "oavBadiUiSessionState";
 
     function saveLocalData() {
@@ -11568,6 +11570,8 @@ function currentReportData(type = document.getElementById("reportType").value) {
       const holder = document.getElementById("periodTimeRows");
       if (!holder) return;
       const mode = activeTimetableTimeMode;
+      document.getElementById("regularTimeTab")?.classList.toggle("active", mode === "normal");
+      document.getElementById("morningTimeTab")?.classList.toggle("active", mode === "morning");
       holder.innerHTML = Array.from({ length: TIMETABLE_PERIOD_COUNT }, (_, index) => `
         <div class="field">
           <label>Period ${index + 1} ${mode === "morning" ? "Morning" : "Regular"}</label>
@@ -11576,8 +11580,19 @@ function currentReportData(type = document.getElementById("reportType").value) {
       `).join("");
     }
 
+    function captureVisiblePeriodTimes() {
+      document.querySelectorAll(".period-time-input").forEach(input => {
+        const mode = input.dataset.mode;
+        const index = Number(input.dataset.index);
+        if (!timetablePeriodTimes[mode] || !Number.isInteger(index)) return;
+        timetablePeriodTimes[mode][index] = input.value.trim();
+      });
+    }
+
     function setTimetableTimeMode(mode) {
+      captureVisiblePeriodTimes();
       activeTimetableTimeMode = mode === "morning" ? "morning" : "normal";
+      localStorage.setItem(TIMETABLE_TIME_MODE_KEY, activeTimetableTimeMode);
       document.getElementById("regularTimeTab")?.classList.toggle("active", activeTimetableTimeMode === "normal");
       document.getElementById("morningTimeTab")?.classList.toggle("active", activeTimetableTimeMode === "morning");
       renderPeriodTimeInputs();
@@ -11587,12 +11602,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
 
     function savePeriodTimes() {
       if (!requireTimetableEditAccess()) return;
-      document.querySelectorAll(".period-time-input").forEach(input => {
-        const mode = input.dataset.mode;
-        const index = Number(input.dataset.index);
-        if (!timetablePeriodTimes[mode]) timetablePeriodTimes[mode] = [];
-        timetablePeriodTimes[mode][index] = input.value.trim();
-      });
+      captureVisiblePeriodTimes();
       addAuditLog("Time Table Period Timing Saved", "Regular and morning period timings updated.", { page: "Time Table" });
       saveLocalData();
       renderTimetableAudit(false);
@@ -12658,7 +12668,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
           schedule[day].push({
             period: periodIndex + 1,
             time: timetablePeriodTimes[activeTimetableTimeMode]?.[periodIndex] || "",
-            className: row.className,
+            className: normalizeTimetableClassName(row.className),
             subject: matchingTimetableSegments(cell, code)
           });
         });
