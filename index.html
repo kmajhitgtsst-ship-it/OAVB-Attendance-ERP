@@ -6414,14 +6414,12 @@
         <header>
           <div>
             <h1>Utilisation Certificate</h1>
-            <p class="subtle">Prepare, save, print, and export FORM OGFR-23 and FORM OGFR-24 scheme-wise.</p>
+            <p class="subtle">Select one scheme, enter the details once, and save or print OGFR-23 as Page 1 with OGFR-24 as Page 2.</p>
             <p class="subtle" id="ucCurrentDateDay"></p>
           </div>
           <div class="action-row">
-            <button class="secondary" id="ucPrintButton" type="button">Print OGFR-23</button>
-            <button class="secondary" id="ucExcelButton" type="button">OGFR-23 Excel</button>
-            <button class="secondary" id="ogfr24PrintButton" type="button">Print OGFR-24</button>
-            <button class="secondary" id="ogfr24ExcelButton" type="button">OGFR-24 Excel</button>
+            <button class="primary" id="ucPrintButton" type="button">Print Complete UC (2 Pages)</button>
+            <button class="secondary" id="ucExcelButton" type="button">Download Complete UC Excel</button>
           </div>
         </header>
 
@@ -6522,23 +6520,24 @@
           </div>
 
           <div class="action-row">
-            <button class="primary" id="ucUpdatePreviewButton" type="button">Update Preview</button>
-            <button class="primary" id="ucSaveButton" type="button">Save Certificate</button>
+            <button class="primary" id="ucUpdatePreviewButton" type="button">Update Both Pages</button>
+            <button class="primary" id="ucSaveButton" type="button">Save Both Forms</button>
+            <button class="secondary" id="ucPrintInlineButton" type="button">Print Both Pages</button>
             <button class="secondary" id="ucResetButton" type="button">Reset Entry</button>
           </div>
           <p class="success-note" id="ucSaveStatus">Fill the details and update the preview.</p>
         </div>
 
         <div class="card" style="margin-top: 14px;">
-          <h2>OGFR-23 Preview</h2>
+          <h2>Page 1 Preview: FORM OGFR-23</h2>
           <div id="ucPreview" class="uc-preview"></div>
         </div>
 
         <div class="card" style="margin-top: 14px;">
           <div class="section-title">
             <div>
-              <h2>FORM OGFR-24 Details</h2>
-              <p class="subtle">Financial values are linked with OGFR-23. Enter the physical target and achievement details.</p>
+              <h2>Page 2 Details: FORM OGFR-24</h2>
+              <p class="subtle">The selected scheme and all financial values are linked automatically from Page 1. Enter only the physical target and achievement details.</p>
             </div>
           </div>
           <div class="uc-grid" style="margin-top: 12px;">
@@ -6554,20 +6553,18 @@
             <div class="field wide"><label>Remarks / Reasons for Shortfall</label><textarea id="ogfr24Remarks" rows="3" placeholder="Enter remarks or reasons for non-utilisation/shortfall, if any"></textarea></div>
           </div>
           <div class="action-row" style="margin-top: 14px;">
-            <button class="primary" id="ogfr24UpdateButton" type="button">Update Form 24 Preview</button>
-            <button class="secondary" id="ogfr24PrintInlineButton" type="button">Print / Save Form 24 PDF</button>
-            <button class="secondary" id="ogfr24ExcelInlineButton" type="button">Download Form 24 Excel</button>
+            <button class="primary" id="ogfr24UpdateButton" type="button">Update Both Pages</button>
           </div>
         </div>
 
         <div class="card" style="margin-top: 14px;">
-          <h2>OGFR-24 Preview</h2>
+          <h2>Page 2 Preview: FORM OGFR-24</h2>
           <div id="ogfr24Preview" class="uc-preview ogfr24-preview"></div>
         </div>
 
         <div class="card" style="margin-top: 14px;">
           <div class="section-title">
-            <div><h2>Saved Certificates</h2><p class="subtle">Scheme-wise certificate history stored with the ERP data.</p></div>
+            <div><h2>Saved Certificates</h2><p class="subtle">Each saved record contains both OGFR-23 and OGFR-24 and prints as one two-page certificate.</p></div>
           </div>
           <div class="table-wrap" style="margin-top: 12px;">
             <table>
@@ -14525,8 +14522,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
             <td>
               <button class="secondary uc-load-record" data-id="${ucEscape(record.id)}" type="button">Load</button>
               <button class="secondary uc-delete-record" data-id="${ucEscape(record.id)}" type="button">Delete</button>
-              <button class="primary uc-print-record" data-id="${ucEscape(record.id)}" type="button">Print OGFR-23</button>
-              <button class="primary uc-print24-record" data-id="${ucEscape(record.id)}" type="button">Print OGFR-24</button>
+              <button class="primary uc-print-complete-record" data-id="${ucEscape(record.id)}" type="button">Print Complete UC</button>
             </td>
           </tr>`).join("")
         : `<tr><td colspan="7">No utilization certificate saved.</td></tr>`;
@@ -14597,10 +14593,10 @@ function currentReportData(type = document.getElementById("reportType").value) {
       if (index >= 0) utilisationCertificates[index] = record;
       else utilisationCertificates.push(record);
       saveLocalData();
-      addAuditLog("Utilisation Certificate Saved", `${record.scheme}, FY ${record.financialYear}, balance ${ucMoney(record.totalBalance)}`, { page: "Utilisation Certificate" });
+      addAuditLog("Combined Utilisation Certificate Saved", `${record.scheme}, OGFR-23 Page 1 and OGFR-24 Page 2, FY ${record.financialYear}, balance ${ucMoney(record.totalBalance)}`, { page: "Utilisation Certificate" });
       renderUtilisationRecords();
       resetUtilisationEntry(false);
-      document.getElementById("ucSaveStatus").textContent = `Certificate saved for ${record.scheme}. Entry fields cleared.`;
+      document.getElementById("ucSaveStatus").textContent = `OGFR-23 and OGFR-24 saved together for ${record.scheme}. Entry fields cleared.`;
     }
 
     function printUtilisationCertificate(record) {
@@ -14675,6 +14671,66 @@ function currentReportData(type = document.getElementById("reportType").value) {
         .ogfr24-footnote{font-size:10px;font-style:italic}
         .ogfr24-signature{width:60mm;margin:auto 0 0 auto;padding-top:10mm;text-align:center;font-size:11px}
       </style></head><body><main class="ogfr24-print-sheet">${ogfr24PreviewHtml(printRecord)}</main><script>window.onload=()=>{document.title="";setTimeout(()=>window.print(),150)};<\/script></body></html>`);
+      popup.document.close();
+    }
+
+    function printCombinedUtilisationCertificate(record) {
+      const printRecord = record && typeof record === "object" && "scheme" in record
+        ? normalizeUtilisationRecord(record)
+        : updateUtilisationPreview();
+      const popup = window.open("", "_blank");
+      if (!popup) {
+        alert("Allow pop-ups to print or save the complete Utilisation Certificate as PDF.");
+        return;
+      }
+      popup.opener = null;
+      popup.document.write(`<!doctype html><html><head><meta charset="utf-8"><title></title><style>
+        @page form23{size:A4 portrait;margin:0}
+        @page form24{size:A4 landscape;margin:0}
+        *{box-sizing:border-box}
+        html,body{margin:0;padding:0;background:#fff}
+        body{font-family:"Times New Roman",serif;color:#111;line-height:1.34;font-size:12px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+        .page-form23{page:form23;break-after:page;page-break-after:always}
+        .page-form24{page:form24;break-before:page;page-break-before:always}
+        .uc-print-sheet{display:flex;flex-direction:column;width:174mm;max-width:174mm;height:297mm;margin:0 auto;padding:10mm 0 8mm;overflow:hidden}
+        .uc-title-box{width:max-content;max-width:100%;margin:0 auto 8px;padding:7px 28px;border:2px solid #111;text-align:center}
+        h2,h3{text-align:center;margin:6px 0;font-size:14px}
+        p{width:100%;max-width:100%;margin:7px 0;text-align:justify;white-space:normal;overflow-wrap:anywhere}
+        .uc-table{display:table;width:100%;max-width:100%;border-collapse:collapse;table-layout:fixed;font-size:8.2px;margin:7px 0 10px}
+        .uc-table th,.uc-table td{border:1px solid #111;padding:3.5px 2px;text-align:center;vertical-align:middle;overflow-wrap:anywhere;word-break:normal}
+        .uc-table-current col:nth-child(1){width:6%}
+        .uc-table-current col:nth-child(2){width:14%}
+        .uc-table-current col:nth-child(3){width:12%}
+        .uc-table-current col:nth-child(4){width:15%}
+        .uc-table-current col:nth-child(5){width:14%}
+        .uc-table-current col:nth-child(6){width:15%}
+        .uc-table-current col:nth-child(7){width:12%}
+        .uc-table-current col:nth-child(8){width:12%}
+        .uc-table-previous col:nth-child(1){width:6%}
+        .uc-table-previous col:nth-child(2){width:12%}
+        .uc-table-previous col:nth-child(3){width:11%}
+        .uc-table-previous col:nth-child(4){width:13%}
+        .uc-table-previous col:nth-child(5){width:12%}
+        .uc-table-previous col:nth-child(6){width:14%}
+        .uc-table-previous col:nth-child(7){width:13%}
+        .uc-table-previous col:nth-child(8){width:10%}
+        .uc-table-previous col:nth-child(9){width:9%}
+        .uc-signature{width:58mm;margin:auto 0 0 auto;padding-top:18px;font-size:12px;line-height:1.45}
+        .ogfr24-print-sheet{width:297mm;height:210mm;margin:0 auto;padding:8mm;display:flex;flex-direction:column;overflow:hidden}
+        .ogfr24-print-sheet .uc-title-box{margin-bottom:7px;padding:7px 32px;font-size:12px}
+        .ogfr24-print-sheet h2{margin:4px 0 2px;font-size:14px}
+        .ogfr24-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:10px;margin:10px 0}
+        .ogfr24-table th,.ogfr24-table td{border:1px solid #111;padding:6px 4px;text-align:center;vertical-align:middle;overflow-wrap:anywhere}
+        .ogfr24-table th{height:34mm}
+        .ogfr24-table td{height:18mm}
+        .column-number td{height:auto;padding:2px;font-weight:700}
+        .ogfr24-footnote{font-size:10px;font-style:italic}
+        .ogfr24-signature{width:60mm;margin:auto 0 0 auto;padding-top:10mm;text-align:center;font-size:11px}
+      </style></head><body>
+        <main class="uc-print-sheet page-form23">${utilisationPreviewHtml(printRecord)}</main>
+        <main class="ogfr24-print-sheet page-form24">${ogfr24PreviewHtml(printRecord)}</main>
+        <script>window.onload=()=>{document.title="";setTimeout(()=>window.print(),180)};<\/script>
+      </body></html>`);
       popup.document.close();
     }
 
@@ -14758,6 +14814,59 @@ function currentReportData(type = document.getElementById("reportType").value) {
       ]);
     }
 
+    function downloadCombinedUtilisationExcel(record = updateUtilisationPreview()) {
+      const form24 = record.form24 || {};
+      const filenameScheme = (record.scheme || "scheme").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase();
+      downloadExcelWorkbook(`Complete-UC-${filenameScheme || "certificate"}-${record.financialYear || "FY"}.xls`, [
+        {
+          name: "OGFR-23 Summary",
+          rows: [
+            ["FORM OGFR-23", "Utilization Certificate"],
+            ["Scheme", record.scheme],
+            ["Purpose", record.purpose],
+            ["Department / School", record.department],
+            ["Grantee", record.grantee],
+            ["Sanctioning Department", record.sanctioningDepartment],
+            ["Financial Year", record.financialYear],
+            ["Certificate Date", ucDateText(record.certificateDate)],
+            ["Fund Received", record.currentReceived],
+            ["Total Utilised", record.totalUtilised],
+            ["Total Balance", record.totalBalance],
+            ["Balance Treatment", record.balanceTreatment]
+          ]
+        },
+        {
+          name: "OGFR-23 Table-1",
+          rows: [
+            ["Sl. No.", "Sanction No. & Date", "Sanctioned Amount", "Adjusted towards GIA / Loan", "Amount Utilised", "Deposited Back", "Balance", "Remarks"],
+            ["1", record.currentSanction, record.currentReceived, record.currentAdjusted, record.currentUtilised, record.currentDeposited, record.currentBalance, record.currentRemarks]
+          ]
+        },
+        {
+          name: "OGFR-23 Table-2",
+          rows: [
+            ["Sl. No.", "Sanction No. & Date", "Sanctioned Amount", "Opening Unspent Balance", "Amount Utilised", "Deposited Back", "Adjusted towards GIA / Loan", "Balance", "Remarks"],
+            ["1", record.previousSanction, record.previousSanctioned, record.previousOpening, record.previousUtilised, record.previousDeposited, record.previousAdjusted, record.previousBalance, record.previousRemarks]
+          ]
+        },
+        {
+          name: "OGFR-24",
+          rows: [
+            ["FORM OGFR-24", "[See Rule 306 (iii) (b)]"],
+            ["Proforma for reporting Physical Target / Achievement made as per Utilization Certificate against the Grants-in-Aid received."],
+            [],
+            ["Name of the Grantee Organisation", "Name of the Scheme and the Sector", "Financial Target fixed", "Amount of Grant-in-Aid received (Year wise)", "Physical Target fixed", "Amount utilized (Year wise)", "The amount for which U.C. furnished previously", "Physical Target achieved against the U.C. already furnished", "Physical Target achieved as per present U.C.", "Remarks"],
+            ["(1)", "(2)", "(3)", "(4)", "(5)", "(6)", "(7)", "(8)", "(9)", "(10)"],
+            [form24.granteeOrganisation, form24.schemeSector, Number(form24.financialTarget) || 0, Number(form24.grantReceived) || 0, form24.physicalTarget, Number(form24.amountUtilised) || 0, Number(form24.previousUcAmount) || 0, form24.previousAchievement, form24.presentAchievement, form24.remarks],
+            [],
+            ["Signature", record.signer || "Principal"],
+            ["Designation", record.designation || "Principal"],
+            ["Date", ucDateText(record.certificateDate)]
+          ]
+        }
+      ]);
+    }
+
     function renderUtilisationModule() {
       const date = todayIsoDate();
       document.getElementById("ucCurrentDateDay").textContent = new Date(`${date}T00:00:00`).toLocaleDateString("en-IN", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
@@ -14831,13 +14940,10 @@ function currentReportData(type = document.getElementById("reportType").value) {
         resetUtilisationEntry();
       }
     });
-    document.getElementById("ucPrintButton")?.addEventListener("click", () => printUtilisationCertificate());
-    document.getElementById("ucExcelButton")?.addEventListener("click", () => downloadUtilisationExcel());
+    document.getElementById("ucPrintButton")?.addEventListener("click", () => printCombinedUtilisationCertificate());
+    document.getElementById("ucPrintInlineButton")?.addEventListener("click", () => printCombinedUtilisationCertificate());
+    document.getElementById("ucExcelButton")?.addEventListener("click", () => downloadCombinedUtilisationExcel());
     document.getElementById("ogfr24UpdateButton")?.addEventListener("click", updateUtilisationPreview);
-    document.getElementById("ogfr24PrintButton")?.addEventListener("click", () => printOgfr24());
-    document.getElementById("ogfr24PrintInlineButton")?.addEventListener("click", () => printOgfr24());
-    document.getElementById("ogfr24ExcelButton")?.addEventListener("click", () => downloadOgfr24Excel());
-    document.getElementById("ogfr24ExcelInlineButton")?.addEventListener("click", () => downloadOgfr24Excel());
 
     document.getElementById("ucSavedRows")?.addEventListener("click", event => {
       const loadButton = event.target.closest(".uc-load-record");
@@ -14846,16 +14952,10 @@ function currentReportData(type = document.getElementById("reportType").value) {
         if (record) setUtilisationForm(record);
         return;
       }
-      const printButton = event.target.closest(".uc-print-record");
+      const printButton = event.target.closest(".uc-print-complete-record");
       if (printButton) {
         const record = utilisationCertificates.find(item => item.id === printButton.dataset.id);
-        if (record) printUtilisationCertificate(record);
-        return;
-      }
-      const print24Button = event.target.closest(".uc-print24-record");
-      if (print24Button) {
-        const record = utilisationCertificates.find(item => item.id === print24Button.dataset.id);
-        if (record) printOgfr24(record);
+        if (record) printCombinedUtilisationCertificate(record);
         return;
       }
       const deleteButton = event.target.closest(".uc-delete-record");
