@@ -5167,6 +5167,36 @@
       margin: 28px 0 0 auto;
     }
 
+    .ogfr24-preview {
+      max-width: 1240px;
+    }
+
+    .ogfr24-table {
+      font-size: 11px !important;
+    }
+
+    .ogfr24-table th,
+    .ogfr24-table td {
+      min-width: 96px;
+      padding: 7px 5px !important;
+    }
+
+    .ogfr24-table .column-number td {
+      padding: 3px !important;
+      font-weight: 700;
+    }
+
+    .ogfr24-footnote {
+      font-size: 12px;
+      font-style: italic;
+    }
+
+    .ogfr24-signature {
+      width: 300px;
+      margin: 34px 0 0 auto;
+      text-align: center;
+    }
+
     @media (max-width: 900px) {
       .uc-grid,
       .uc-summary {
@@ -6384,12 +6414,14 @@
         <header>
           <div>
             <h1>Utilisation Certificate</h1>
-            <p class="subtle">Prepare, save, print, and export FORM OGFR-23 scheme-wise.</p>
+            <p class="subtle">Prepare, save, print, and export FORM OGFR-23 and FORM OGFR-24 scheme-wise.</p>
             <p class="subtle" id="ucCurrentDateDay"></p>
           </div>
           <div class="action-row">
-            <button class="secondary" id="ucPrintButton" type="button">Print / Save PDF</button>
-            <button class="secondary" id="ucExcelButton" type="button">Download Excel</button>
+            <button class="secondary" id="ucPrintButton" type="button">Print OGFR-23</button>
+            <button class="secondary" id="ucExcelButton" type="button">OGFR-23 Excel</button>
+            <button class="secondary" id="ogfr24PrintButton" type="button">Print OGFR-24</button>
+            <button class="secondary" id="ogfr24ExcelButton" type="button">OGFR-24 Excel</button>
           </div>
         </header>
 
@@ -6484,7 +6516,7 @@
           </div>
 
           <div class="uc-summary">
-            <div><span>Fund Received</span><strong id="ucReceivedSummary">Rs. 0.00</strong></div>
+            <div><span>Total Fund Available</span><strong id="ucReceivedSummary">Rs. 0.00</strong></div>
             <div><span>Total Utilised</span><strong id="ucUtilisedSummary">Rs. 0.00</strong></div>
             <div><span>Total Balance</span><strong id="ucBalanceSummary">Rs. 0.00</strong></div>
           </div>
@@ -6500,6 +6532,37 @@
         <div class="card" style="margin-top: 14px;">
           <h2>OGFR-23 Preview</h2>
           <div id="ucPreview" class="uc-preview"></div>
+        </div>
+
+        <div class="card" style="margin-top: 14px;">
+          <div class="section-title">
+            <div>
+              <h2>FORM OGFR-24 Details</h2>
+              <p class="subtle">Financial values are linked with OGFR-23. Enter the physical target and achievement details.</p>
+            </div>
+          </div>
+          <div class="uc-grid" style="margin-top: 12px;">
+            <div class="field wide"><label>Name of the Grantee Organisation</label><input id="ogfr24Grantee" readonly></div>
+            <div class="field wide"><label>Name of the Scheme and the Sector</label><input id="ogfr24SchemeSector" readonly></div>
+            <div class="field"><label>Financial Target Fixed (Rs.)</label><input id="ogfr24FinancialTarget" type="number" readonly></div>
+            <div class="field"><label>Grant-in-Aid Received (Rs.)</label><input id="ogfr24GrantReceived" type="number" readonly></div>
+            <div class="field"><label>Physical Target Fixed</label><input id="ogfr24PhysicalTarget" placeholder="Example: 4 classrooms"></div>
+            <div class="field"><label>Amount Utilized (Rs.)</label><input id="ogfr24AmountUtilised" type="number" readonly></div>
+            <div class="field"><label>Amount for which U.C. Furnished Previously (Rs.)</label><input id="ogfr24PreviousUcAmount" type="number" min="0" step="0.01" value="0"></div>
+            <div class="field wide"><label>Physical Target Achieved Against U.C. Furnished Previously</label><input id="ogfr24PreviousAchievement" placeholder="Enter previous achievement"></div>
+            <div class="field wide"><label>Physical Target Achieved as per Present U.C.</label><input id="ogfr24PresentAchievement" placeholder="Enter present achievement"></div>
+            <div class="field wide"><label>Remarks / Reasons for Shortfall</label><textarea id="ogfr24Remarks" rows="3" placeholder="Enter remarks or reasons for non-utilisation/shortfall, if any"></textarea></div>
+          </div>
+          <div class="action-row" style="margin-top: 14px;">
+            <button class="primary" id="ogfr24UpdateButton" type="button">Update Form 24 Preview</button>
+            <button class="secondary" id="ogfr24PrintInlineButton" type="button">Print / Save Form 24 PDF</button>
+            <button class="secondary" id="ogfr24ExcelInlineButton" type="button">Download Form 24 Excel</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top: 14px;">
+          <h2>OGFR-24 Preview</h2>
+          <div id="ogfr24Preview" class="uc-preview ogfr24-preview"></div>
         </div>
 
         <div class="card" style="margin-top: 14px;">
@@ -6915,7 +6978,7 @@
 
       if (savedUtilisationCertificates) {
         utilisationCertificates.length = 0;
-        JSON.parse(savedUtilisationCertificates).forEach(record => utilisationCertificates.push(record));
+        JSON.parse(savedUtilisationCertificates).forEach(record => utilisationCertificates.push(normalizeUtilisationRecord(record)));
       }
 
       syncTeacherAssignmentsFromMaster();
@@ -14066,7 +14129,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
       const previousAdjusted = ucNumber("ucPreviousAdjusted");
       const currentBalance = currentReceived - currentAdjusted - currentUtilised - currentDeposited;
       const previousBalance = previousOpening - previousUtilised - previousDeposited - previousAdjusted;
-      return {
+      const record = {
         id: document.getElementById("ucSaveButton").dataset.recordId || `UC-${Date.now()}`,
         savedAt: new Date().toISOString(),
         scheme: document.getElementById("ucSchemeSelect").value.trim(),
@@ -14098,9 +14161,69 @@ function currentReportData(type = document.getElementById("reportType").value) {
         checks: document.getElementById("ucChecks").value.trim(),
         signer: document.getElementById("ucSigner").value.trim(),
         designation: document.getElementById("ucDesignation").value.trim(),
+        totalFundAvailable: currentReceived + previousOpening,
         totalUtilised: currentUtilised + previousUtilised,
         totalBalance: currentBalance + previousBalance
       };
+      record.form24 = {
+        granteeOrganisation: record.department || "Odisha Adarsha Vidyalaya, Badi",
+        schemeSector: record.purpose || record.scheme,
+        financialTarget: record.totalFundAvailable,
+        grantReceived: record.currentReceived,
+        physicalTarget: document.getElementById("ogfr24PhysicalTarget")?.value.trim() || "",
+        amountUtilised: record.totalUtilised,
+        previousUcAmount: Number(document.getElementById("ogfr24PreviousUcAmount")?.value) || 0,
+        previousAchievement: document.getElementById("ogfr24PreviousAchievement")?.value.trim() || "",
+        presentAchievement: document.getElementById("ogfr24PresentAchievement")?.value.trim() || "",
+        remarks: document.getElementById("ogfr24Remarks")?.value.trim() || ""
+      };
+      return normalizeUtilisationRecord(record);
+    }
+
+    function normalizeUtilisationRecord(source) {
+      const record = { ...source };
+      record.currentReceived = Number(record.currentReceived) || 0;
+      record.currentAdjusted = Number(record.currentAdjusted) || 0;
+      record.currentUtilised = Number(record.currentUtilised) || 0;
+      record.currentDeposited = Number(record.currentDeposited) || 0;
+      record.previousOpening = Number(record.previousOpening) || 0;
+      record.previousUtilised = Number(record.previousUtilised) || 0;
+      record.previousDeposited = Number(record.previousDeposited) || 0;
+      record.previousAdjusted = Number(record.previousAdjusted) || 0;
+
+      const unsupportedCurrentUse = Math.max(
+        0,
+        record.currentUtilised - Math.max(0, record.currentReceived - record.currentAdjusted - record.currentDeposited)
+      );
+      const availablePreviousFund = Math.max(
+        0,
+        record.previousOpening - record.previousUtilised - record.previousDeposited - record.previousAdjusted
+      );
+      const transferToPrevious = Math.min(unsupportedCurrentUse, availablePreviousFund);
+      if (transferToPrevious > 0) {
+        record.currentUtilised -= transferToPrevious;
+        record.previousUtilised += transferToPrevious;
+      }
+
+      record.currentBalance = record.currentReceived - record.currentAdjusted - record.currentUtilised - record.currentDeposited;
+      record.previousBalance = record.previousOpening - record.previousUtilised - record.previousDeposited - record.previousAdjusted;
+      record.totalFundAvailable = record.currentReceived + record.previousOpening;
+      record.totalUtilised = record.currentUtilised + record.previousUtilised;
+      record.totalBalance = record.currentBalance + record.previousBalance;
+      const sourceForm24 = source.form24 && typeof source.form24 === "object" ? source.form24 : {};
+      record.form24 = {
+        granteeOrganisation: record.department || "Odisha Adarsha Vidyalaya, Badi",
+        schemeSector: record.purpose || record.scheme || "",
+        financialTarget: record.totalFundAvailable,
+        grantReceived: record.currentReceived,
+        physicalTarget: String(sourceForm24.physicalTarget || ""),
+        amountUtilised: record.totalUtilised,
+        previousUcAmount: Number(sourceForm24.previousUcAmount ?? record.previousUtilised) || 0,
+        previousAchievement: String(sourceForm24.previousAchievement || ""),
+        presentAchievement: String(sourceForm24.presentAchievement || ""),
+        remarks: String(sourceForm24.remarks || "")
+      };
+      return record;
     }
 
     function utilisationPreviewHtml(record = utilisationFormRecord()) {
@@ -14158,12 +14281,83 @@ function currentReportData(type = document.getElementById("reportType").value) {
       `;
     }
 
+    function syncOgfr24Fields(record, includeEditable = false) {
+      const form24 = record.form24 || {};
+      const linkedValues = {
+        ogfr24Grantee: form24.granteeOrganisation || record.department || "Odisha Adarsha Vidyalaya, Badi",
+        ogfr24SchemeSector: form24.schemeSector || record.purpose || record.scheme || "",
+        ogfr24FinancialTarget: Number(record.totalFundAvailable) || 0,
+        ogfr24GrantReceived: Number(record.currentReceived) || 0,
+        ogfr24AmountUtilised: Number(record.totalUtilised) || 0
+      };
+      Object.entries(linkedValues).forEach(([id, value]) => {
+        const field = document.getElementById(id);
+        if (field) field.value = value;
+      });
+      if (!includeEditable) return;
+      const editableValues = {
+        ogfr24PhysicalTarget: form24.physicalTarget || "",
+        ogfr24PreviousUcAmount: Number(form24.previousUcAmount ?? record.previousUtilised) || 0,
+        ogfr24PreviousAchievement: form24.previousAchievement || "",
+        ogfr24PresentAchievement: form24.presentAchievement || "",
+        ogfr24Remarks: form24.remarks || ""
+      };
+      Object.entries(editableValues).forEach(([id, value]) => {
+        const field = document.getElementById(id);
+        if (field) field.value = value;
+      });
+    }
+
+    function ogfr24PreviewHtml(record = utilisationFormRecord()) {
+      const form24 = record.form24 || {};
+      return `
+        <div class="uc-title-box"><strong>FORM OGFR-24</strong><br>[See Rule 306 (iii) (b)]</div>
+        <h2>Proforma for Reporting Physical Target / Achievement</h2>
+        <p style="text-align:center;">made as per Utilization Certificate against the Grants-in-Aid received</p>
+        <table class="ogfr24-table">
+          <thead>
+            <tr>
+              <th>Name of the Grantee Organisation</th>
+              <th>Name of the Scheme and the Sector</th>
+              <th>Financial Target fixed</th>
+              <th>Amount of Grant-in-Aid received (Year wise)</th>
+              <th>Physical Target fixed</th>
+              <th>Amount utilized (Year wise)</th>
+              <th>The amount for which U.C. furnished previously</th>
+              <th>Physical Target achieved against the U.C. already furnished</th>
+              <th>Physical Target achieved as per present U.C.</th>
+              <th>Remarks</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="column-number">${Array.from({ length: 10 }, (_, index) => `<td>(${index + 1})</td>`).join("")}</tr>
+            <tr>
+              <td>${ucEscape(form24.granteeOrganisation || "-")}</td>
+              <td>${ucEscape(form24.schemeSector || "-")}</td>
+              <td>${ucCellAmount(form24.financialTarget)}</td>
+              <td>${ucCellAmount(form24.grantReceived)}</td>
+              <td>${ucEscape(form24.physicalTarget || "-")}</td>
+              <td>${ucCellAmount(form24.amountUtilised)}</td>
+              <td>${ucCellAmount(form24.previousUcAmount)}</td>
+              <td>${ucEscape(form24.previousAchievement || "-")}</td>
+              <td>${ucEscape(form24.presentAchievement || "-")}</td>
+              <td>${ucEscape(form24.remarks || "-")}</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="ogfr24-footnote">* Reasons for non-utilisation of the Grant-in-Aid and shortfall in achieving the target in proportion to the grant utilized shall also be explained in the Remarks column.</p>
+        <div class="ogfr24-signature"><strong>Signature of the Grantee</strong><br><br>${ucEscape(record.signer || "Principal")}<br>${ucEscape(record.designation || "Principal")}<br>${ucEscape(ucDateText(record.certificateDate))}</div>
+      `;
+    }
+
     function updateUtilisationPreview() {
       const record = utilisationFormRecord();
-      document.getElementById("ucReceivedSummary").textContent = ucMoney(record.currentReceived);
+      document.getElementById("ucReceivedSummary").textContent = ucMoney(record.totalFundAvailable);
       document.getElementById("ucUtilisedSummary").textContent = ucMoney(record.totalUtilised);
       document.getElementById("ucBalanceSummary").textContent = ucMoney(record.totalBalance);
       document.getElementById("ucPreview").innerHTML = utilisationPreviewHtml(record);
+      syncOgfr24Fields(record);
+      document.getElementById("ogfr24Preview").innerHTML = ogfr24PreviewHtml(record);
       return record;
     }
 
@@ -14244,13 +14438,24 @@ function currentReportData(type = document.getElementById("reportType").value) {
         updateUtilisationPreview();
         return;
       }
-      document.getElementById("ucPreviousOpening").value = data.previousFund;
-      document.getElementById("ucCurrentReceived").value = data.currentReceived;
-      document.getElementById("ucCurrentUtilised").value = data.utilised;
-      document.getElementById("ucPreviousUtilised").value = 0;
+      const previousFund = Number(data.previousFund) || 0;
+      const currentReceived = Number(data.currentReceived) || 0;
+      const totalUtilised = Math.max(0, Number(data.utilised) || 0);
+      const previousUtilised = Math.min(Math.max(0, previousFund), totalUtilised);
+      const currentUtilised = Math.max(0, totalUtilised - previousUtilised);
+      const calculatedBalance = previousFund + currentReceived - totalUtilised;
+      document.getElementById("ucPreviousOpening").value = previousFund;
+      document.getElementById("ucCurrentReceived").value = currentReceived;
+      document.getElementById("ucCurrentUtilised").value = currentUtilised;
+      document.getElementById("ucPreviousUtilised").value = previousUtilised;
       document.getElementById("ucPurpose").value = scheme;
+      document.getElementById("ogfr24PhysicalTarget").value = "";
+      document.getElementById("ogfr24PreviousUcAmount").value = previousUtilised;
+      document.getElementById("ogfr24PreviousAchievement").value = "";
+      document.getElementById("ogfr24PresentAchievement").value = "";
+      document.getElementById("ogfr24Remarks").value = "";
       document.getElementById("ucSchemeStatus").textContent =
-        `${scheme}: Previous fund ${ucMoney(data.previousFund)}, current received ${ucMoney(data.currentReceived)}, utilised ${ucMoney(data.utilised)}, balance ${ucMoney(data.balance)}.`;
+        `${scheme}: Previous fund ${ucMoney(previousFund)}, current received ${ucMoney(currentReceived)}, total utilised ${ucMoney(totalUtilised)}, balance ${ucMoney(calculatedBalance)}.`;
       updateUtilisationPreview();
     }
 
@@ -14320,7 +14525,8 @@ function currentReportData(type = document.getElementById("reportType").value) {
             <td>
               <button class="secondary uc-load-record" data-id="${ucEscape(record.id)}" type="button">Load</button>
               <button class="secondary uc-delete-record" data-id="${ucEscape(record.id)}" type="button">Delete</button>
-              <button class="primary uc-print-record" data-id="${ucEscape(record.id)}" type="button">Print</button>
+              <button class="primary uc-print-record" data-id="${ucEscape(record.id)}" type="button">Print OGFR-23</button>
+              <button class="primary uc-print24-record" data-id="${ucEscape(record.id)}" type="button">Print OGFR-24</button>
             </td>
           </tr>`).join("")
         : `<tr><td colspan="7">No utilization certificate saved.</td></tr>`;
@@ -14347,6 +14553,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
         const field = document.getElementById(id);
         if (field) field.value = value ?? "";
       });
+      syncOgfr24Fields(normalizeUtilisationRecord(record), true);
       document.getElementById("ucSaveButton").dataset.recordId = record.id || "";
       updateUtilisationPreview();
       document.getElementById("ucSaveStatus").textContent = `Loaded ${record.scheme || "certificate"} for editing.`;
@@ -14367,6 +14574,8 @@ function currentReportData(type = document.getElementById("reportType").value) {
       document.getElementById("ucBalanceTreatment").value = "carry";
       ["ucCurrentSanction", "ucCurrentRemarks", "ucPreviousSanction", "ucPreviousRemarks", "ucChallanNo", "ucChallanDate", "ucChecks"].forEach(id => document.getElementById(id).value = "");
       ["ucCurrentReceived", "ucCurrentAdjusted", "ucCurrentUtilised", "ucCurrentDeposited", "ucPreviousSanctioned", "ucPreviousOpening", "ucPreviousUtilised", "ucPreviousDeposited", "ucPreviousAdjusted"].forEach(id => document.getElementById(id).value = "0");
+      ["ogfr24PhysicalTarget", "ogfr24PreviousAchievement", "ogfr24PresentAchievement", "ogfr24Remarks"].forEach(id => document.getElementById(id).value = "");
+      document.getElementById("ogfr24PreviousUcAmount").value = "0";
       document.getElementById("ucSigner").value = "Principal";
       document.getElementById("ucDesignation").value = "Principal";
       document.getElementById("ucSaveButton").dataset.recordId = "";
@@ -14437,6 +14646,79 @@ function currentReportData(type = document.getElementById("reportType").value) {
         .uc-signature{width:58mm;margin:auto 0 0 auto;padding-top:18px;font-size:12px;line-height:1.45}
       </style></head><body><main class="uc-print-sheet">${utilisationPreviewHtml(printRecord)}</main><script>window.onload=()=>{document.title="";setTimeout(()=>window.print(),150)};<\/script></body></html>`);
       popup.document.close();
+    }
+
+    function printOgfr24(record) {
+      const printRecord = record && typeof record === "object" && "scheme" in record
+        ? normalizeUtilisationRecord(record)
+        : updateUtilisationPreview();
+      const popup = window.open("", "_blank");
+      if (!popup) {
+        alert("Allow pop-ups to print or save FORM OGFR-24 as PDF.");
+        return;
+      }
+      popup.opener = null;
+      popup.document.write(`<!doctype html><html><head><meta charset="utf-8"><title></title><style>
+        @page{size:A4 landscape;margin:8mm}
+        *{box-sizing:border-box}
+        html,body{margin:0;padding:0;width:100%;background:#fff}
+        body{font-family:"Times New Roman",serif;color:#111;font-size:11px;line-height:1.3;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+        .ogfr24-print-sheet{width:281mm;min-height:194mm;margin:0 auto;padding:4mm;display:flex;flex-direction:column}
+        .uc-title-box{width:max-content;max-width:100%;margin:0 auto 7px;padding:7px 32px;border:2px solid #111;text-align:center;font-size:12px}
+        h2{margin:4px 0 2px;text-align:center;font-size:14px}
+        p{margin:5px 0}
+        .ogfr24-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:10px;margin:10px 0}
+        .ogfr24-table th,.ogfr24-table td{border:1px solid #111;padding:6px 4px;text-align:center;vertical-align:middle;overflow-wrap:anywhere}
+        .ogfr24-table th{height:34mm}
+        .ogfr24-table td{height:18mm}
+        .column-number td{height:auto;padding:2px;font-weight:700}
+        .ogfr24-footnote{font-size:10px;font-style:italic}
+        .ogfr24-signature{width:60mm;margin:auto 0 0 auto;padding-top:10mm;text-align:center;font-size:11px}
+      </style></head><body><main class="ogfr24-print-sheet">${ogfr24PreviewHtml(printRecord)}</main><script>window.onload=()=>{document.title="";setTimeout(()=>window.print(),150)};<\/script></body></html>`);
+      popup.document.close();
+    }
+
+    function downloadOgfr24Excel(record = updateUtilisationPreview()) {
+      const form24 = record.form24 || {};
+      const filenameScheme = (record.scheme || "scheme").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase();
+      downloadExcelWorkbook(`OGFR-24-${filenameScheme || "certificate"}-${record.financialYear || "FY"}.xls`, [{
+        name: "FORM OGFR-24",
+        rows: [
+          ["FORM OGFR-24", "[See Rule 306 (iii) (b)]"],
+          ["Proforma for reporting Physical Target / Achievement made as per Utilization Certificate against the Grants-in-Aid received."],
+          [],
+          [
+            "Name of the Grantee Organisation",
+            "Name of the Scheme and the Sector",
+            "Financial Target fixed",
+            "Amount of Grant-in-Aid received (Year wise)",
+            "Physical Target fixed",
+            "Amount utilized (Year wise)",
+            "The amount for which U.C. furnished previously",
+            "Physical Target achieved against the U.C. already furnished",
+            "Physical Target achieved as per present U.C.",
+            "Remarks"
+          ],
+          ["(1)", "(2)", "(3)", "(4)", "(5)", "(6)", "(7)", "(8)", "(9)", "(10)"],
+          [
+            form24.granteeOrganisation,
+            form24.schemeSector,
+            Number(form24.financialTarget) || 0,
+            Number(form24.grantReceived) || 0,
+            form24.physicalTarget,
+            Number(form24.amountUtilised) || 0,
+            Number(form24.previousUcAmount) || 0,
+            form24.previousAchievement,
+            form24.presentAchievement,
+            form24.remarks
+          ],
+          [],
+          ["Note", "Reasons for non-utilisation of the Grant-in-Aid and shortfall in achieving the target in proportion to the grant utilized shall also be explained in the Remarks column."],
+          ["Signature", record.signer || "Principal"],
+          ["Designation", record.designation || "Principal"],
+          ["Date", ucDateText(record.certificateDate)]
+        ]
+      }]);
     }
 
     function downloadUtilisationExcel(record = updateUtilisationPreview()) {
@@ -14551,6 +14833,11 @@ function currentReportData(type = document.getElementById("reportType").value) {
     });
     document.getElementById("ucPrintButton")?.addEventListener("click", () => printUtilisationCertificate());
     document.getElementById("ucExcelButton")?.addEventListener("click", () => downloadUtilisationExcel());
+    document.getElementById("ogfr24UpdateButton")?.addEventListener("click", updateUtilisationPreview);
+    document.getElementById("ogfr24PrintButton")?.addEventListener("click", () => printOgfr24());
+    document.getElementById("ogfr24PrintInlineButton")?.addEventListener("click", () => printOgfr24());
+    document.getElementById("ogfr24ExcelButton")?.addEventListener("click", () => downloadOgfr24Excel());
+    document.getElementById("ogfr24ExcelInlineButton")?.addEventListener("click", () => downloadOgfr24Excel());
 
     document.getElementById("ucSavedRows")?.addEventListener("click", event => {
       const loadButton = event.target.closest(".uc-load-record");
@@ -14563,6 +14850,12 @@ function currentReportData(type = document.getElementById("reportType").value) {
       if (printButton) {
         const record = utilisationCertificates.find(item => item.id === printButton.dataset.id);
         if (record) printUtilisationCertificate(record);
+        return;
+      }
+      const print24Button = event.target.closest(".uc-print24-record");
+      if (print24Button) {
+        const record = utilisationCertificates.find(item => item.id === print24Button.dataset.id);
+        if (record) printOgfr24(record);
         return;
       }
       const deleteButton = event.target.closest(".uc-delete-record");
