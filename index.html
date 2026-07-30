@@ -14389,15 +14389,15 @@ function currentReportData(type = document.getElementById("reportType").value) {
         @page{size:A4 portrait;margin:0}
         *{box-sizing:border-box}
         html,body{margin:0;padding:0;width:100%;background:#fff}
-        body{font-family:"Times New Roman",serif;color:#111;line-height:1.24;font-size:10.5px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-        .uc-print-sheet{width:190mm;max-width:190mm;margin:0 auto;padding:8mm 0 7mm;overflow:visible;break-after:avoid-page;page-break-after:avoid}
-        .uc-title-box{width:max-content;max-width:100%;margin:0 auto 5px;padding:5px 24px;border:2px solid #111;text-align:center}
-        h2,h3{text-align:center;margin:3px 0}
-        h2{font-size:16px}
-        h3{font-size:12px}
-        p{margin:5px 0;text-align:justify;overflow-wrap:anywhere}
-        .uc-table{width:100%;max-width:100%;border-collapse:collapse;table-layout:fixed;font-size:8px;margin:4px 0 6px}
-        .uc-table th,.uc-table td{border:1px solid #111;padding:2px 1.5px;text-align:center;vertical-align:middle;overflow-wrap:anywhere;word-break:normal}
+        body{font-family:"Times New Roman",serif;color:#111;line-height:1.34;font-size:11.5px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+        .uc-print-sheet{display:flex;flex-direction:column;width:174mm;max-width:174mm;min-height:277mm;margin:0 auto;padding:10mm 0 8mm;overflow:visible;break-after:avoid-page;page-break-after:avoid}
+        .uc-title-box{width:max-content;max-width:100%;margin:0 auto 8px;padding:7px 28px;border:2px solid #111;text-align:center}
+        h2,h3{text-align:center;margin:6px 0}
+        h2{font-size:18px}
+        h3{font-size:13px}
+        p{width:100%;max-width:100%;margin:7px 0;text-align:justify;white-space:normal;overflow-wrap:anywhere}
+        .uc-table{display:table;width:100%;max-width:100%;border-collapse:collapse;table-layout:fixed;font-size:8.2px;margin:7px 0 10px}
+        .uc-table th,.uc-table td{border:1px solid #111;padding:3.5px 2px;text-align:center;vertical-align:middle;overflow-wrap:anywhere;word-break:normal}
         .uc-table-current col:nth-child(1){width:6%}
         .uc-table-current col:nth-child(2){width:14%}
         .uc-table-current col:nth-child(3){width:12%}
@@ -14415,7 +14415,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
         .uc-table-previous col:nth-child(7){width:13%}
         .uc-table-previous col:nth-child(8){width:10%}
         .uc-table-previous col:nth-child(9){width:9%}
-        .uc-signature{width:58mm;margin:12px 0 0 auto}
+        .uc-signature{width:58mm;margin:auto 0 0 auto;padding-top:18px;font-size:11.5px;line-height:1.45}
       </style></head><body><main class="uc-print-sheet">${utilisationPreviewHtml(printRecord)}</main><script>window.onload=()=>{document.title="";setTimeout(()=>window.print(),150)};<\/script></body></html>`);
       popup.document.close();
     }
