@@ -5437,6 +5437,10 @@
                   <label for="studentHostel">Hostel</label>
                   <select id="studentHostel"><option>Yes</option><option>No</option></select>
                 </div>
+                <div class="field">
+                  <label for="studentAttendanceStartDate">Attendance From</label>
+                  <input id="studentAttendanceStartDate" type="date">
+                </div>
               </div>
               <p class="success-note" id="studentMasterStatus">Select class and add student details.</p>
             </div>
@@ -5452,6 +5456,29 @@
               <li><strong>WhatsApp linked</strong><span>Guardian mobile is used for individual WhatsApp summaries.</span></li>
             </ul>
           </div>
+        </div>
+        <div class="card" style="margin-top: 14px;">
+          <div class="section-title">
+            <h2>Section A/B Exchange</h2>
+            <span class="pill">Attendance preserved</span>
+          </div>
+          <p class="subtle">Enter equal roll-number lists in matching order. Each A student will exchange section and roll position with the corresponding B student.</p>
+          <div class="toolbar">
+            <div class="field">
+              <label for="exchangeBaseClass">Class</label>
+              <select id="exchangeBaseClass"><option>Class VI</option><option>Class VII</option><option>Class VIII</option><option>Class IX</option><option>Class X</option></select>
+            </div>
+            <div class="field wide-field">
+              <label for="exchangeRollsA">Section A to B Roll Numbers</label>
+              <input id="exchangeRollsA" placeholder="Example: 1,3,8">
+            </div>
+            <div class="field wide-field">
+              <label for="exchangeRollsB">Section B to A Roll Numbers</label>
+              <input id="exchangeRollsB" placeholder="Example: 2,5,9">
+            </div>
+            <button class="primary" id="exchangeStudents">Exchange Students</button>
+          </div>
+          <p class="success-note" id="exchangeStudentStatus">Previous attendance will remain linked to each student after exchange.</p>
         </div>
         <div class="card" style="margin-top: 14px;">
           <div class="section-title">
@@ -5471,7 +5498,7 @@
           </div>
           <div class="field">
               <label for="wholeSchoolStudentText">Paste rows from template or compact format</label>
-              <textarea id="wholeSchoolStudentText" placeholder="Template format: Admission No, Roll No, Student Name, Class, Section, Gender, DOB, Guardian/Father Name, Mother Name, Mobile Number, Hostel, Address, Category, Aadhaar No, Blood Group, Status, Remarks&#10;Compact format: 1,SAI SANGAM MUND,Class VI,B,Parent Name,+91 9876543210,Yes"></textarea>
+              <textarea id="wholeSchoolStudentText" placeholder="Template format: Admission No, Roll No, Student Name, Class, Section, Gender, DOB, Guardian/Father Name, Mother Name, Mobile Number, Hostel, Address, Category, Aadhaar No, Blood Group, Status, Remarks, Attendance Start Date&#10;Compact format: 1,SAI SANGAM MUND,Class VI,B,Parent Name,+91 9876543210,Yes"></textarea>
           </div>
           <div class="toolbar">
             <button class="secondary" id="importWholeSchoolStudents">Import Pasted Whole School Data</button>
@@ -5501,7 +5528,7 @@
           <div class="table-wrap">
             <table>
               <thead>
-                <tr><th>Admission No.</th><th>Roll</th><th>Name</th><th>Class</th><th>Section</th><th>Gender</th><th>DOB</th><th>Guardian</th><th>Mother</th><th>Mobile</th><th>Hostel</th><th>Category</th><th>Status</th><th>Action</th></tr>
+                <tr><th>Admission No.</th><th>Roll</th><th>Name</th><th>Class</th><th>Section</th><th>Attendance From</th><th>Gender</th><th>DOB</th><th>Guardian</th><th>Mother</th><th>Mobile</th><th>Hostel</th><th>Category</th><th>Status</th><th>Action</th></tr>
               </thead>
               <tbody id="masterRows"></tbody>
             </table>
@@ -6610,7 +6637,7 @@
         <div class="grid two-col">
           <div class="card grid">
             <div class="field"><label>School Name</label><input value="Odisha Adarsha Vidyalaya, Badi"></div>
-            <div class="field"><label>Academic Session</label><input value="2026-27"></div>
+            <div class="field"><label for="academicSession">Academic Session</label><input id="academicSession" value="2026-27"></div>
             <div class="field"><label>Attendance Cutoff Time</label><input type="time" value="09:00"></div>
             <div class="field"><label>Low Attendance Threshold</label><input value="75%"></div>
             <div class="field"><label for="workingMonth">Month</label><input id="workingMonth" type="month" value="2026-07"></div>
@@ -8085,6 +8112,7 @@
         savedAt: new Date().toISOString(),
         students: students.map(student => ({
           roll: student[0],
+          admissionNo: studentAdmissionNo(student),
           name: student[1],
           inTime: student[3],
           status: student[4],
@@ -8165,15 +8193,17 @@
     function studentMonthlyStats(student) {
       const month = selectedMonthKey();
       const setting = monthSettings[month] || { workingDays: 0, holidays: [] };
-      const effectiveRecord = monthlyStatusesForStudent(month, currentClassKey(), student[0]);
-      const workingDays = effectiveRecord.length || Number(setting.workingDays) || 0;
-      const present = effectiveRecord.filter(status => status === "Present").length;
-      const absent = effectiveRecord.filter(status => status === "Absent").length;
-      const leave = effectiveRecord.filter(status => status === "Leave").length;
+      const classGroup = currentClassKey();
+      const startDate = studentAttendanceStartDate(student, classGroup);
+      const effectiveRecord = monthlyStatusesForStudent(month, classGroup, student[0], null, startDate, studentAdmissionNo(student));
+      const workingDays = effectiveRecord.length || (startDate ? 0 : Number(setting.workingDays) || 0);
+      const present = effectiveRecord.filter(item => item.status === "Present").length;
+      const absent = effectiveRecord.filter(item => item.status === "Absent").length;
+      const leave = effectiveRecord.filter(item => item.status === "Leave").length;
       let currentStreak = 0;
       let maxConsecutiveAbsent = 0;
-      effectiveRecord.forEach(status => {
-        currentStreak = status === "Absent" ? currentStreak + 1 : 0;
+      effectiveRecord.forEach(item => {
+        currentStreak = item.status === "Absent" ? currentStreak + 1 : 0;
         maxConsecutiveAbsent = Math.max(maxConsecutiveAbsent, currentStreak);
       });
       const presentPercent = effectiveRecord.length ? Math.round((present / effectiveRecord.length) * 1000) / 10 : 0;
@@ -8445,6 +8475,18 @@
       };
     }
 
+    function defaultAttendanceStartDateForClass(classGroup) {
+      if (!/^Class XI-SCIENCE$/i.test(String(classGroup || "").trim())) return "";
+      const session = document.getElementById("academicSession")?.value || "2026-27";
+      const startYear = (String(session).match(/\d{4}/) || [String(new Date().getFullYear())])[0];
+      return `${startYear}-06-01`;
+    }
+
+    function studentAttendanceStartDate(student, classGroup = "") {
+      const savedDate = String(studentMeta(student).attendanceStartDate || "").trim();
+      return /^\d{4}-\d{2}-\d{2}$/.test(savedDate) ? savedDate : defaultAttendanceStartDateForClass(classGroup);
+    }
+
     function applyStudentMeta(student, data = {}, classGroup = "") {
       const meta = studentMeta(student);
       const classSection = classSectionFromKey(classGroup);
@@ -8459,7 +8501,8 @@
         aadhaar: data.aadhaar || meta.aadhaar || "",
         bloodGroup: data.bloodGroup || meta.bloodGroup || "",
         studentStatus: data.studentStatus || meta.studentStatus || "Active",
-        remarks: data.remarks || meta.remarks || ""
+        remarks: data.remarks || meta.remarks || "",
+        attendanceStartDate: data.attendanceStartDate || meta.attendanceStartDate || defaultAttendanceStartDateForClass(classGroup)
       });
       return meta;
     }
@@ -8495,6 +8538,119 @@
       });
     }
 
+    function parseExchangeRolls(value) {
+      const numbers = [];
+      String(value || "").split(",").map(part => part.trim()).filter(Boolean).forEach(part => {
+        const range = part.match(/^(\d+)\s*-\s*(\d+)$/);
+        if (range) {
+          const start = Number(range[1]);
+          const end = Number(range[2]);
+          for (let number = Math.min(start, end); number <= Math.max(start, end); number += 1) numbers.push(number);
+        } else if (/^\d+$/.test(part)) {
+          numbers.push(Number(part));
+        }
+      });
+      return [...new Set(numbers)].map(number => String(number).padStart(2, "0"));
+    }
+
+    function attendanceRowWithStudentIdentity(row, destinationRoll, student) {
+      return {
+        ...(row || {}),
+        roll: destinationRoll,
+        admissionNo: studentAdmissionNo(student),
+        name: student[1],
+        guardian: student[6] || "",
+        mobile: student[7] || "",
+        hostel: student[2] || "",
+        inTime: row?.inTime || "08:55",
+        status: row?.status || "Present",
+        remark: row?.remark || ""
+      };
+    }
+
+    function exchangeSavedAttendancePair(classA, rollA, studentA, classB, rollB, studentB) {
+      const dates = new Set(Object.values(dailyAttendanceRecords)
+        .filter(record => record.classGroup === classA || record.classGroup === classB)
+        .map(record => record.date));
+      dates.forEach(date => {
+        const keyA = attendanceRecordKey(date, classA);
+        const keyB = attendanceRecordKey(date, classB);
+        const hadA = Boolean(dailyAttendanceRecords[keyA]);
+        const hadB = Boolean(dailyAttendanceRecords[keyB]);
+        if (!hadA && !hadB) return;
+        const rowsA = savedOrDefaultAttendanceStudents(date, classA);
+        const rowsB = savedOrDefaultAttendanceStudents(date, classB);
+        const sourceA = rowsA.find(row => row.roll === rollA);
+        const sourceB = rowsB.find(row => row.roll === rollB);
+        const nextA = rowsA.filter(row => row.roll !== rollA);
+        const nextB = rowsB.filter(row => row.roll !== rollB);
+        nextA.push(attendanceRowWithStudentIdentity(sourceB, rollA, studentB));
+        nextB.push(attendanceRowWithStudentIdentity(sourceA, rollB, studentA));
+        nextA.sort((a, b) => Number(a.roll) - Number(b.roll));
+        nextB.sort((a, b) => Number(a.roll) - Number(b.roll));
+        dailyAttendanceRecords[keyA] = { date, classGroup: classA, savedAt: new Date().toISOString(), students: nextA };
+        dailyAttendanceRecords[keyB] = { date, classGroup: classB, savedAt: new Date().toISOString(), students: nextB };
+      });
+    }
+
+    function exchangeSectionStudents() {
+      const baseClass = document.getElementById("exchangeBaseClass").value;
+      const classA = `${baseClass}-A`;
+      const classB = `${baseClass}-B`;
+      const rollsA = parseExchangeRolls(document.getElementById("exchangeRollsA").value);
+      const rollsB = parseExchangeRolls(document.getElementById("exchangeRollsB").value);
+      const status = document.getElementById("exchangeStudentStatus");
+      if (!rollsA.length || rollsA.length !== rollsB.length) {
+        status.textContent = "Enter the same number of valid roll numbers for Section A and Section B.";
+        return;
+      }
+      const listA = classData[classA] || [];
+      const listB = classData[classB] || [];
+      const pairs = rollsA.map((rollA, index) => ({
+        rollA,
+        rollB: rollsB[index],
+        studentA: listA.find(student => student[0] === rollA),
+        studentB: listB.find(student => student[0] === rollsB[index])
+      }));
+      const missing = pairs.filter(pair => !pair.studentA || !pair.studentB);
+      if (missing.length) {
+        status.textContent = `Student not found for pair(s): ${missing.map(pair => `A-${Number(pair.rollA)} / B-${Number(pair.rollB)}`).join(", ")}.`;
+        return;
+      }
+      if (!confirm(`Exchange ${pairs.length} student pair(s) between ${classA} and ${classB}? Previous attendance will be preserved.`)) return;
+
+      pairs.forEach(pair => {
+        exchangeSavedAttendancePair(classA, pair.rollA, pair.studentA, classB, pair.rollB, pair.studentB);
+        pair.studentA[0] = pair.rollB;
+        pair.studentB[0] = pair.rollA;
+        applyStudentMeta(pair.studentA, { className: baseClass, section: "B" }, classB);
+        applyStudentMeta(pair.studentB, { className: baseClass, section: "A" }, classA);
+        examResults.forEach(result => {
+          const admissionNo = String(result.admissionNo || "");
+          const resultRoll = String(result.roll || "").padStart(2, "0");
+          if ((admissionNo && admissionNo === studentAdmissionNo(pair.studentA)) || (result.classGroup === classA && resultRoll === pair.rollA)) {
+            result.classGroup = classB; result.section = "B"; result.roll = pair.rollB; result.name = pair.studentA[1];
+          } else if ((admissionNo && admissionNo === studentAdmissionNo(pair.studentB)) || (result.classGroup === classB && resultRoll === pair.rollB)) {
+            result.classGroup = classA; result.section = "A"; result.roll = pair.rollA; result.name = pair.studentB[1];
+          }
+        });
+      });
+      classData[classA] = listA.filter(student => !pairs.some(pair => pair.studentA === student)).concat(pairs.map(pair => pair.studentB)).sort((a, b) => Number(a[0]) - Number(b[0]));
+      classData[classB] = listB.filter(student => !pairs.some(pair => pair.studentB === student)).concat(pairs.map(pair => pair.studentA)).sort((a, b) => Number(a[0]) - Number(b[0]));
+      Object.values(dailyAttendanceRecords).forEach(record => {
+        if (record.classGroup === classA || record.classGroup === classB) {
+          record.students = savedOrDefaultAttendanceStudents(record.date, record.classGroup);
+        }
+      });
+      addAuditLog("Student Section Exchange", `${pairs.length} pair(s) exchanged between ${classA} and ${classB}; previous attendance preserved.`, { classGroup: baseClass });
+      saveLocalData();
+      clearEntryFields(["exchangeRollsA", "exchangeRollsB"]);
+      renderStudentMaster();
+      loadClassStudents();
+      refreshAttendanceLinkedViews();
+      status.textContent = `${pairs.length} pair(s) exchanged successfully. Previous attendance and exam identity were preserved.`;
+    }
+
     function renderStudentMaster() {
       updateLinkedSectionState("masterClass", "masterSection");
       const key = classKeyFrom("masterClass", "masterSection");
@@ -8510,6 +8666,7 @@
             <td>${student[1]}</td>
             <td>${meta.className || classSectionFromKey(key).className}</td>
             <td>${meta.section || classSectionFromKey(key).section || "-"}</td>
+            <td>${studentAttendanceStartDate(student, key) || "-"}</td>
             <td>${meta.gender || "-"}</td>
             <td>${meta.dob || "-"}</td>
             <td>${student[6]}</td>
@@ -8557,13 +8714,14 @@
       const bloodGroup = prompt("Blood Group", meta.bloodGroup || "") || meta.bloodGroup || "";
       const studentStatus = prompt("Student Status Active/Inactive", meta.studentStatus || "Active") || meta.studentStatus || "Active";
       const remarks = prompt("Remarks", meta.remarks || "") || meta.remarks || "";
+      const attendanceStartDate = prompt("Attendance Start Date (yyyy-mm-dd)", studentAttendanceStartDate(student, key)) || studentAttendanceStartDate(student, key);
       student[0] = nextRoll;
       setStudentAdmissionNo(student, admissionNo);
       student[1] = name;
       student[6] = guardian;
       student[7] = mobile;
       student[2] = hostel;
-      applyStudentMeta(student, { gender, dob, mother, address, category, aadhaar, bloodGroup, studentStatus, remarks }, key);
+      applyStudentMeta(student, { gender, dob, mother, address, category, aadhaar, bloodGroup, studentStatus, remarks, attendanceStartDate }, key);
       if (nextRoll !== oldRoll) updateStudentRollReferences(key, oldRoll, nextRoll);
       selected.sort((a, b) => Number(a[0]) - Number(b[0]));
       saveLocalData();
@@ -8599,6 +8757,7 @@
       const guardian = document.getElementById("guardianName").value.trim() || "Guardian";
       const mobile = document.getElementById("guardianMobile").value.trim() || "+91 9000000000";
       const hostel = document.getElementById("studentHostel").value;
+      const attendanceStartDate = document.getElementById("studentAttendanceStartDate").value || defaultAttendanceStartDateForClass(key);
 
       if (!name) {
         document.getElementById("studentMasterStatus").textContent = "Student name required.";
@@ -8610,10 +8769,10 @@
         return;
       }
 
-      selected.push(createStudentRecord({ roll, admissionNo, name, guardian, mobile, hostel }, null, key));
+      selected.push(createStudentRecord({ roll, admissionNo, name, guardian, mobile, hostel, attendanceStartDate }, null, key));
       selected.sort((a, b) => Number(a[0]) - Number(b[0]));
       classData[key] = selected;
-      clearEntryFields(["studentName", "studentAdmissionNo", "guardianName", "guardianMobile", "studentRoll"]);
+      clearEntryFields(["studentName", "studentAdmissionNo", "guardianName", "guardianMobile", "studentRoll", "studentAttendanceStartDate"]);
       document.getElementById("studentMasterStatus").textContent = `${name} added to ${key}.`;
       saveLocalData();
       renderStudentMaster();
@@ -8688,7 +8847,8 @@
           aadhaar: rowValue(row, headerMap, ["Aadhaar No", "Aadhaar Number", "Aadhar No"], 13),
           bloodGroup: rowValue(row, headerMap, ["Blood Group"], 14),
           studentStatus: rowValue(row, headerMap, ["Status", "Student Status"], 15) || "Active",
-          remarks: rowValue(row, headerMap, ["Remarks", "Remark"], 16)
+          remarks: rowValue(row, headerMap, ["Remarks", "Remark"], 16),
+          attendanceStartDate: rowValue(row, headerMap, ["Attendance Start Date", "Attendance From", "Admission Date"], 17)
         };
       }
       return {
@@ -8708,7 +8868,8 @@
         aadhaar: row[13] || "",
         bloodGroup: row[14] || "",
         studentStatus: row[15] || "Active",
-        remarks: row[16] || ""
+        remarks: row[16] || "",
+        attendanceStartDate: row[17] || ""
       };
     }
 
@@ -8738,22 +8899,23 @@
         aadhaar: "",
         bloodGroup: "",
         studentStatus: "Active",
-        remarks: ""
+        remarks: "",
+        attendanceStartDate: ""
       };
     }
 
     function studentTemplateRows() {
       return [
-        ["Admission No", "Roll No", "Student Name", "Class", "Section", "Gender", "DOB", "Guardian/Father Name", "Mother Name", "Mobile Number", "Hostel", "Address", "Category", "Aadhaar No", "Blood Group", "Status", "Remarks"],
-        ["OAVB-2026-001", "1", "SAI SANGAM MUND", "Class VI", "B", "Male", "2014-05-12", "FATHER NAME", "MOTHER NAME", "9876543210", "No", "Village, Block, District", "ST", "", "B+", "Active", "Sample row - replace/delete"],
-        ["OAVB-2026-002", "2", "ADITYA JHANKAR", "Class VI", "A", "Male", "2014-08-21", "PHAKIR MOHAN JHANKAR", "MOTHER NAME", "7894657912", "No", "Village, Block, District", "OBC", "", "O+", "Active", "Sample row - replace/delete"]
+        ["Admission No", "Roll No", "Student Name", "Class", "Section", "Gender", "DOB", "Guardian/Father Name", "Mother Name", "Mobile Number", "Hostel", "Address", "Category", "Aadhaar No", "Blood Group", "Status", "Remarks", "Attendance Start Date"],
+        ["OAVB-2026-001", "1", "SAI SANGAM MUND", "Class VI", "B", "Male", "2014-05-12", "FATHER NAME", "MOTHER NAME", "9876543210", "No", "Village, Block, District", "ST", "", "B+", "Active", "Sample row - replace/delete", ""],
+        ["OAVB-2026-002", "2", "XI SCIENCE STUDENT", "Class XI-SCIENCE", "", "Male", "2010-08-21", "FATHER NAME", "MOTHER NAME", "7894657912", "No", "Village, Block, District", "OBC", "", "O+", "Active", "June admission example", "2026-06-01"]
       ];
     }
 
     function downloadStudentTemplate() {
       downloadCsv("oav-badi-student-bulk-entry-template.csv", studentTemplateRows());
       document.getElementById("studentBulkStatus").textContent = "Student CSV template downloaded. Fill all rows and import from Whole School Student Excel/CSV File.";
-      document.getElementById("wholeSchoolStudentStatus").textContent = "Template columns activated: Admission, Roll, Name, Class, Section, Gender, DOB, Guardian, Mother, Mobile, Hostel, Address, Category, Aadhaar, Blood Group, Status, Remarks.";
+      document.getElementById("wholeSchoolStudentStatus").textContent = "Template columns activated, including Attendance Start Date. XI-SCIENCE defaults to 1 June of the academic session when this field is blank.";
     }
 
     function studentMasterExcelHeaders() {
@@ -8775,7 +8937,8 @@
         "Aadhaar No.",
         "Blood Group",
         "Status",
-        "Remarks"
+        "Remarks",
+        "Attendance From"
       ].map(value => ({ value, styleId: "ReportHeader" }));
     }
 
@@ -8804,7 +8967,8 @@
             meta.aadhaar || "",
             meta.bloodGroup || "",
             meta.studentStatus || student[4] || "Active",
-            meta.remarks || ""
+            meta.remarks || "",
+            studentAttendanceStartDate(student, classKey) || ""
           ].map(value => ({ value, styleId: "ReportCell" }));
         });
     }
@@ -9645,16 +9809,26 @@
       return "Not Eligible";
     }
 
-    function mdmRuleForDate(dateText) {
+    function mdmRiceKgPerStudent(classGroup) {
+      const normalized = String(classGroup || "")
+        .toUpperCase()
+        .replace(/^CLASS\s+/, "")
+        .trim();
+      if (/^(IX|X)(?:-|$)/.test(normalized)) return 0.2;
+      return 0.15;
+    }
+
+    function mdmRuleForDate(dateText, classGroup = "") {
       const day = new Date(`${dateText}T00:00:00`).getDay();
+      const riceKg = mdmRiceKgPerStudent(classGroup);
       if ([1, 3, 5].includes(day)) {
-        return { menu: "Rice + Egg + Fruits + Vegetables", protein: "Egg", proteinPerStudent: 1, proteinUnit: "pc", hasChoice: true, hasLaddu: false, ladduPerStudent: 0, riceKg: 0.15, oilKg: 0.0075, vegetableKg: 0.1, fuel: 0.7, spice: 0.5 };
+        return { menu: "Rice + Egg + Fruits + Vegetables", protein: "Egg", proteinPerStudent: 1, proteinUnit: "pc", hasChoice: true, hasLaddu: false, ladduPerStudent: 0, riceKg, oilKg: 0.0075, vegetableKg: 0.1, fuel: 0.7, spice: 0.5 };
       }
       if ([2, 6].includes(day)) {
-        return { menu: "Rice + Soyabean + Ragi Laddu + Vegetables", protein: "Soyabean", proteinPerStudent: 0.025, proteinUnit: "kg", hasChoice: false, hasLaddu: true, ladduPerStudent: 1, riceKg: 0.15, oilKg: 0.0075, vegetableKg: 0.1, fuel: 0.7, spice: 0.5 };
+        return { menu: "Rice + Soyabean + Ragi Laddu + Vegetables", protein: "Soyabean", proteinPerStudent: 0.025, proteinUnit: "kg", hasChoice: false, hasLaddu: true, ladduPerStudent: 1, riceKg, oilKg: 0.0075, vegetableKg: 0.1, fuel: 0.7, spice: 0.5 };
       }
       if (day === 4) {
-        return { menu: "Rice + Dal + Ragi Laddu + Vegetables", protein: "Dal", proteinPerStudent: 0.035, proteinUnit: "kg", hasChoice: false, hasLaddu: true, ladduPerStudent: 1, riceKg: 0.15, oilKg: 0.0075, vegetableKg: 0.1, fuel: 0.7, spice: 0.5 };
+        return { menu: "Rice + Dal + Ragi Laddu + Vegetables", protein: "Dal", proteinPerStudent: 0.035, proteinUnit: "kg", hasChoice: false, hasLaddu: true, ladduPerStudent: 1, riceKg, oilKg: 0.0075, vegetableKg: 0.1, fuel: 0.7, spice: 0.5 };
       }
       return { menu: "No MDM - Sunday", protein: "None", proteinPerStudent: 0, proteinUnit: "kg", hasChoice: false, hasLaddu: false, ladduPerStudent: 0, riceKg: 0, oilKg: 0, vegetableKg: 0, fuel: 0, spice: 0 };
     }
@@ -10011,7 +10185,7 @@
             return clone;
           });
       const category = mdmCategoryForClass(key);
-      const rule = mdmRuleForDate(date);
+      const rule = mdmRuleForDate(date, key);
       const eligible = category === "Junior" || category === "Senior";
       const mealStudents = eligible && attendanceRecord ? attendanceStudents.filter(student => student[4] === "Present" || student[4] === "Late") : [];
       const served = mealStudents.length;
@@ -10088,7 +10262,7 @@
 
       if (!data.attendanceSaved) {
         document.getElementById("mdmRows").innerHTML = `
-          <tr><td>Rice</td><td>0.150 kg</td><td>0.00 kg</td><td>Govt stock</td><td>0.00</td><td>${data.stock.rice.toFixed(2)} kg</td></tr>
+          <tr><td>Rice</td><td>${data.rule.riceKg.toFixed(3)} kg</td><td>0.00 kg</td><td>Govt stock</td><td>0.00</td><td>${data.stock.rice.toFixed(2)} kg</td></tr>
           <tr><td>${data.rule.protein}</td><td>${data.rule.proteinPerStudent}${data.rule.proteinUnit}</td><td>0 ${data.rule.proteinUnit}</td><td>-</td><td>0.00</td><td>-</td></tr>
           <tr><td>Oil</td><td>0.0075 kg</td><td>0.000 kg</td><td>${data.rates.oil}</td><td>0.00</td><td>${data.stock.oil.toFixed(3)} kg</td></tr>
           <tr><td>Vegetables</td><td>0.100 kg</td><td>0.00 kg</td><td>${data.rates.vegetable}</td><td>0.00</td><td>${data.stock.vegetable.toFixed(2)} kg</td></tr>
@@ -10105,7 +10279,7 @@
         ? `${Math.max(0, data.stock.egg - data.used.protein).toFixed(0)} pcs`
         : `${Math.max(0, (data.rule.protein === "Dal" ? data.stock.dal : data.stock.soy) - data.used.protein).toFixed(2)} kg`;
       const rows = [
-        ["Rice", "0.150 kg", `${data.used.rice.toFixed(2)} kg`, "Govt stock", "0.00", `${Math.max(0, data.stock.rice - data.used.rice).toFixed(2)} kg`],
+        ["Rice", `${data.rule.riceKg.toFixed(3)} kg`, `${data.used.rice.toFixed(2)} kg`, "Govt stock", "0.00", `${Math.max(0, data.stock.rice - data.used.rice).toFixed(2)} kg`],
         [data.rule.protein, `${data.rule.proteinPerStudent}${data.rule.proteinUnit}`, `${data.used.protein.toFixed(data.rule.proteinUnit === "pc" ? 0 : 2)} ${data.rule.proteinUnit}`, data.proteinRate, data.costs.protein.toFixed(2), proteinBalance],
         ...(data.rule.hasChoice ? [["Fruits", "1 pc", `${data.used.fruit.toFixed(0)} pcs`, data.rates.fruit, data.costs.fruit.toFixed(2), `${Math.max(0, data.stock.fruit - data.used.fruit).toFixed(0)} pcs`]] : []),
         ...(data.rule.hasLaddu ? [["Ragi Laddu", "1 pc", `${data.used.laddu.toFixed(0)} pcs`, data.rates.laddu, data.costs.laddu.toFixed(2), `${Math.max(0, data.stock.laddu - data.used.laddu).toFixed(0)} pcs`]] : []),
@@ -10319,7 +10493,7 @@ ${sheets.map(worksheetXml).join("")}
 
     function mdmRecordWithCurrentRates(record) {
       const served = Number(record.served || 0);
-      const rule = mdmRuleForDate(record.date);
+      const rule = mdmRuleForDate(record.date, record.classGroup);
       const rates = currentMdmRates();
       const proteinText = record.protein || rule.protein;
       const protein = proteinText === "Soya" ? "Soyabean" : proteinText;
@@ -10880,7 +11054,7 @@ function configuredMonthWorkingDays(month) {
   return Number.isFinite(value) && value > 0 ? value : 0;
 }
 
-function monthlyAttendanceCalculation(month, statuses) {
+function monthlyAttendanceCalculation(month, statuses, eligibleWorkingDays = null, eligibleHolidayCount = null) {
   const source = Array.isArray(statuses) ? statuses.filter(Boolean) : [];
   const entries = source.map(item => {
     if (item && typeof item === "object" && !Array.isArray(item)) {
@@ -10894,9 +11068,12 @@ function monthlyAttendanceCalculation(month, statuses) {
   const rawLeave = entries.filter(item => item.status === "Leave").length;
   const savedHoliday = entries.filter(item => item.status === "Holiday").length;
   const absentDates = entries.filter(item => item.status === "Absent" && item.date).map(item => item.date);
-  const holiday = Math.max(savedHoliday, configuredMonthHolidays(month).length);
+  const configuredHolidayCount = Number.isFinite(eligibleHolidayCount) ? eligibleHolidayCount : configuredMonthHolidays(month).length;
+  const holiday = Math.max(savedHoliday, configuredHolidayCount);
   const savedWorkingDays = entries.filter(item => item.status !== "Holiday").length;
-  const workingDays = configuredMonthWorkingDays(month) || savedWorkingDays;
+  const workingDays = Number.isFinite(eligibleWorkingDays)
+    ? Math.max(0, eligibleWorkingDays)
+    : (configuredMonthWorkingDays(month) || savedWorkingDays);
   const absent = workingDays ? Math.min(rawAbsent, workingDays) : rawAbsent;
   const leave = workingDays ? Math.min(rawLeave, Math.max(0, workingDays - absent)) : rawLeave;
   const late = workingDays ? Math.min(rawLate, Math.max(0, workingDays - absent - leave)) : rawLate;
@@ -10934,8 +11111,10 @@ function monthlySummaryRows(month, classKeys) {
     const classStudents = classData[classGroup] || [];
     const records = Object.values(dailyAttendanceRecords).filter(record => record.classGroup === classGroup && record.date.startsWith(month));
     return classStudents.map(student => {
-      const source = monthlyStatusesForStudent(month, classGroup, student[0], records);
-      const calc = monthlyAttendanceCalculation(month, source);
+      const startDate = studentAttendanceStartDate(student, classGroup);
+      const source = monthlyStatusesForStudent(month, classGroup, student[0], records, startDate, studentAdmissionNo(student));
+      const eligibility = attendanceEligibilityForMonth(month, startDate);
+      const calc = monthlyAttendanceCalculation(month, source, startDate ? eligibility.workingDays : null, startDate ? eligibility.holidays : null);
       if (!Array.isArray(student[8]) || student[8].length) student[8] = [];
       return [
         month,
@@ -10961,24 +11140,61 @@ function monthlySummaryRows(month, classKeys) {
   });
 }
 
-    function monthlyStatusesForStudent(month, classGroup, roll, preloadedRecords = null) {
+    function attendanceEligibilityForMonth(month, startDate = "") {
+      const allDates = datesForMonth(month);
+      if (!allDates.length) return { workingDays: 0, holidays: 0 };
+      const monthStart = allDates[0];
+      const monthEnd = allDates[allDates.length - 1];
+      if (startDate && startDate > monthEnd) return { workingDays: 0, holidays: 0 };
+
+      const configuredWorkingDays = configuredMonthWorkingDays(month);
+      const eligibleDates = allDates.filter(date => !startDate || date >= startDate);
+      const eligibleHolidays = eligibleDates.filter(date => isAttendanceHolidayDate(date)).length;
+      const actualEligibleWorkingDays = eligibleDates.length - eligibleHolidays;
+      if (!startDate || startDate <= monthStart) {
+        return {
+          workingDays: configuredWorkingDays || actualEligibleWorkingDays,
+          holidays: eligibleHolidays
+        };
+      }
+
+      const workingDaysBeforeAdmission = allDates
+        .filter(date => date < startDate && !isAttendanceHolidayDate(date)).length;
+      return {
+        workingDays: configuredWorkingDays
+          ? Math.max(0, Math.min(actualEligibleWorkingDays, configuredWorkingDays - workingDaysBeforeAdmission))
+          : actualEligibleWorkingDays,
+        holidays: eligibleHolidays
+      };
+    }
+
+    function monthlyStatusesForStudent(month, classGroup, roll, preloadedRecords = null, startDate = "", admissionNo = "") {
       const records = preloadedRecords || Object.values(dailyAttendanceRecords)
         .filter(record => record.classGroup === classGroup && record.date.startsWith(month));
       const recordsByDate = new Map(records.map(record => [record.date, record]));
-      const workingDates = datesForMonth(month).filter(date => !isAttendanceHolidayDate(date));
+      const candidateDates = datesForMonth(month).filter(date => (!startDate || date >= startDate) && !isAttendanceHolidayDate(date));
+      const targetWorkingDays = attendanceEligibilityForMonth(month, startDate).workingDays;
+      const savedDates = records
+        .map(record => record.date)
+        .filter(date => candidateDates.includes(date));
+      const selectedDates = new Set(savedDates);
+      candidateDates.forEach(date => {
+        if (selectedDates.size < targetWorkingDays) selectedDates.add(date);
+      });
+      const workingDates = [...selectedDates].sort();
       if (!workingDates.length) {
         return records
-          .filter(record => !isAttendanceHolidayDate(record.date))
+          .filter(record => (!startDate || record.date >= startDate) && !isAttendanceHolidayDate(record.date))
           .sort((a, b) => a.date.localeCompare(b.date))
           .map(record => {
-            const saved = (record.students || []).find(item => item.roll === roll);
+            const saved = (record.students || []).find(item => (admissionNo && item.admissionNo === admissionNo) || item.roll === roll);
             return { date: record.date, status: saved?.status || "Present" };
           })
           .filter(Boolean);
       }
       return workingDates.map(date => {
         const record = recordsByDate.get(date);
-        const saved = (record?.students || []).find(item => item.roll === roll);
+        const saved = (record?.students || []).find(item => (admissionNo && item.admissionNo === admissionNo) || item.roll === roll);
         return { date, status: saved?.status || "Present" };
       });
     }
@@ -11048,7 +11264,10 @@ function yearlyAttendanceRows(anchorMonth, classKeys) {
     return classStudents.map(student => {
       const totals = months.reduce((acc, month) => {
         const records = Object.values(dailyAttendanceRecords).filter(record => record.classGroup === classGroup && record.date.startsWith(month));
-        const calc = monthlyAttendanceCalculation(month, monthlyStatusesForStudent(month, classGroup, student[0], records));
+        const startDate = studentAttendanceStartDate(student, classGroup);
+        const source = monthlyStatusesForStudent(month, classGroup, student[0], records, startDate, studentAdmissionNo(student));
+        const eligibility = attendanceEligibilityForMonth(month, startDate);
+        const calc = monthlyAttendanceCalculation(month, source, startDate ? eligibility.workingDays : null, startDate ? eligibility.holidays : null);
         acc.workingDays += calc.workingDays || calc.savedWorkingDays;
         acc.savedWorkingDays += calc.savedWorkingDays;
         acc.holiday += calc.holiday;
@@ -13489,6 +13708,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
           const existing = byRoll.get(student[0]) || {};
           return {
             roll: student[0],
+            admissionNo: studentAdmissionNo(student),
             name: student[1],
             inTime: existing.inTime || "08:55",
             status: existing.status || "Present",
@@ -13501,6 +13721,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
       }
       return selected.map(student => ({
         roll: student[0],
+        admissionNo: studentAdmissionNo(student),
         name: student[1],
         inTime: "08:55",
         status: "Present",
@@ -13543,8 +13764,9 @@ function currentReportData(type = document.getElementById("reportType").value) {
       const grid = document.getElementById("longRangeMonthGrid");
       const student = longRangeTargetStudent();
       const month = currentLongRangeMonth();
-      const dates = datesForMonth(month);
       const classGroup = currentClassKey();
+      const startDate = student ? studentAttendanceStartDate(student, classGroup) : "";
+      const dates = datesForMonth(month).filter(date => !startDate || date >= startDate);
       if (!student) {
         grid.innerHTML = `<p class="subtle">Enter a valid roll number to load month-wise dropdown entry.</p>`;
         return { student: null, month, dates: [] };
@@ -13569,7 +13791,9 @@ function currentReportData(type = document.getElementById("reportType").value) {
             }).join("")}
           </tbody>
         </table>`;
-      document.getElementById("longRangeStatusText").textContent = `Month grid loaded for Roll ${Number(student[0])}: ${student[1]} / ${monthLabel(month)}.`;
+      document.getElementById("longRangeStatusText").textContent = dates.length
+        ? `Month grid loaded for Roll ${Number(student[0])}: ${student[1]} / ${monthLabel(month)}.${startDate ? ` Attendance starts ${startDate}.` : ""}`
+        : `${student[1]} is not eligible for attendance in ${monthLabel(month)}. Attendance starts ${startDate}.`;
       return { student, month, dates };
     }
 
@@ -13648,11 +13872,14 @@ function currentReportData(type = document.getElementById("reportType").value) {
     }
 
     function saveLongRangeAttendance() {
-      const { student, status, workingDates, holidayDates, invalid } = updateLongRangePreview();
+      const previewData = updateLongRangePreview();
+      const { student, status, holidayDates, invalid } = previewData;
       if (!student) {
         document.getElementById("longRangeStatusText").textContent = "Enter a valid roll number for the selected class.";
         return;
       }
+      const startDate = studentAttendanceStartDate(student, currentClassKey());
+      const workingDates = previewData.workingDates.filter(date => !startDate || date >= startDate);
       if (!workingDates.length) {
         document.getElementById("longRangeStatusText").textContent = "No valid working date found. Check date format.";
         return;
@@ -13691,7 +13918,8 @@ function currentReportData(type = document.getElementById("reportType").value) {
     function resetLongRangeAttendance() {
       const student = longRangeTargetStudent();
       const { dates, invalid } = parseLongRangeDates(document.getElementById("longRangeDates").value);
-      const workingDates = dates.filter(date => !isAttendanceHolidayDate(date));
+      const startDate = student ? studentAttendanceStartDate(student, currentClassKey()) : "";
+      const workingDates = dates.filter(date => (!startDate || date >= startDate) && !isAttendanceHolidayDate(date));
       const holidayDates = dates.filter(date => isAttendanceHolidayDate(date));
       const classGroup = currentClassKey();
       if (!student) {
@@ -14655,18 +14883,18 @@ function currentReportData(type = document.getElementById("reportType").value) {
       }
       popup.opener = null;
       popup.document.write(`<!doctype html><html><head><meta charset="utf-8"><title></title><style>
-        @page{size:A4 landscape;margin:8mm}
+        @page{size:A4 portrait;margin:8mm}
         *{box-sizing:border-box}
         html,body{margin:0;padding:0;width:100%;background:#fff}
         body{font-family:"Times New Roman",serif;color:#111;font-size:11px;line-height:1.3;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-        .ogfr24-print-sheet{width:281mm;min-height:194mm;margin:0 auto;padding:4mm;display:flex;flex-direction:column}
+        .ogfr24-print-sheet{width:194mm;min-height:281mm;margin:0 auto;padding:4mm;display:flex;flex-direction:column;overflow:hidden}
         .uc-title-box{width:max-content;max-width:100%;margin:0 auto 7px;padding:7px 32px;border:2px solid #111;text-align:center;font-size:12px}
         h2{margin:4px 0 2px;text-align:center;font-size:14px}
         p{margin:5px 0}
-        .ogfr24-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:10px;margin:10px 0}
-        .ogfr24-table th,.ogfr24-table td{border:1px solid #111;padding:6px 4px;text-align:center;vertical-align:middle;overflow-wrap:anywhere}
-        .ogfr24-table th{height:34mm}
-        .ogfr24-table td{height:18mm}
+        .ogfr24-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:7.4px;margin:10px 0}
+        .ogfr24-table th,.ogfr24-table td{border:1px solid #111;padding:4px 2px;text-align:center;vertical-align:middle;overflow-wrap:anywhere;word-break:normal}
+        .ogfr24-table th{height:48mm;line-height:1.15}
+        .ogfr24-table td{height:22mm;line-height:1.2}
         .column-number td{height:auto;padding:2px;font-weight:700}
         .ogfr24-footnote{font-size:10px;font-style:italic}
         .ogfr24-signature{width:60mm;margin:auto 0 0 auto;padding-top:10mm;text-align:center;font-size:11px}
@@ -14686,7 +14914,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
       popup.opener = null;
       popup.document.write(`<!doctype html><html><head><meta charset="utf-8"><title></title><style>
         @page form23{size:A4 portrait;margin:0}
-        @page form24{size:A4 landscape;margin:0}
+        @page form24{size:A4 portrait;margin:0}
         *{box-sizing:border-box}
         html,body{margin:0;padding:0;background:#fff}
         body{font-family:"Times New Roman",serif;color:#111;line-height:1.34;font-size:12px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -14716,13 +14944,13 @@ function currentReportData(type = document.getElementById("reportType").value) {
         .uc-table-previous col:nth-child(8){width:10%}
         .uc-table-previous col:nth-child(9){width:9%}
         .uc-signature{width:58mm;margin:auto 0 0 auto;padding-top:18px;font-size:12px;line-height:1.45}
-        .ogfr24-print-sheet{width:297mm;height:210mm;margin:0 auto;padding:8mm;display:flex;flex-direction:column;overflow:hidden}
+        .ogfr24-print-sheet{width:210mm;height:297mm;margin:0 auto;padding:12mm 8mm 10mm;display:flex;flex-direction:column;overflow:hidden}
         .ogfr24-print-sheet .uc-title-box{margin-bottom:7px;padding:7px 32px;font-size:12px}
         .ogfr24-print-sheet h2{margin:4px 0 2px;font-size:14px}
-        .ogfr24-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:10px;margin:10px 0}
-        .ogfr24-table th,.ogfr24-table td{border:1px solid #111;padding:6px 4px;text-align:center;vertical-align:middle;overflow-wrap:anywhere}
-        .ogfr24-table th{height:34mm}
-        .ogfr24-table td{height:18mm}
+        .ogfr24-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:7.4px;margin:10px 0}
+        .ogfr24-table th,.ogfr24-table td{border:1px solid #111;padding:4px 2px;text-align:center;vertical-align:middle;overflow-wrap:anywhere;word-break:normal}
+        .ogfr24-table th{height:48mm;line-height:1.15}
+        .ogfr24-table td{height:22mm;line-height:1.2}
         .column-number td{height:auto;padding:2px;font-weight:700}
         .ogfr24-footnote{font-size:10px;font-style:italic}
         .ogfr24-signature{width:60mm;margin:auto 0 0 auto;padding-top:10mm;text-align:center;font-size:11px}
@@ -15039,10 +15267,14 @@ function currentReportData(type = document.getElementById("reportType").value) {
     });
 
     document.getElementById("masterClass").addEventListener("change", () => {
+      const key = classKeyFrom("masterClass", "masterSection");
+      document.getElementById("studentAttendanceStartDate").value = defaultAttendanceStartDateForClass(key);
       renderStudentMaster();
     });
 
     document.getElementById("masterSection").addEventListener("change", () => {
+      const key = classKeyFrom("masterClass", "masterSection");
+      document.getElementById("studentAttendanceStartDate").value = defaultAttendanceStartDateForClass(key);
       renderStudentMaster();
     });
 
@@ -15053,6 +15285,8 @@ function currentReportData(type = document.getElementById("reportType").value) {
     document.getElementById("refreshMaster").addEventListener("click", () => {
       renderStudentMaster();
     });
+
+    document.getElementById("exchangeStudents").addEventListener("click", exchangeSectionStudents);
 
     document.getElementById("downloadStudentTemplate").addEventListener("click", () => {
       downloadStudentTemplate();
@@ -15928,6 +16162,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
     applyClassAccess();
     loadClassStudents();
     renderStudentMaster();
+    document.getElementById("studentAttendanceStartDate").value = defaultAttendanceStartDateForClass(classKeyFrom("masterClass", "masterSection"));
     renderTeachers();
     renderTeacherAttendance();
     syncMdmWithAttendanceFilters();
