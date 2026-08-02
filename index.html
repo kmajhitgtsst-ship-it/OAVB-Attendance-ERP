@@ -6651,7 +6651,7 @@
             <div class="field"><label>Attendance Cutoff Time</label><input type="time" value="09:00"></div>
             <div class="field"><label>Low Attendance Threshold</label><input value="75%"></div>
             <div class="field"><label for="workingMonth">Month</label><input id="workingMonth" type="month" value="2026-07"></div>
-            <div class="field"><label for="workingDays">Monthly Working Days</label><input id="workingDays" type="number" min="1" max="31" value="24"></div>
+            <div class="field"><label for="workingDays">Monthly Working Days</label><input id="workingDays" type="number" min="0" max="31" value="24"></div>
             <div class="field"><label for="holidayDates">Holiday Dates</label><input id="holidayDates" placeholder="Example: 5,12,19,26"></div>
             <p class="success-note" id="workingDayStatus">July 2026 working days: 24.</p>
           </div>
@@ -11109,9 +11109,14 @@ ${sheets.map(worksheetXml).join("")}
   return list.map(value => String(value).trim()).filter(Boolean);
 }
 
+function hasConfiguredMonthWorkingDays(month) {
+  return Object.prototype.hasOwnProperty.call(monthSettings[month] || {}, "workingDays")
+    && Number.isFinite(Number(monthSettings[month].workingDays));
+}
+
 function configuredMonthWorkingDays(month) {
-  const value = Number(monthSettings[month]?.workingDays || 0);
-  return Number.isFinite(value) && value > 0 ? value : 0;
+  if (!hasConfiguredMonthWorkingDays(month)) return 0;
+  return Math.max(0, Math.min(31, Number(monthSettings[month].workingDays)));
 }
 
 function monthlyAttendanceCalculation(month, statuses, eligibleWorkingDays = null, eligibleHolidayCount = null) {
@@ -11131,15 +11136,16 @@ function monthlyAttendanceCalculation(month, statuses, eligibleWorkingDays = nul
   const configuredHolidayCount = Number.isFinite(eligibleHolidayCount) ? eligibleHolidayCount : configuredMonthHolidays(month).length;
   const holiday = Math.max(savedHoliday, configuredHolidayCount);
   const savedWorkingDays = entries.filter(item => item.status !== "Holiday").length;
+  const hasWorkingDayLimit = Number.isFinite(eligibleWorkingDays) || hasConfiguredMonthWorkingDays(month);
   const workingDays = Number.isFinite(eligibleWorkingDays)
     ? Math.max(0, eligibleWorkingDays)
-    : (configuredMonthWorkingDays(month) || savedWorkingDays);
-  const absent = workingDays ? Math.min(rawAbsent, workingDays) : rawAbsent;
-  const leave = workingDays ? Math.min(rawLeave, Math.max(0, workingDays - absent)) : rawLeave;
-  const late = workingDays ? Math.min(rawLate, Math.max(0, workingDays - absent - leave)) : rawLate;
-  const present = workingDays ? Math.min(rawPresent, Math.max(0, workingDays - absent - leave - late)) : rawPresent;
+    : (hasConfiguredMonthWorkingDays(month) ? configuredMonthWorkingDays(month) : savedWorkingDays);
+  const absent = hasWorkingDayLimit ? Math.min(rawAbsent, workingDays) : rawAbsent;
+  const leave = hasWorkingDayLimit ? Math.min(rawLeave, Math.max(0, workingDays - absent)) : rawLeave;
+  const late = hasWorkingDayLimit ? Math.min(rawLate, Math.max(0, workingDays - absent - leave)) : rawLate;
+  const present = hasWorkingDayLimit ? Math.min(rawPresent, Math.max(0, workingDays - absent - leave - late)) : rawPresent;
   const attended = present + late;
-  const denominator = workingDays || savedWorkingDays;
+  const denominator = hasWorkingDayLimit ? workingDays : savedWorkingDays;
   const percentValue = denominator ? Math.round((attended / denominator) * 1000) / 10 : null;
   const targetPresent = workingDays ? Math.ceil(workingDays * 0.75) : 0;
   const neededFor75 = targetPresent ? Math.max(0, targetPresent - attended) : 0;
@@ -11248,9 +11254,10 @@ function monthlySummaryRows(month, classKeys) {
       const eligibleDates = allDates.filter(date => !startDate || date >= startDate);
       const eligibleHolidays = eligibleDates.filter(date => isAttendanceHolidayDate(date)).length;
       const actualEligibleWorkingDays = eligibleDates.length - eligibleHolidays;
+      const hasConfiguredWorkingDays = hasConfiguredMonthWorkingDays(month);
       if (!startDate || startDate <= monthStart) {
         return {
-          workingDays: configuredWorkingDays || actualEligibleWorkingDays,
+          workingDays: hasConfiguredWorkingDays ? configuredWorkingDays : actualEligibleWorkingDays,
           holidays: eligibleHolidays
         };
       }
@@ -11258,7 +11265,7 @@ function monthlySummaryRows(month, classKeys) {
       const workingDaysBeforeAdmission = allDates
         .filter(date => date < startDate && !isAttendanceHolidayDate(date)).length;
       return {
-        workingDays: configuredWorkingDays
+        workingDays: hasConfiguredWorkingDays
           ? Math.max(0, Math.min(actualEligibleWorkingDays, configuredWorkingDays - workingDaysBeforeAdmission))
           : actualEligibleWorkingDays,
         holidays: eligibleHolidays
@@ -14388,8 +14395,9 @@ function currentReportData(type = document.getElementById("reportType").value) {
         .sort()
         .pop();
       const base = monthSettings[previousMonth] || monthSettings["2026-07"] || { workingDays: 24, holidays: [] };
+      const baseWorkingDays = Number(base.workingDays);
       return {
-        workingDays: Number(base.workingDays) || 24,
+        workingDays: Number.isFinite(baseWorkingDays) ? Math.max(0, Math.min(31, baseWorkingDays)) : 24,
         holidays: Array.isArray(base.holidays) ? [...base.holidays] : []
       };
     }
@@ -14412,7 +14420,10 @@ function currentReportData(type = document.getElementById("reportType").value) {
 
     function saveWorkingDaySettings({ silent = false } = {}) {
       const month = document.getElementById("workingMonth").value || selectedMonthKey();
-      const workingDays = Math.max(1, Math.min(31, Number(document.getElementById("workingDays").value) || 1));
+      const enteredWorkingDays = Number(document.getElementById("workingDays").value);
+      const workingDays = Number.isFinite(enteredWorkingDays)
+        ? Math.max(0, Math.min(31, enteredWorkingDays))
+        : 0;
       const holidays = document.getElementById("holidayDates").value
         .split(",")
         .map(day => day.trim())
