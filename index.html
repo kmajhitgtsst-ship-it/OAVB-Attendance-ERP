@@ -5476,9 +5476,13 @@
               <label for="exchangeRollsB">Section B to A Roll Numbers</label>
               <input id="exchangeRollsB" placeholder="Example: 2,5,9">
             </div>
+            <button class="secondary" id="previewSectionExchange" type="button">Preview Exchange</button>
             <button class="primary" id="exchangeStudents">Exchange Students</button>
           </div>
           <p class="success-note" id="exchangeStudentStatus">Previous attendance will remain linked to each student after exchange.</p>
+          <div class="table-wrap" id="exchangeStudentPreview" style="margin-top: 12px;">
+            <p class="subtle" style="padding: 14px;">Enter matching Section A and Section B roll numbers to preview the exchange.</p>
+          </div>
         </div>
         <div class="card" style="margin-top: 14px;">
           <div class="section-title">
@@ -8615,6 +8619,81 @@
       return [...new Set(numbers)].map(number => String(number).padStart(2, "0"));
     }
 
+    function sectionExchangeText(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function getSectionExchangePreviewData() {
+      const baseClass = document.getElementById("exchangeBaseClass").value;
+      const classA = `${baseClass}-A`;
+      const classB = `${baseClass}-B`;
+      const rollsA = parseExchangeRolls(document.getElementById("exchangeRollsA").value);
+      const rollsB = parseExchangeRolls(document.getElementById("exchangeRollsB").value);
+      const listA = classData[classA] || [];
+      const listB = classData[classB] || [];
+      const pairs = rollsA.map((rollA, index) => ({
+        rollA,
+        rollB: rollsB[index] || "",
+        studentA: listA.find(student => student[0] === rollA),
+        studentB: listB.find(student => student[0] === rollsB[index])
+      }));
+      let error = "";
+      if (!rollsA.length && !rollsB.length) {
+        error = "Enter matching Section A and Section B roll numbers to generate the preview.";
+      } else if (!rollsA.length || rollsA.length !== rollsB.length) {
+        error = "Enter the same number of valid roll numbers for Section A and Section B.";
+      } else {
+        const missing = pairs.filter(pair => !pair.studentA || !pair.studentB);
+        if (missing.length) {
+          error = `Student not found for pair(s): ${missing.map(pair => `A-${Number(pair.rollA || 0)} / B-${Number(pair.rollB || 0)}`).join(", ")}.`;
+        }
+      }
+      return { baseClass, classA, classB, rollsA, rollsB, listA, listB, pairs, error };
+    }
+
+    function renderSectionExchangePreview() {
+      const preview = document.getElementById("exchangeStudentPreview");
+      const status = document.getElementById("exchangeStudentStatus");
+      const data = getSectionExchangePreviewData();
+      if (data.error) {
+        status.textContent = data.error;
+        preview.innerHTML = `<p class="subtle" style="padding: 14px; color: #b42318;"><strong>Preview unavailable:</strong> ${sectionExchangeText(data.error)}</p>`;
+        return data;
+      }
+      status.textContent = `${data.pairs.length} pair(s) ready. Verify every student before clicking Exchange Students.`;
+      preview.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Pair</th>
+              <th>Section A Student</th>
+              <th>New Position</th>
+              <th>Section B Student</th>
+              <th>New Position</th>
+              <th>Linked Data</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${data.pairs.map((pair, index) => `
+              <tr>
+                <td><strong>${index + 1}</strong></td>
+                <td><strong>${sectionExchangeText(pair.rollA)} - ${sectionExchangeText(pair.studentA[1])}</strong><br><span class="subtle">Admission: ${sectionExchangeText(studentAdmissionNo(pair.studentA) || "-")}</span></td>
+                <td><strong>${sectionExchangeText(data.classB)}</strong><br>Roll ${sectionExchangeText(pair.rollB)}</td>
+                <td><strong>${sectionExchangeText(pair.rollB)} - ${sectionExchangeText(pair.studentB[1])}</strong><br><span class="subtle">Admission: ${sectionExchangeText(studentAdmissionNo(pair.studentB) || "-")}</span></td>
+                <td><strong>${sectionExchangeText(data.classA)}</strong><br>Roll ${sectionExchangeText(pair.rollA)}</td>
+                <td><span class="pill">Attendance preserved</span><br><span class="subtle">Exam identity preserved</span></td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>`;
+      return data;
+    }
+
     function attendanceRowWithStudentIdentity(row, destinationRoll, student) {
       return {
         ...(row || {}),
@@ -8656,29 +8735,10 @@
     }
 
     function exchangeSectionStudents() {
-      const baseClass = document.getElementById("exchangeBaseClass").value;
-      const classA = `${baseClass}-A`;
-      const classB = `${baseClass}-B`;
-      const rollsA = parseExchangeRolls(document.getElementById("exchangeRollsA").value);
-      const rollsB = parseExchangeRolls(document.getElementById("exchangeRollsB").value);
       const status = document.getElementById("exchangeStudentStatus");
-      if (!rollsA.length || rollsA.length !== rollsB.length) {
-        status.textContent = "Enter the same number of valid roll numbers for Section A and Section B.";
-        return;
-      }
-      const listA = classData[classA] || [];
-      const listB = classData[classB] || [];
-      const pairs = rollsA.map((rollA, index) => ({
-        rollA,
-        rollB: rollsB[index],
-        studentA: listA.find(student => student[0] === rollA),
-        studentB: listB.find(student => student[0] === rollsB[index])
-      }));
-      const missing = pairs.filter(pair => !pair.studentA || !pair.studentB);
-      if (missing.length) {
-        status.textContent = `Student not found for pair(s): ${missing.map(pair => `A-${Number(pair.rollA)} / B-${Number(pair.rollB)}`).join(", ")}.`;
-        return;
-      }
+      const previewData = renderSectionExchangePreview();
+      if (previewData.error) return;
+      const { baseClass, classA, classB, listA, listB, pairs } = previewData;
       if (!confirm(`Exchange ${pairs.length} student pair(s) between ${classA} and ${classB}? Previous attendance will be preserved.`)) return;
 
       pairs.forEach(pair => {
@@ -8710,6 +8770,7 @@
       renderStudentMaster();
       loadClassStudents();
       refreshAttendanceLinkedViews();
+      document.getElementById("exchangeStudentPreview").innerHTML = `<p class="subtle" style="padding: 14px;">Enter matching Section A and Section B roll numbers to preview the next exchange.</p>`;
       status.textContent = `${pairs.length} pair(s) exchanged successfully. Previous attendance and exam identity were preserved.`;
     }
 
@@ -15515,6 +15576,11 @@ function currentReportData(type = document.getElementById("reportType").value) {
       renderStudentMaster();
     });
 
+    document.getElementById("previewSectionExchange").addEventListener("click", renderSectionExchangePreview);
+    ["exchangeBaseClass", "exchangeRollsA", "exchangeRollsB"].forEach(id => {
+      document.getElementById(id).addEventListener("input", renderSectionExchangePreview);
+      document.getElementById(id).addEventListener("change", renderSectionExchangePreview);
+    });
     document.getElementById("exchangeStudents").addEventListener("click", exchangeSectionStudents);
 
     document.getElementById("downloadStudentTemplate").addEventListener("click", () => {
