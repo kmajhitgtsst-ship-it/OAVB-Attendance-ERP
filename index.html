@@ -5616,7 +5616,7 @@
           <div id="longRangeAttendanceSection">
           <div class="section-title" style="margin-top: 14px;">
             <h2>Student Long Range Attendance Entry</h2>
-            <span class="pill">1-3 months</span>
+            <span class="pill">Selected month only</span>
           </div>
           <div class="toolbar">
             <div class="field">
@@ -5634,7 +5634,7 @@
             </div>
             <div class="field wide-field">
               <label for="longRangeDates">Date Entry Format</label>
-              <textarea id="longRangeDates" placeholder="Example: 1,2,3,8-9,15,18 April 2026, 5-8,15,16 May 2026"></textarea>
+              <textarea id="longRangeDates" placeholder="Example: 1,2,3,8-9,15,18 August 2026 (must match the selected month)"></textarea>
             </div>
             <div class="field">
               <label for="longRangeMonth">Month Wise Entry</label>
@@ -5647,7 +5647,7 @@
             <button class="primary" id="saveLongRangeMonth" type="button">Save Month Entry</button>
             <button class="danger" id="resetLongRangeMonth" type="button">Reset Month Entry</button>
           </div>
-          <p class="success-note" id="longRangeStatusText">Enter one student roll number and date pattern to preview 1-3 month attendance entry.</p>
+          <p class="success-note" id="longRangeStatusText">Select one month, then enter dates from that month only.</p>
           <div class="name-preview" id="longRangePreview"></div>
           <div class="table-wrap" id="longRangeMonthGrid" style="margin-top: 12px;"></div>
           </div>
@@ -6404,6 +6404,10 @@
               <label for="reportMonth">Month</label>
               <input id="reportMonth" type="month" value="2026-07">
             </div>
+            <div class="field">
+              <label for="reportSession">Academic Session</label>
+              <input id="reportSession" value="2026-27" inputmode="numeric" placeholder="Example: 2026-27">
+            </div>
             <button class="secondary" id="downloadReportExcel">Download Current Excel</button>
           </div>
           <div class="toolbar">
@@ -6743,7 +6747,7 @@
     const monthSettings = {
       "2026-07": { workingDays: 24, holidays: [] }
     };
-    const APP_VERSION = "2026-08-02-current-attendance-long-range-access";
+    const APP_VERSION = "2026-08-02-academic-session-attendance-report";
     const CLOUD_KEYS = [
       "oavBadiClassData",
       "oavBadiTeachers",
@@ -6753,6 +6757,7 @@
       "oavBadiImportedTimetableRows",
       "oavBadiStockBackups",
       "oavBadiMonthSettings",
+      "oavBadiAcademicSession",
       "oavBadiDailyAttendanceRecords",
       "oavBadiDailyTeacherAttendanceRecords",
       "oavBadiMdmRecords",
@@ -6872,6 +6877,8 @@
       localStorage.setItem("oavBadiImportedTimetableRows", JSON.stringify(importedTimetableRows));
       localStorage.setItem("oavBadiStockBackups", JSON.stringify(savedStockBackups));
       localStorage.setItem("oavBadiMonthSettings", JSON.stringify(monthSettings));
+      const academicSessionInput = document.getElementById("academicSession");
+      if (academicSessionInput) localStorage.setItem("oavBadiAcademicSession", academicSessionInput.value || "2026-27");
       localStorage.setItem("oavBadiDailyAttendanceRecords", JSON.stringify(dailyAttendanceRecords));
       localStorage.setItem("oavBadiDailyTeacherAttendanceRecords", JSON.stringify(dailyTeacherAttendanceRecords));
       localStorage.setItem("oavBadiMdmRecords", JSON.stringify(mdmRecords));
@@ -6900,6 +6907,7 @@
       const savedImportedTimetableRows = localStorage.getItem("oavBadiImportedTimetableRows");
       const savedBackups = localStorage.getItem("oavBadiStockBackups");
       const savedMonthSettings = localStorage.getItem("oavBadiMonthSettings");
+      const savedAcademicSession = localStorage.getItem("oavBadiAcademicSession");
       const savedDailyAttendanceRecords = localStorage.getItem("oavBadiDailyAttendanceRecords");
       const savedDailyTeacherAttendanceRecords = localStorage.getItem("oavBadiDailyTeacherAttendanceRecords");
       const savedMdmRecords = localStorage.getItem("oavBadiMdmRecords");
@@ -6959,6 +6967,13 @@
 
       if (savedMonthSettings) {
         Object.assign(monthSettings, JSON.parse(savedMonthSettings));
+      }
+      if (savedAcademicSession) {
+        const session = normalizedAcademicSession(savedAcademicSession);
+        const academicSessionInput = document.getElementById("academicSession");
+        const reportSessionInput = document.getElementById("reportSession");
+        if (academicSessionInput) academicSessionInput.value = session;
+        if (reportSessionInput) reportSessionInput.value = session;
       }
 
       if (savedDailyAttendanceRecords) {
@@ -7108,7 +7123,7 @@
       const ids = [
         "dateFilter", "classFilter", "sectionFilter", "searchStudent", "bulkStatus", "bulkRolls",
         "longRangeRoll", "longRangeStatus", "longRangeDates", "longRangeMonth",
-        "mdmDate", "mdmClass", "mdmSection", "reportType", "reportClass", "reportDate", "reportMonth",
+        "mdmDate", "mdmClass", "mdmSection", "reportType", "reportClass", "reportDate", "reportMonth", "reportSession",
         "workingMonth", "workingDays", "holidayDates", "examResultClass", "examName", "timeTableClassSelect"
       ];
       return ids.reduce((state, id) => {
@@ -11173,7 +11188,8 @@ function attendanceCalculationThroughCurrentDate(month, statuses, startDate = ""
 }
 
 function monthlyAttendanceHeaders() {
-  return ["Month", "Class", "Roll", "Student", "Working Days", "Saved Days", "Present", "Absent", "Late", "Leave", "Total Holiday", "Attendance %", "Attendance % Up to Current Date", "Calculated Through", "Present Required for 75%", "Present Needed", "Suggestion", "Guardian", "Mobile", "Absent Dates"];
+  const currentDateLabel = displayDateLong(todayIsoDate());
+  return ["Month", "Class", "Roll", "Student", "Planned Working Days", `Working Days up to ${currentDateLabel}`, `Saved Days up to ${currentDateLabel}`, `Present up to ${currentDateLabel}`, `Absent up to ${currentDateLabel}`, `Late up to ${currentDateLabel}`, `Leave up to ${currentDateLabel}`, `Holiday up to ${currentDateLabel}`, `Attendance % up to ${currentDateLabel}`, "Calculated Through", "Present Required for Month 75%", "Present Needed in Remaining Days", "Remaining Working Days", "Suggestion", "Guardian", "Mobile", "Absent Dates"];
 }
 function monthlySummaryRows(month, classKeys) {
   return classKeys.flatMap(classGroup => {
@@ -11185,6 +11201,14 @@ function monthlySummaryRows(month, classKeys) {
       const eligibility = attendanceEligibilityForMonth(month, startDate);
       const calc = monthlyAttendanceCalculation(month, source, startDate ? eligibility.workingDays : null, startDate ? eligibility.holidays : null);
       const currentCalc = attendanceCalculationThroughCurrentDate(month, source, startDate);
+      const currentAttended = currentCalc.present + currentCalc.late;
+      const remainingWorkingDays = Math.max(0, calc.workingDays - currentCalc.workingDays);
+      const presentNeededInRemainingDays = Math.max(0, calc.targetPresent - currentAttended);
+      const currentSuggestion = presentNeededInRemainingDays > remainingWorkingDays
+        ? `75% is not reachable in this month; ${presentNeededInRemainingDays} present day(s) required but only ${remainingWorkingDays} working day(s) remain.`
+        : (presentNeededInRemainingDays
+          ? `${presentNeededInRemainingDays} present day(s) required in the remaining ${remainingWorkingDays} working day(s) for 75%.`
+          : "75% target achieved based on attendance up to the calculated date.");
       if (!Array.isArray(student[8]) || student[8].length) student[8] = [];
       return [
         month,
@@ -11192,18 +11216,19 @@ function monthlySummaryRows(month, classKeys) {
         student[0],
         student[1],
         calc.workingDays,
-        calc.savedWorkingDays,
-        calc.present,
-        calc.absent,
-        calc.late,
-        calc.leave,
-        calc.holiday,
-        calc.percent,
+        currentCalc.workingDays,
+        currentCalc.savedWorkingDays,
+        currentCalc.present,
+        currentCalc.absent,
+        currentCalc.late,
+        currentCalc.leave,
+        currentCalc.holiday,
         currentCalc.percent,
         currentCalc.through ? displayDateLong(currentCalc.through) : "Not started",
         calc.targetPresent,
-        calc.neededFor75,
-        calc.suggestion,
+        presentNeededInRemainingDays,
+        remainingWorkingDays,
+        currentSuggestion,
         student[6] || "",
         student[7] || "",
         (calc.absentDates || []).map(date => date.slice(-2)).join(", ")
@@ -11283,7 +11308,7 @@ function monthlySummaryRows(month, classKeys) {
 
     function lowAttendanceRows(month, classKeys) {
       return monthlySummaryRows(month, classKeys)
-        .map(row => ({ row, percent: Number(String(row[12] === "-" ? row[11] : row[12]).replace("%", "")) }))
+        .map(row => ({ row, percent: Number(String(row[12]).replace("%", "")) }))
         .filter(item => Number.isFinite(item.percent) && item.percent < 75)
         .map(item => [...item.row, item.percent < 60 ? "Urgent" : "Monitor"]);
     }
@@ -11308,11 +11333,34 @@ function monthlySummaryRows(month, classKeys) {
         .map(mdmExportRowFromRecord);
     }
 
-    function academicYearMonths(anchorMonth) {
-  const [yearText, monthText] = String(anchorMonth || todayIsoDate().slice(0, 7)).split("-");
-  const year = Number(yearText) || new Date().getFullYear();
-  const month = Number(monthText) || 1;
-  const startYear = month >= 4 ? year : year - 1;
+function normalizedAcademicSession(value = "") {
+  const text = String(value || "").trim();
+  const match = text.match(/^(\d{4})\s*[-/]\s*(\d{2}|\d{4})$/);
+  if (match) {
+    const startYear = Number(match[1]);
+    const suppliedEnd = Number(match[2].length === 2 ? `${String(startYear).slice(0, 2)}${match[2]}` : match[2]);
+    if (suppliedEnd === startYear + 1) return `${startYear}-${String(suppliedEnd).slice(-2)}`;
+  }
+  const fallback = String(document.getElementById("academicSession")?.value || "2026-27").trim();
+  if (fallback !== text) return normalizedAcademicSession(fallback);
+  const today = todayIsoDate();
+  const year = Number(today.slice(0, 4));
+  const startYear = Number(today.slice(5, 7)) >= 4 ? year : year - 1;
+  return `${startYear}-${String(startYear + 1).slice(-2)}`;
+}
+
+function academicYearMonths(sessionOrAnchorMonth) {
+  const value = String(sessionOrAnchorMonth || "").trim();
+  const sessionMatch = value.match(/^(\d{4})\s*[-/]\s*(\d{2}|\d{4})$/);
+  let startYear;
+  if (sessionMatch) {
+    startYear = Number(sessionMatch[1]);
+  } else {
+    const [yearText, monthText] = String(value || todayIsoDate().slice(0, 7)).split("-");
+    const year = Number(yearText) || new Date().getFullYear();
+    const month = Number(monthText) || 1;
+    startYear = month >= 4 ? year : year - 1;
+  }
   return Array.from({ length: 12 }, (_, index) => {
     const date = new Date(startYear, 3 + index, 1);
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
@@ -11325,12 +11373,13 @@ function academicYearLabel(anchorMonth) {
 }
 
 function yearlyAttendanceHeaders() {
-  return ["Academic Year", "Class", "Roll", "Student", "Working Days", "Saved Days", "Total Holiday", "Present", "Absent", "Late", "Leave", "Attendance %", "Attendance % Up to Current Date", "Calculated Through", "Present Required for 75%", "Present Needed", "Suggestion", "Guardian", "Mobile"];
+  const currentDateLabel = displayDateLong(todayIsoDate());
+  return ["Academic Session", "Class", "Roll", "Student", "Planned Working Days", `Working Days up to ${currentDateLabel}`, "Saved Days", "Total Holiday", `Present up to ${currentDateLabel}`, `Absent up to ${currentDateLabel}`, `Late up to ${currentDateLabel}`, `Leave up to ${currentDateLabel}`, `Attendance % up to ${currentDateLabel}`, "Calculated Through", "Present Required for Session 75%", "Remaining Working Days", "Present Needed in Remaining Days", "Suggestion", "Guardian", "Mobile"];
 }
 
-function yearlyAttendanceRows(anchorMonth, classKeys) {
-  const months = academicYearMonths(anchorMonth);
-  const yearLabel = academicYearLabel(anchorMonth);
+function yearlyAttendanceRows(session, classKeys) {
+  const months = academicYearMonths(session);
+  const yearLabel = academicYearLabel(session);
   return classKeys.flatMap(classGroup => {
     const classStudents = classData[classGroup] || [];
     return classStudents.map(student => {
@@ -11350,40 +11399,47 @@ function yearlyAttendanceRows(anchorMonth, classKeys) {
         const currentCalc = attendanceCalculationThroughCurrentDate(month, source, startDate);
         acc.currentWorkingDays += currentCalc.workingDays;
         acc.currentPresent += currentCalc.present;
+        acc.currentAbsent += currentCalc.absent;
         acc.currentLate += currentCalc.late;
+        acc.currentLeave += currentCalc.leave;
+        acc.currentHoliday += currentCalc.holiday;
         if (currentCalc.through && (!acc.calculatedThrough || currentCalc.through > acc.calculatedThrough)) {
           acc.calculatedThrough = currentCalc.through;
         }
         return acc;
-      }, { workingDays: 0, savedWorkingDays: 0, holiday: 0, present: 0, absent: 0, late: 0, leave: 0, currentWorkingDays: 0, currentPresent: 0, currentLate: 0, calculatedThrough: "" });
-      const attended = totals.present + totals.late;
+      }, { workingDays: 0, savedWorkingDays: 0, holiday: 0, present: 0, absent: 0, late: 0, leave: 0, currentWorkingDays: 0, currentPresent: 0, currentAbsent: 0, currentLate: 0, currentLeave: 0, currentHoliday: 0, calculatedThrough: "" });
       const denominator = totals.workingDays || totals.savedWorkingDays;
-      const percentValue = denominator ? Math.round((attended / denominator) * 1000) / 10 : null;
       const currentAttended = totals.currentPresent + totals.currentLate;
       const currentPercentValue = totals.currentWorkingDays
         ? Math.round((currentAttended / totals.currentWorkingDays) * 1000) / 10
         : null;
       const requiredFor75 = denominator ? Math.ceil(denominator * 0.75) : 0;
-      const neededFor75 = requiredFor75 ? Math.max(0, requiredFor75 - attended) : 0;
+      const remainingWorkingDays = Math.max(0, denominator - totals.currentWorkingDays);
+      const neededFor75 = requiredFor75 ? Math.max(0, requiredFor75 - currentAttended) : 0;
       const suggestion = !denominator
         ? "Set monthly working days or save attendance."
-        : (neededFor75 ? `${neededFor75} more present day(s) needed for yearly 75%.` : "Yearly 75% target achieved.");
+        : (neededFor75 > remainingWorkingDays
+          ? `75% is not reachable this session; ${neededFor75} present day(s) required but only ${remainingWorkingDays} working day(s) remain.`
+          : (neededFor75
+            ? `${neededFor75} present day(s) required in the remaining ${remainingWorkingDays} working day(s) for session 75%.`
+            : "Session 75% target achieved based on attendance up to the calculated date."));
       return [
         yearLabel,
         classGroup,
         student[0],
         student[1],
         totals.workingDays,
+        totals.currentWorkingDays,
         totals.savedWorkingDays,
-        totals.holiday,
-        totals.present,
-        totals.absent,
-        totals.late,
-        totals.leave,
-        percentValue === null ? "-" : `${percentValue}%`,
+        totals.currentHoliday,
+        totals.currentPresent,
+        totals.currentAbsent,
+        totals.currentLate,
+        totals.currentLeave,
         currentPercentValue === null ? "-" : `${currentPercentValue}%`,
         totals.calculatedThrough ? displayDateLong(totals.calculatedThrough) : "Not started",
         requiredFor75,
+        remainingWorkingDays,
         neededFor75,
         suggestion,
         student[6],
@@ -11395,12 +11451,13 @@ function yearlyAttendanceRows(anchorMonth, classKeys) {
 function currentReportData(type = document.getElementById("reportType").value) {
       const date = document.getElementById("reportDate").value || todayIsoDate();
       const month = document.getElementById("reportMonth").value || date.slice(0, 7);
+      const session = normalizedAcademicSession(document.getElementById("reportSession")?.value);
       const classKeys = reportClassKeys();
       if (type === "monthly") {
         return { title: `Monthly Summary - ${monthLabel(month)}`, headers: monthlyAttendanceHeaders(), rows: monthlySummaryRows(month, classKeys) };
       }
       if (type === "yearly") {
-    return { title: `Yearly 75% Attendance Calculation - ${academicYearLabel(month)}`, headers: yearlyAttendanceHeaders(), rows: yearlyAttendanceRows(month, classKeys) };
+    return { title: `Academic Session Attendance: 1 April ${session.slice(0, 4)} to 31 March ${Number(session.slice(0, 4)) + 1} (${session})`, headers: yearlyAttendanceHeaders(), rows: yearlyAttendanceRows(session, classKeys) };
   }
   if (type === "alerts") {
         return { title: `Parent Alerts - ${date}`, headers: ["Date", "Class", "Roll", "Student", "Status", "Guardian", "Mobile", "WhatsApp Link"], rows: parentAlertRows(date, classKeys) };
@@ -13768,8 +13825,11 @@ function currentReportData(type = document.getElementById("reportType").value) {
       const student = longRangeTargetStudent();
       const status = document.getElementById("longRangeStatus").value;
       const { dates, invalid } = parseLongRangeDates(document.getElementById("longRangeDates").value);
-      const holidayDates = dates.filter(date => isAttendanceHolidayDate(date));
-      const workingDates = dates.filter(date => !isAttendanceHolidayDate(date));
+      const selectedMonth = currentLongRangeMonth();
+      const monthMismatchDates = dates.filter(date => !date.startsWith(`${selectedMonth}-`));
+      const validMonthDates = dates.filter(date => date.startsWith(`${selectedMonth}-`));
+      const holidayDates = validMonthDates.filter(date => isAttendanceHolidayDate(date));
+      const workingDates = validMonthDates.filter(date => !isAttendanceHolidayDate(date));
       const preview = document.getElementById("longRangePreview");
       const statusText = document.getElementById("longRangeStatusText");
 
@@ -13777,11 +13837,14 @@ function currentReportData(type = document.getElementById("reportType").value) {
         student ? `<span class="name-chip">Roll ${Number(student[0])}: ${student[1]}</span>` : `<span class="name-chip">Student not found</span>`,
         ...workingDates.slice(0, 40).map(date => `<span class="name-chip">${date}: ${status}</span>`),
         holidayDates.length ? `<span class="name-chip">${holidayDates.length} holiday date(s) will be skipped</span>` : "",
+        monthMismatchDates.length ? `<span class="name-chip">Month mismatch: ${monthMismatchDates.join(", ")}</span>` : "",
         dates.length > 40 ? `<span class="name-chip">+${dates.length - 40} more date(s)</span>` : ""
       ].filter(Boolean).join("");
 
-      statusText.textContent = `${student ? student[1] : "No student"} | ${workingDates.length} date(s) ready, ${holidayDates.length} holiday skipped${invalid.length ? `, invalid: ${invalid.join(", ")}` : ""}.`;
-      return { student, status, dates, workingDates, holidayDates, invalid };
+      statusText.textContent = monthMismatchDates.length
+        ? `Month mismatch. Selected month is ${monthLabel(selectedMonth)}. Remove these dates before saving: ${monthMismatchDates.join(", ")}.`
+        : `${student ? student[1] : "No student"} | ${workingDates.length} date(s) ready for ${monthLabel(selectedMonth)}, ${holidayDates.length} holiday skipped${invalid.length ? `, invalid: ${invalid.join(", ")}` : ""}.`;
+      return { student, status, dates, workingDates, holidayDates, invalid, selectedMonth, monthMismatchDates };
     }
 
     function savedOrDefaultAttendanceStudents(date, classGroup) {
@@ -13958,9 +14021,13 @@ function currentReportData(type = document.getElementById("reportType").value) {
 
     function saveLongRangeAttendance() {
       const previewData = updateLongRangePreview();
-      const { student, status, holidayDates, invalid } = previewData;
+      const { student, status, holidayDates, invalid, selectedMonth, monthMismatchDates } = previewData;
       if (!student) {
         document.getElementById("longRangeStatusText").textContent = "Enter a valid roll number for the selected class.";
+        return;
+      }
+      if (monthMismatchDates.length) {
+        document.getElementById("longRangeStatusText").textContent = `Save blocked: only dates from ${monthLabel(selectedMonth)} are allowed. Remove: ${monthMismatchDates.join(", ")}.`;
         return;
       }
       const startDate = studentAttendanceStartDate(student, currentClassKey());
@@ -14003,6 +14070,12 @@ function currentReportData(type = document.getElementById("reportType").value) {
     function resetLongRangeAttendance() {
       const student = longRangeTargetStudent();
       const { dates, invalid } = parseLongRangeDates(document.getElementById("longRangeDates").value);
+      const selectedMonth = currentLongRangeMonth();
+      const monthMismatchDates = dates.filter(date => !date.startsWith(`${selectedMonth}-`));
+      if (monthMismatchDates.length) {
+        document.getElementById("longRangeStatusText").textContent = `Reset blocked: only dates from ${monthLabel(selectedMonth)} are allowed. Remove: ${monthMismatchDates.join(", ")}.`;
+        return;
+      }
       const startDate = student ? studentAttendanceStartDate(student, currentClassKey()) : "";
       const workingDates = dates.filter(date => (!startDate || date >= startDate) && !isAttendanceHolidayDate(date));
       const holidayDates = dates.filter(date => isAttendanceHolidayDate(date));
@@ -15566,9 +15639,15 @@ function currentReportData(type = document.getElementById("reportType").value) {
       resetEntireErpData();
     });
 
-    ["reportType", "reportClass", "reportDate", "reportMonth"].forEach(id => {
+    ["reportType", "reportClass", "reportDate", "reportMonth", "reportSession"].forEach(id => {
       document.getElementById(id).addEventListener("change", () => {
         if (id === "reportDate") syncReportMonthFromDate();
+        if (id === "reportSession") {
+          const session = normalizedAcademicSession(document.getElementById("reportSession").value);
+          document.getElementById("reportSession").value = session;
+          document.getElementById("academicSession").value = session;
+          saveLocalData();
+        }
         renderReport();
         updateDateDayLabels();
       });
@@ -16052,9 +16131,11 @@ function currentReportData(type = document.getElementById("reportType").value) {
     ["longRangeRoll", "longRangeMonth"].forEach(id => {
       document.getElementById(id).addEventListener("change", () => {
         renderLongRangeMonthGrid();
+        if (id === "longRangeMonth") updateLongRangePreview();
       });
       document.getElementById(id).addEventListener("input", () => {
         renderLongRangeMonthGrid();
+        if (id === "longRangeMonth") updateLongRangePreview();
       });
     });
 
@@ -16101,7 +16182,19 @@ function currentReportData(type = document.getElementById("reportType").value) {
     });
 
     document.getElementById("saveSettings").addEventListener("click", () => {
+      const session = normalizedAcademicSession(document.getElementById("academicSession").value);
+      document.getElementById("academicSession").value = session;
+      document.getElementById("reportSession").value = session;
       saveWorkingDaySettings();
+      renderReport();
+    });
+
+    document.getElementById("academicSession").addEventListener("change", () => {
+      const session = normalizedAcademicSession(document.getElementById("academicSession").value);
+      document.getElementById("academicSession").value = session;
+      document.getElementById("reportSession").value = session;
+      saveLocalData();
+      renderReport();
     });
 
     document.getElementById("workingMonth").addEventListener("change", () => {
