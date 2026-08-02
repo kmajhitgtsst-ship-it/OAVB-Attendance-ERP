@@ -6652,7 +6652,7 @@
             <div class="field"><label>Low Attendance Threshold</label><input value="75%"></div>
             <div class="field"><label for="workingMonth">Month</label><input id="workingMonth" type="month" value="2026-07"></div>
             <div class="field"><label for="workingCalculationDate">Calculation Date</label><input id="workingCalculationDate" type="date"></div>
-            <div class="field"><label for="workingDays">Monthly Working Days</label><input id="workingDays" type="number" min="0" max="31" value="24"></div>
+            <div class="field"><label for="workingDays">Monthly Working Days (Automatic)</label><input id="workingDays" type="number" min="0" max="31" value="24" readonly></div>
             <div class="field"><label for="holidayDates">Holiday Dates</label><input id="holidayDates" placeholder="Example: 5,12,19,26"></div>
             <div class="field"><label for="totalHolidays">Total Holidays</label><input id="totalHolidays" type="number" value="0" readonly></div>
             <p class="success-note" id="workingDayStatus">July 2026 working days: 24.</p>
@@ -14409,17 +14409,47 @@ function currentReportData(type = document.getElementById("reportType").value) {
         .map(String);
     }
 
+    function calculatedWorkingDayTotals(month, calculationDate, holidayValues) {
+      const validCalculationDate = String(calculationDate || "").startsWith(`${month}-`)
+        ? calculationDate
+        : defaultWorkingCalculationDate(month);
+      const holidays = normalizedHolidayDays(month, holidayValues);
+      const calculationDay = Math.max(1, Number(validCalculationDate.slice(-2)) || 1);
+      const holidaysThroughDate = holidays.filter(day => Number(day) <= calculationDay);
+      return {
+        calculationDate: validCalculationDate,
+        holidays,
+        totalHolidays: holidaysThroughDate.length,
+        workingDays: Math.max(0, calculationDay - holidaysThroughDate.length)
+      };
+    }
+
+    function updateWorkingDayAutoCalculation() {
+      const month = document.getElementById("workingMonth").value || selectedMonthKey();
+      const totals = calculatedWorkingDayTotals(
+        month,
+        document.getElementById("workingCalculationDate").value,
+        document.getElementById("holidayDates").value
+      );
+      document.getElementById("workingCalculationDate").value = totals.calculationDate;
+      document.getElementById("workingDays").value = totals.workingDays;
+      document.getElementById("totalHolidays").value = totals.totalHolidays;
+      return totals;
+    }
+
     function defaultMonthSetting(month) {
       const previousMonth = Object.keys(monthSettings)
         .filter(key => key < month)
         .sort()
         .pop();
       const base = monthSettings[previousMonth] || monthSettings["2026-07"] || { workingDays: 24, holidays: [] };
-      const baseWorkingDays = Number(base.workingDays);
+      const calculationDate = defaultWorkingCalculationDate(month);
+      const holidays = normalizedHolidayDays(month, Array.isArray(base.holidays) ? base.holidays : []);
+      const totals = calculatedWorkingDayTotals(month, calculationDate, holidays);
       return {
-        workingDays: Number.isFinite(baseWorkingDays) ? Math.max(0, Math.min(31, baseWorkingDays)) : 24,
-        holidays: normalizedHolidayDays(month, Array.isArray(base.holidays) ? base.holidays : []),
-        calculationDate: defaultWorkingCalculationDate(month)
+        workingDays: totals.workingDays,
+        holidays,
+        calculationDate
       };
     }
 
@@ -14432,40 +14462,37 @@ function currentReportData(type = document.getElementById("reportType").value) {
 
     function loadWorkingDaySettings(month = selectedMonthKey()) {
       const setting = ensureMonthSetting(month);
-      document.getElementById("workingMonth").value = month;
-      document.getElementById("workingDays").value = setting.workingDays;
       const holidays = normalizedHolidayDays(month, setting.holidays || []);
       const calculationDate = String(setting.calculationDate || "").startsWith(`${month}-`)
         ? setting.calculationDate
         : defaultWorkingCalculationDate(month);
+      const totals = calculatedWorkingDayTotals(month, calculationDate, holidays);
+      document.getElementById("workingMonth").value = month;
+      document.getElementById("workingDays").value = totals.workingDays;
+      setting.workingDays = totals.workingDays;
       setting.holidays = holidays;
       setting.calculationDate = calculationDate;
       document.getElementById("holidayDates").value = holidays.join(",");
-      document.getElementById("totalHolidays").value = holidays.length;
+      document.getElementById("totalHolidays").value = totals.totalHolidays;
       document.getElementById("workingCalculationDate").value = calculationDate;
-      document.getElementById("workingDayStatus").textContent = `${monthLabel(month)} working days: ${setting.workingDays}. Total holidays: ${holidays.length}. Calculation date: ${displayDateLong(calculationDate)}. Month settings auto-loaded and saved.`;
+      document.getElementById("workingDayStatus").textContent = `${monthLabel(month)} working days through ${displayDateLong(calculationDate)}: ${totals.workingDays}. Total holidays through this date: ${totals.totalHolidays}. Month settings auto-loaded and saved.`;
       saveLocalData();
     }
 
     function saveWorkingDaySettings({ silent = false } = {}) {
       const month = document.getElementById("workingMonth").value || selectedMonthKey();
-      const enteredWorkingDays = Number(document.getElementById("workingDays").value);
-      const workingDays = Number.isFinite(enteredWorkingDays)
-        ? Math.max(0, Math.min(31, enteredWorkingDays))
-        : 0;
       const holidays = normalizedHolidayDays(month, document.getElementById("holidayDates").value);
       const enteredCalculationDate = document.getElementById("workingCalculationDate").value;
-      const calculationDate = enteredCalculationDate.startsWith(`${month}-`)
-        ? enteredCalculationDate
-        : defaultWorkingCalculationDate(month);
+      const totals = calculatedWorkingDayTotals(month, enteredCalculationDate, holidays);
+      const { workingDays, calculationDate, totalHolidays } = totals;
       monthSettings[month] = { workingDays, holidays, calculationDate };
       document.getElementById("workingDays").value = workingDays;
       document.getElementById("holidayDates").value = holidays.join(",");
-      document.getElementById("totalHolidays").value = holidays.length;
+      document.getElementById("totalHolidays").value = totalHolidays;
       document.getElementById("workingCalculationDate").value = calculationDate;
-      document.getElementById("workingDayStatus").textContent = `${monthLabel(month)} working days saved: ${workingDays}. Total holidays: ${holidays.length}. Calculation date: ${displayDateLong(calculationDate)}${holidays.length ? `. Holiday dates: ${holidays.join(", ")}` : ""}.`;
+      document.getElementById("workingDayStatus").textContent = `${monthLabel(month)} working days saved through ${displayDateLong(calculationDate)}: ${workingDays}. Total holidays through this date: ${totalHolidays}${holidays.length ? `. Holiday dates entered: ${holidays.join(", ")}` : ""}.`;
       if (!silent) {
-        addAuditLog("Settings Saved", `${monthLabel(month)} working days ${workingDays}, total holidays ${holidays.length}, calculation date ${displayDateLong(calculationDate)}${holidays.length ? `, holiday dates ${holidays.join(", ")}` : ""}.`, { page: "Settings", recordDate: calculationDate });
+        addAuditLog("Settings Saved", `${monthLabel(month)} working days ${workingDays}, total holidays through calculation date ${totalHolidays}, calculation date ${displayDateLong(calculationDate)}${holidays.length ? `, holiday dates ${holidays.join(", ")}` : ""}.`, { page: "Settings", recordDate: calculationDate });
       }
       saveLocalData();
       loadClassStudents();
@@ -16247,7 +16274,10 @@ function currentReportData(type = document.getElementById("reportType").value) {
       blockAttendanceIfHoliday();
     });
 
-    ["workingCalculationDate", "workingDays", "holidayDates"].forEach(id => {
+    ["workingCalculationDate", "holidayDates"].forEach(id => {
+      document.getElementById(id).addEventListener("input", () => {
+        updateWorkingDayAutoCalculation();
+      });
       document.getElementById(id).addEventListener("change", () => {
         saveWorkingDaySettings({ silent: true });
       });
