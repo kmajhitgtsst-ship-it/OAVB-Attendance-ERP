@@ -6651,8 +6651,10 @@
             <div class="field"><label>Attendance Cutoff Time</label><input type="time" value="09:00"></div>
             <div class="field"><label>Low Attendance Threshold</label><input value="75%"></div>
             <div class="field"><label for="workingMonth">Month</label><input id="workingMonth" type="month" value="2026-07"></div>
+            <div class="field"><label for="workingCalculationDate">Calculation Date</label><input id="workingCalculationDate" type="date"></div>
             <div class="field"><label for="workingDays">Monthly Working Days</label><input id="workingDays" type="number" min="0" max="31" value="24"></div>
             <div class="field"><label for="holidayDates">Holiday Dates</label><input id="holidayDates" placeholder="Example: 5,12,19,26"></div>
+            <div class="field"><label for="totalHolidays">Total Holidays</label><input id="totalHolidays" type="number" value="0" readonly></div>
             <p class="success-note" id="workingDayStatus">July 2026 working days: 24.</p>
           </div>
           <div class="card">
@@ -14389,6 +14391,24 @@ function currentReportData(type = document.getElementById("reportType").value) {
       }
     }
 
+    function defaultWorkingCalculationDate(month) {
+      const dates = datesForMonth(month);
+      if (!dates.length) return todayIsoDate();
+      const today = todayIsoDate();
+      if (today < dates[0]) return dates[0];
+      if (today > dates[dates.length - 1]) return dates[dates.length - 1];
+      return today;
+    }
+
+    function normalizedHolidayDays(month, values) {
+      const daysInMonth = datesForMonth(month).length;
+      return [...new Set((Array.isArray(values) ? values : String(values || "").split(","))
+        .map(value => Number(String(value).trim()))
+        .filter(day => Number.isInteger(day) && day >= 1 && day <= daysInMonth))]
+        .sort((a, b) => a - b)
+        .map(String);
+    }
+
     function defaultMonthSetting(month) {
       const previousMonth = Object.keys(monthSettings)
         .filter(key => key < month)
@@ -14398,7 +14418,8 @@ function currentReportData(type = document.getElementById("reportType").value) {
       const baseWorkingDays = Number(base.workingDays);
       return {
         workingDays: Number.isFinite(baseWorkingDays) ? Math.max(0, Math.min(31, baseWorkingDays)) : 24,
-        holidays: Array.isArray(base.holidays) ? [...base.holidays] : []
+        holidays: normalizedHolidayDays(month, Array.isArray(base.holidays) ? base.holidays : []),
+        calculationDate: defaultWorkingCalculationDate(month)
       };
     }
 
@@ -14413,8 +14434,16 @@ function currentReportData(type = document.getElementById("reportType").value) {
       const setting = ensureMonthSetting(month);
       document.getElementById("workingMonth").value = month;
       document.getElementById("workingDays").value = setting.workingDays;
-      document.getElementById("holidayDates").value = (setting.holidays || []).join(",");
-      document.getElementById("workingDayStatus").textContent = `${monthLabel(month)} working days: ${setting.workingDays}${setting.holidays?.length ? `, holidays: ${setting.holidays.join(", ")}` : ""}. Month settings auto-loaded and saved.`;
+      const holidays = normalizedHolidayDays(month, setting.holidays || []);
+      const calculationDate = String(setting.calculationDate || "").startsWith(`${month}-`)
+        ? setting.calculationDate
+        : defaultWorkingCalculationDate(month);
+      setting.holidays = holidays;
+      setting.calculationDate = calculationDate;
+      document.getElementById("holidayDates").value = holidays.join(",");
+      document.getElementById("totalHolidays").value = holidays.length;
+      document.getElementById("workingCalculationDate").value = calculationDate;
+      document.getElementById("workingDayStatus").textContent = `${monthLabel(month)} working days: ${setting.workingDays}. Total holidays: ${holidays.length}. Calculation date: ${displayDateLong(calculationDate)}. Month settings auto-loaded and saved.`;
       saveLocalData();
     }
 
@@ -14424,15 +14453,19 @@ function currentReportData(type = document.getElementById("reportType").value) {
       const workingDays = Number.isFinite(enteredWorkingDays)
         ? Math.max(0, Math.min(31, enteredWorkingDays))
         : 0;
-      const holidays = document.getElementById("holidayDates").value
-        .split(",")
-        .map(day => day.trim())
-        .filter(Boolean);
-      monthSettings[month] = { workingDays, holidays };
+      const holidays = normalizedHolidayDays(month, document.getElementById("holidayDates").value);
+      const enteredCalculationDate = document.getElementById("workingCalculationDate").value;
+      const calculationDate = enteredCalculationDate.startsWith(`${month}-`)
+        ? enteredCalculationDate
+        : defaultWorkingCalculationDate(month);
+      monthSettings[month] = { workingDays, holidays, calculationDate };
       document.getElementById("workingDays").value = workingDays;
-      document.getElementById("workingDayStatus").textContent = `${monthLabel(month)} working days saved: ${workingDays}${holidays.length ? `, holidays: ${holidays.join(", ")}` : ""}.`;
+      document.getElementById("holidayDates").value = holidays.join(",");
+      document.getElementById("totalHolidays").value = holidays.length;
+      document.getElementById("workingCalculationDate").value = calculationDate;
+      document.getElementById("workingDayStatus").textContent = `${monthLabel(month)} working days saved: ${workingDays}. Total holidays: ${holidays.length}. Calculation date: ${displayDateLong(calculationDate)}${holidays.length ? `. Holiday dates: ${holidays.join(", ")}` : ""}.`;
       if (!silent) {
-        addAuditLog("Settings Saved", `${monthLabel(month)} working days ${workingDays}${holidays.length ? `, holidays ${holidays.join(", ")}` : ""}.`, { page: "Settings", recordDate: month });
+        addAuditLog("Settings Saved", `${monthLabel(month)} working days ${workingDays}, total holidays ${holidays.length}, calculation date ${displayDateLong(calculationDate)}${holidays.length ? `, holiday dates ${holidays.join(", ")}` : ""}.`, { page: "Settings", recordDate: calculationDate });
       }
       saveLocalData();
       loadClassStudents();
@@ -16214,7 +16247,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
       blockAttendanceIfHoliday();
     });
 
-    ["workingDays", "holidayDates"].forEach(id => {
+    ["workingCalculationDate", "workingDays", "holidayDates"].forEach(id => {
       document.getElementById(id).addEventListener("change", () => {
         saveWorkingDaySettings({ silent: true });
       });
