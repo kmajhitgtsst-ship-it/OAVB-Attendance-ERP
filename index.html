@@ -5609,6 +5609,11 @@
             <button class="primary" id="importAttendanceText">Import Pasted Attendance</button>
           </div>
           <p class="success-note" id="attendanceUploadStatus">Download template, fill attendance status, then import. Press Submit Attendance to save final entry.</p>
+          <div class="toolbar" id="longRangeVisibilityAdminControl" style="margin-top: 14px;" hidden>
+            <button class="secondary" id="toggleLongRangeAttendance" type="button">Hide Long Range Attendance Entry</button>
+            <span class="pill" id="longRangeVisibilityStatus">Visible to authorised users</span>
+          </div>
+          <div id="longRangeAttendanceSection">
           <div class="section-title" style="margin-top: 14px;">
             <h2>Student Long Range Attendance Entry</h2>
             <span class="pill">1-3 months</span>
@@ -5645,6 +5650,7 @@
           <p class="success-note" id="longRangeStatusText">Enter one student roll number and date pattern to preview 1-3 month attendance entry.</p>
           <div class="name-preview" id="longRangePreview"></div>
           <div class="table-wrap" id="longRangeMonthGrid" style="margin-top: 12px;"></div>
+          </div>
           <div class="grid two-col">
             <div class="bulk-preview" id="bulkPreviewCard">
               <h2>Selected Students Preview</h2>
@@ -6737,7 +6743,7 @@
     const monthSettings = {
       "2026-07": { workingDays: 24, holidays: [] }
     };
-    const APP_VERSION = "2026-07-12-erp-update-1";
+    const APP_VERSION = "2026-08-02-current-attendance-long-range-access";
     const CLOUD_KEYS = [
       "oavBadiClassData",
       "oavBadiTeachers",
@@ -6756,6 +6762,7 @@
       "oavBadiTimetableArrangementSelections",
       "oavBadiAuditLogs",
       "oavBadiTimetablePeriodTimes",
+      "oavBadiLongRangeAttendanceHidden",
       "oavBadiUtilisationSchemes",
       "oavBadiUtilisationSchemeData",
       "oavBadiUtilisationCertificates"
@@ -6852,6 +6859,7 @@
     let activeUser = { role: "guest", teacher: "", classKey: "", pages: [] };
     let loggedIn = false;
     let adminSession = false;
+    let longRangeAttendanceHidden = localStorage.getItem("oavBadiLongRangeAttendanceHidden") === "true";
     let activeTimetableTimeMode = localStorage.getItem(TIMETABLE_TIME_MODE_KEY) === "morning" ? "morning" : "normal";
     const UI_SESSION_BASE_KEY = "oavBadiUiSessionState";
 
@@ -6873,6 +6881,7 @@
       localStorage.setItem("oavBadiTimetableArrangementSelections", JSON.stringify(timetableArrangementSelections));
       localStorage.setItem("oavBadiAuditLogs", JSON.stringify(auditLogs));
       localStorage.setItem("oavBadiTimetablePeriodTimes", JSON.stringify(timetablePeriodTimes));
+      localStorage.setItem("oavBadiLongRangeAttendanceHidden", String(longRangeAttendanceHidden));
       localStorage.setItem("oavBadiUtilisationSchemes", JSON.stringify(utilisationSchemes));
       localStorage.setItem("oavBadiUtilisationSchemeData", JSON.stringify(utilisationSchemeData));
       localStorage.setItem("oavBadiUtilisationCertificates", JSON.stringify(utilisationCertificates));
@@ -6900,6 +6909,7 @@
       const savedTimetableArrangementSelections = localStorage.getItem("oavBadiTimetableArrangementSelections");
       const savedAuditLogs = localStorage.getItem("oavBadiAuditLogs");
       const savedTimetablePeriodTimes = localStorage.getItem("oavBadiTimetablePeriodTimes");
+      const savedLongRangeAttendanceHidden = localStorage.getItem("oavBadiLongRangeAttendanceHidden");
       const savedUtilisationSchemes = localStorage.getItem("oavBadiUtilisationSchemes");
       const savedUtilisationSchemeData = localStorage.getItem("oavBadiUtilisationSchemeData");
       const savedUtilisationCertificates = localStorage.getItem("oavBadiUtilisationCertificates");
@@ -6940,6 +6950,7 @@
         if (Array.isArray(parsedTimes.normal)) timetablePeriodTimes.normal = parsedTimes.normal.slice(0, TIMETABLE_PERIOD_COUNT);
         if (Array.isArray(parsedTimes.morning)) timetablePeriodTimes.morning = parsedTimes.morning.slice(0, TIMETABLE_PERIOD_COUNT);
       }
+      longRangeAttendanceHidden = savedLongRangeAttendanceHidden === "true";
 
       if (savedBackups) {
         savedStockBackups.length = 0;
@@ -7627,6 +7638,40 @@
         else if (activeUser.role === "teacher") sideLabel.textContent = "Teacher login";
         else sideLabel.textContent = "Staff login";
       }
+      updateLongRangeAttendanceVisibility();
+    }
+
+    function updateLongRangeAttendanceVisibility() {
+      const section = document.getElementById("longRangeAttendanceSection");
+      const control = document.getElementById("longRangeVisibilityAdminControl");
+      const button = document.getElementById("toggleLongRangeAttendance");
+      const status = document.getElementById("longRangeVisibilityStatus");
+      const canManage = loggedIn && canManageTeacherPasswords();
+      if (control) control.hidden = !canManage;
+      if (section) section.hidden = longRangeAttendanceHidden;
+      if (button) button.textContent = longRangeAttendanceHidden
+        ? "Unhide Long Range Attendance Entry"
+        : "Hide Long Range Attendance Entry";
+      if (status) status.textContent = longRangeAttendanceHidden
+        ? "Hidden for all users"
+        : "Visible to authorised users";
+    }
+
+    function toggleLongRangeAttendanceVisibility() {
+      if (!loggedIn || !canManageTeacherPasswords()) {
+        alert("Only Admin or Principal can change Long Range Attendance visibility.");
+        return;
+      }
+      longRangeAttendanceHidden = !longRangeAttendanceHidden;
+      addAuditLog(
+        longRangeAttendanceHidden ? "Long Range Attendance Hidden" : "Long Range Attendance Unhidden",
+        longRangeAttendanceHidden
+          ? "Student Long Range Attendance Entry hidden for all users."
+          : "Student Long Range Attendance Entry made visible again.",
+        { page: "Student Attendance" }
+      );
+      saveLocalData();
+      updateLongRangeAttendanceVisibility();
     }
 
     function syncMobilePanelHeight() {
@@ -11103,8 +11148,32 @@ function monthlyAttendanceCalculation(month, statuses, eligibleWorkingDays = nul
   };
 }
 
+function attendanceCalculationThroughCurrentDate(month, statuses, startDate = "") {
+  const allDates = datesForMonth(month);
+  const today = todayIsoDate();
+  if (!allDates.length || today < allDates[0] || (startDate && today < startDate)) {
+    return { ...monthlyAttendanceCalculation(month, [], 0, 0), through: "" };
+  }
+  const through = today > allDates[allDates.length - 1] ? allDates[allDates.length - 1] : today;
+  const eligibleDates = allDates.filter(date => date <= through && (!startDate || date >= startDate));
+  const holidayCount = eligibleDates.filter(date => isAttendanceHolidayDate(date)).length;
+  const fullEligibility = attendanceEligibilityForMonth(month, startDate);
+  const elapsedWorkingDays = Math.min(
+    fullEligibility.workingDays,
+    eligibleDates.filter(date => !isAttendanceHolidayDate(date)).length
+  );
+  const elapsedStatuses = (Array.isArray(statuses) ? statuses : []).filter(item => {
+    const date = item && typeof item === "object" && !Array.isArray(item) ? item.date : "";
+    return !date || date <= through;
+  });
+  return {
+    ...monthlyAttendanceCalculation(month, elapsedStatuses, elapsedWorkingDays, holidayCount),
+    through
+  };
+}
+
 function monthlyAttendanceHeaders() {
-  return ["Month", "Class", "Roll", "Student", "Working Days", "Saved Days", "Present", "Absent", "Late", "Leave", "Total Holiday", "Attendance %", "Present Required for 75%", "Present Needed", "Suggestion", "Guardian", "Mobile", "Absent Dates"];
+  return ["Month", "Class", "Roll", "Student", "Working Days", "Saved Days", "Present", "Absent", "Late", "Leave", "Total Holiday", "Attendance %", "Attendance % Up to Current Date", "Calculated Through", "Present Required for 75%", "Present Needed", "Suggestion", "Guardian", "Mobile", "Absent Dates"];
 }
 function monthlySummaryRows(month, classKeys) {
   return classKeys.flatMap(classGroup => {
@@ -11115,6 +11184,7 @@ function monthlySummaryRows(month, classKeys) {
       const source = monthlyStatusesForStudent(month, classGroup, student[0], records, startDate, studentAdmissionNo(student));
       const eligibility = attendanceEligibilityForMonth(month, startDate);
       const calc = monthlyAttendanceCalculation(month, source, startDate ? eligibility.workingDays : null, startDate ? eligibility.holidays : null);
+      const currentCalc = attendanceCalculationThroughCurrentDate(month, source, startDate);
       if (!Array.isArray(student[8]) || student[8].length) student[8] = [];
       return [
         month,
@@ -11129,6 +11199,8 @@ function monthlySummaryRows(month, classKeys) {
         calc.leave,
         calc.holiday,
         calc.percent,
+        currentCalc.percent,
+        currentCalc.through ? displayDateLong(currentCalc.through) : "Not started",
         calc.targetPresent,
         calc.neededFor75,
         calc.suggestion,
@@ -11211,7 +11283,7 @@ function monthlySummaryRows(month, classKeys) {
 
     function lowAttendanceRows(month, classKeys) {
       return monthlySummaryRows(month, classKeys)
-        .map(row => ({ row, percent: Number(String(row[11]).replace("%", "")) }))
+        .map(row => ({ row, percent: Number(String(row[12] === "-" ? row[11] : row[12]).replace("%", "")) }))
         .filter(item => Number.isFinite(item.percent) && item.percent < 75)
         .map(item => [...item.row, item.percent < 60 ? "Urgent" : "Monitor"]);
     }
@@ -11253,7 +11325,7 @@ function academicYearLabel(anchorMonth) {
 }
 
 function yearlyAttendanceHeaders() {
-  return ["Academic Year", "Class", "Roll", "Student", "Working Days", "Saved Days", "Total Holiday", "Present", "Absent", "Late", "Leave", "Attendance %", "Present Required for 75%", "Present Needed", "Suggestion", "Guardian", "Mobile"];
+  return ["Academic Year", "Class", "Roll", "Student", "Working Days", "Saved Days", "Total Holiday", "Present", "Absent", "Late", "Leave", "Attendance %", "Attendance % Up to Current Date", "Calculated Through", "Present Required for 75%", "Present Needed", "Suggestion", "Guardian", "Mobile"];
 }
 
 function yearlyAttendanceRows(anchorMonth, classKeys) {
@@ -11275,11 +11347,22 @@ function yearlyAttendanceRows(anchorMonth, classKeys) {
         acc.absent += calc.absent;
         acc.late += calc.late;
         acc.leave += calc.leave;
+        const currentCalc = attendanceCalculationThroughCurrentDate(month, source, startDate);
+        acc.currentWorkingDays += currentCalc.workingDays;
+        acc.currentPresent += currentCalc.present;
+        acc.currentLate += currentCalc.late;
+        if (currentCalc.through && (!acc.calculatedThrough || currentCalc.through > acc.calculatedThrough)) {
+          acc.calculatedThrough = currentCalc.through;
+        }
         return acc;
-      }, { workingDays: 0, savedWorkingDays: 0, holiday: 0, present: 0, absent: 0, late: 0, leave: 0 });
+      }, { workingDays: 0, savedWorkingDays: 0, holiday: 0, present: 0, absent: 0, late: 0, leave: 0, currentWorkingDays: 0, currentPresent: 0, currentLate: 0, calculatedThrough: "" });
       const attended = totals.present + totals.late;
       const denominator = totals.workingDays || totals.savedWorkingDays;
       const percentValue = denominator ? Math.round((attended / denominator) * 1000) / 10 : null;
+      const currentAttended = totals.currentPresent + totals.currentLate;
+      const currentPercentValue = totals.currentWorkingDays
+        ? Math.round((currentAttended / totals.currentWorkingDays) * 1000) / 10
+        : null;
       const requiredFor75 = denominator ? Math.ceil(denominator * 0.75) : 0;
       const neededFor75 = requiredFor75 ? Math.max(0, requiredFor75 - attended) : 0;
       const suggestion = !denominator
@@ -11298,6 +11381,8 @@ function yearlyAttendanceRows(anchorMonth, classKeys) {
         totals.late,
         totals.leave,
         percentValue === null ? "-" : `${percentValue}%`,
+        currentPercentValue === null ? "-" : `${currentPercentValue}%`,
+        totals.calculatedThrough ? displayDateLong(totals.calculatedThrough) : "Not started",
         requiredFor75,
         neededFor75,
         suggestion,
@@ -15995,6 +16080,10 @@ function currentReportData(type = document.getElementById("reportType").value) {
 
     document.getElementById("resetLongRangeMonth").addEventListener("click", () => {
       resetLongRangeMonthAttendance();
+    });
+
+    document.getElementById("toggleLongRangeAttendance")?.addEventListener("click", () => {
+      toggleLongRangeAttendanceVisibility();
     });
 
     document.getElementById("applyBulk").addEventListener("click", () => {
