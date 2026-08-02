@@ -5460,9 +5460,9 @@
         <div class="card" style="margin-top: 14px;">
           <div class="section-title">
             <h2>Section A/B Exchange</h2>
-            <span class="pill">Attendance preserved</span>
+            <span class="pill">Alphabetical roll allotment</span>
           </div>
-          <p class="subtle">Enter equal roll-number lists in matching order. Each A student will exchange section and roll position with the corresponding B student.</p>
+          <p class="subtle">Enter equal roll-number lists in matching order. After exchange, both sections will be arranged alphabetically and fresh roll numbers will be allotted automatically. Attendance, MDM and exam records will remain linked to each student.</p>
           <div class="toolbar">
             <div class="field">
               <label for="exchangeBaseClass">Class</label>
@@ -8653,7 +8653,44 @@
           error = `Student not found for pair(s): ${missing.map(pair => `A-${Number(pair.rollA || 0)} / B-${Number(pair.rollB || 0)}`).join(", ")}.`;
         }
       }
-      return { baseClass, classA, classB, rollsA, rollsB, listA, listB, pairs, error };
+      const alphabetical = list => [...list]
+        .sort((first, second) => String(first?.[1] || "").localeCompare(String(second?.[1] || ""), undefined, { sensitivity: "base", numeric: true }));
+      const nextListA = error ? [] : alphabetical(listA
+        .filter(student => !pairs.some(pair => pair.studentA === student))
+        .concat(pairs.map(pair => pair.studentB)));
+      const nextListB = error ? [] : alphabetical(listB
+        .filter(student => !pairs.some(pair => pair.studentB === student))
+        .concat(pairs.map(pair => pair.studentA)));
+      return { baseClass, classA, classB, rollsA, rollsB, listA, listB, pairs, nextListA, nextListB, error };
+    }
+
+    function sectionExchangeListTable(classGroup, list, headingPrefix = "Proposed") {
+      return `
+        <div>
+          <h3 style="margin: 14px 0 8px;">${sectionExchangeText(headingPrefix)} ${sectionExchangeText(classGroup)} List</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>New Roll</th><th>Student Name</th><th>Admission No.</th></tr></thead>
+              <tbody>
+                ${list.map((student, index) => `
+                  <tr>
+                    <td><strong>${String(index + 1).padStart(2, "0")}</strong></td>
+                    <td>${sectionExchangeText(student[1])}</td>
+                    <td>${sectionExchangeText(studentAdmissionNo(student) || "-")}</td>
+                  </tr>
+                `).join("") || `<tr><td colspan="3">No students available.</td></tr>`}
+              </tbody>
+            </table>
+          </div>
+        </div>`;
+    }
+
+    function sectionExchangeListsHtml(classA, listA, classB, listB, headingPrefix = "Proposed") {
+      return `
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; padding: 0 12px 12px;">
+          ${sectionExchangeListTable(classA, listA, headingPrefix)}
+          ${sectionExchangeListTable(classB, listB, headingPrefix)}
+        </div>`;
     }
 
     function renderSectionExchangePreview() {
@@ -8690,7 +8727,9 @@
               </tr>
             `).join("")}
           </tbody>
-        </table>`;
+        </table>
+        <div class="success-note" style="margin: 12px;">Instant section lists below show the alphabetical order and new roll numbers that will be applied.</div>
+        ${sectionExchangeListsHtml(data.classA, data.nextListA, data.classB, data.nextListB)}`;
       return data;
     }
 
@@ -8734,6 +8773,61 @@
       });
     }
 
+    function alphabetizeSectionAndRelink(classGroup) {
+      const list = classData[classGroup] || [];
+      const identity = new Map(list.map(student => [student, {
+        oldRoll: String(student[0] || "").padStart(2, "0"),
+        admissionNo: studentAdmissionNo(student),
+        name: String(student[1] || "").trim()
+      }]));
+      const sorted = [...list].sort((first, second) => String(first?.[1] || "")
+        .localeCompare(String(second?.[1] || ""), undefined, { sensitivity: "base", numeric: true }));
+
+      Object.values(dailyAttendanceRecords).forEach(record => {
+        if (record.classGroup !== classGroup) return;
+        const savedRows = [...(record.students || [])];
+        record.students = sorted.map((student, index) => {
+          const studentIdentity = identity.get(student);
+          const source = savedRows.find(row => studentIdentity.admissionNo && String(row.admissionNo || "").trim() === studentIdentity.admissionNo)
+            || savedRows.find(row => String(row.roll || "").padStart(2, "0") === studentIdentity.oldRoll)
+            || savedRows.find(row => String(row.name || "").trim().toLowerCase() === studentIdentity.name.toLowerCase());
+          return attendanceRowWithStudentIdentity(source, String(index + 1).padStart(2, "0"), student);
+        });
+      });
+
+      examResults.forEach(result => {
+        if (result.classGroup !== classGroup) return;
+        const resultAdmission = String(result.admissionNo || "").trim();
+        const resultRoll = String(result.roll || "").padStart(2, "0");
+        const match = sorted.find(student => {
+          const studentIdentity = identity.get(student);
+          return (resultAdmission && studentIdentity.admissionNo === resultAdmission)
+            || (!resultAdmission && studentIdentity.oldRoll === resultRoll)
+            || String(result.name || "").trim().toLowerCase() === studentIdentity.name.toLowerCase();
+        });
+        if (!match) return;
+        result.roll = String(sorted.indexOf(match) + 1).padStart(2, "0");
+        result.name = match[1];
+        result.admissionNo = result.admissionNo || studentAdmissionNo(match);
+      });
+
+      mdmRecords.forEach(record => {
+        if (record.classGroup !== classGroup || record.roll === undefined) return;
+        const recordAdmission = String(record.admissionNo || "").trim();
+        const recordRoll = String(record.roll || "").padStart(2, "0");
+        const match = sorted.find(student => {
+          const studentIdentity = identity.get(student);
+          return (recordAdmission && studentIdentity.admissionNo === recordAdmission)
+            || (!recordAdmission && studentIdentity.oldRoll === recordRoll);
+        });
+        if (match) record.roll = String(sorted.indexOf(match) + 1).padStart(2, "0");
+      });
+
+      sorted.forEach((student, index) => { student[0] = String(index + 1).padStart(2, "0"); });
+      classData[classGroup] = sorted;
+      return sorted;
+    }
+
     function exchangeSectionStudents() {
       const status = document.getElementById("exchangeStudentStatus");
       const previewData = renderSectionExchangePreview();
@@ -8757,8 +8851,10 @@
           }
         });
       });
-      classData[classA] = listA.filter(student => !pairs.some(pair => pair.studentA === student)).concat(pairs.map(pair => pair.studentB)).sort((a, b) => Number(a[0]) - Number(b[0]));
-      classData[classB] = listB.filter(student => !pairs.some(pair => pair.studentB === student)).concat(pairs.map(pair => pair.studentA)).sort((a, b) => Number(a[0]) - Number(b[0]));
+      classData[classA] = listA.filter(student => !pairs.some(pair => pair.studentA === student)).concat(pairs.map(pair => pair.studentB));
+      classData[classB] = listB.filter(student => !pairs.some(pair => pair.studentB === student)).concat(pairs.map(pair => pair.studentA));
+      const finalListA = alphabetizeSectionAndRelink(classA);
+      const finalListB = alphabetizeSectionAndRelink(classB);
       Object.values(dailyAttendanceRecords).forEach(record => {
         if (record.classGroup === classA || record.classGroup === classB) {
           record.students = savedOrDefaultAttendanceStudents(record.date, record.classGroup);
@@ -8770,8 +8866,10 @@
       renderStudentMaster();
       loadClassStudents();
       refreshAttendanceLinkedViews();
-      document.getElementById("exchangeStudentPreview").innerHTML = `<p class="subtle" style="padding: 14px;">Enter matching Section A and Section B roll numbers to preview the next exchange.</p>`;
-      status.textContent = `${pairs.length} pair(s) exchanged successfully. Previous attendance and exam identity were preserved.`;
+      document.getElementById("exchangeStudentPreview").innerHTML = `
+        <div class="success-note" style="margin: 12px;">Exchange complete. Final alphabetical section lists and newly allotted roll numbers are shown below.</div>
+        ${sectionExchangeListsHtml(classA, finalListA, classB, finalListB, "Final")}`;
+      status.textContent = `${pairs.length} pair(s) exchanged successfully. Alphabetical roll numbers allotted; attendance, MDM, exam and report identity preserved.`;
     }
 
     function renderStudentMaster() {
