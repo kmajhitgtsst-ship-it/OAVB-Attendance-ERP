@@ -5478,6 +5478,7 @@
             </div>
             <button class="secondary" id="previewSectionExchange" type="button">Preview Exchange</button>
             <button class="primary" id="exchangeStudents">Exchange Students</button>
+            <button class="secondary" id="reorderSectionRolls" type="button">Reorder Both Sections A-Z</button>
           </div>
           <p class="success-note" id="exchangeStudentStatus">Previous attendance will remain linked to each student after exchange.</p>
           <div class="table-wrap" id="exchangeStudentPreview" style="margin-top: 12px;">
@@ -6753,7 +6754,7 @@
     const monthSettings = {
       "2026-07": { workingDays: 24, holidays: [] }
     };
-    const APP_VERSION = "2026-08-02-academic-session-attendance-report";
+    const APP_VERSION = "2026-08-02-alphabetical-roll-fix";
     const CLOUD_KEYS = [
       "oavBadiClassData",
       "oavBadiTeachers",
@@ -8780,8 +8781,13 @@
         admissionNo: studentAdmissionNo(student),
         name: String(student[1] || "").trim()
       }]));
-      const sorted = [...list].sort((first, second) => String(first?.[1] || "")
-        .localeCompare(String(second?.[1] || ""), undefined, { sensitivity: "base", numeric: true }));
+      const sorted = [...list].sort((first, second) => {
+        const firstName = String(first?.[1] || "").trim();
+        const secondName = String(second?.[1] || "").trim();
+        const nameOrder = firstName.localeCompare(secondName, "en", { sensitivity: "base", numeric: true });
+        if (nameOrder) return nameOrder;
+        return studentAdmissionNo(first).localeCompare(studentAdmissionNo(second), "en", { numeric: true });
+      });
 
       Object.values(dailyAttendanceRecords).forEach(record => {
         if (record.classGroup !== classGroup) return;
@@ -8828,7 +8834,38 @@
       return sorted;
     }
 
-    function exchangeSectionStudents() {
+    function showExchangedSectionInMaster(baseClass, section = "A") {
+      const classSelect = document.getElementById("masterClass");
+      const sectionSelect = document.getElementById("masterSection");
+      if (classSelect) classSelect.value = baseClass;
+      if (sectionSelect) sectionSelect.value = section;
+      renderStudentMaster();
+    }
+
+    async function persistAlphabeticalRollChanges() {
+      saveLocalData();
+      clearTimeout(cloudSyncTimer);
+      await pushCloudState();
+    }
+
+    async function reorderSelectedSectionsAlphabetically() {
+      const baseClass = document.getElementById("exchangeBaseClass").value;
+      const classA = `${baseClass}-A`;
+      const classB = `${baseClass}-B`;
+      if (!confirm(`Reorder ${classA} and ${classB} alphabetically and allot fresh roll numbers? Linked attendance and results will be preserved.`)) return;
+      const finalListA = alphabetizeSectionAndRelink(classA);
+      const finalListB = alphabetizeSectionAndRelink(classB);
+      await persistAlphabeticalRollChanges();
+      showExchangedSectionInMaster(baseClass, "A");
+      loadClassStudents();
+      refreshAttendanceLinkedViews();
+      document.getElementById("exchangeStudentPreview").innerHTML = `
+        <div class="success-note" style="margin: 12px;">Both sections were sorted A-Z and fresh roll numbers were saved.</div>
+        ${sectionExchangeListsHtml(classA, finalListA, classB, finalListB, "Final")}`;
+      document.getElementById("exchangeStudentStatus").textContent = `${classA} and ${classB} reordered successfully. Roll numbers now follow student-name alphabetical order.`;
+    }
+
+    async function exchangeSectionStudents() {
       const status = document.getElementById("exchangeStudentStatus");
       const previewData = renderSectionExchangePreview();
       if (previewData.error) return;
@@ -8861,9 +8898,9 @@
         }
       });
       addAuditLog("Student Section Exchange", `${pairs.length} pair(s) exchanged between ${classA} and ${classB}; previous attendance preserved.`, { classGroup: baseClass });
-      saveLocalData();
+      await persistAlphabeticalRollChanges();
       clearEntryFields(["exchangeRollsA", "exchangeRollsB"]);
-      renderStudentMaster();
+      showExchangedSectionInMaster(baseClass, "A");
       loadClassStudents();
       refreshAttendanceLinkedViews();
       document.getElementById("exchangeStudentPreview").innerHTML = `
@@ -15680,6 +15717,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
       document.getElementById(id).addEventListener("change", renderSectionExchangePreview);
     });
     document.getElementById("exchangeStudents").addEventListener("click", exchangeSectionStudents);
+    document.getElementById("reorderSectionRolls").addEventListener("click", reorderSelectedSectionsAlphabetically);
 
     document.getElementById("downloadStudentTemplate").addEventListener("click", () => {
       downloadStudentTemplate();
