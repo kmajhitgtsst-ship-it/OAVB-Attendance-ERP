@@ -26,6 +26,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>OAV BADI Attendance ERP</title>
+  <link rel="stylesheet" href="grant-module.css">
   <style>
     :root {
       --ink: #172027;
@@ -6853,7 +6854,8 @@
       "oavBadiLongRangeAttendanceHidden",
       "oavBadiUtilisationSchemes",
       "oavBadiUtilisationSchemeData",
-      "oavBadiUtilisationCertificates"
+      "oavBadiUtilisationCertificates",
+      "oavBadiGrantModule"
     ];
     const CLOUD_TS_KEY = "oavBadiCloudUpdatedAt";
     const REMEMBERED_LOGIN_KEY = "oavBadiRememberedLogin";
@@ -7846,7 +7848,8 @@
         renderReport();
       }
       if (page === "utilisation") {
-        renderUtilisationModule();
+        if (window.renderAdvancedGrantModule) window.renderAdvancedGrantModule();
+        else renderUtilisationModule();
       }
       if (page === "examresults") {
         populateExamClassOptions();
@@ -8038,7 +8041,8 @@
       renderReport();
       populateExamClassOptions();
       renderExamResults();
-      renderUtilisationModule();
+      if (window.renderAdvancedGrantModule) window.renderAdvancedGrantModule();
+      else renderUtilisationModule();
       renderPeriodTimeInputs();
       renderTimetableAudit();
       updateTimetableAccess();
@@ -16789,7 +16793,8 @@ function currentReportData(type = document.getElementById("reportType").value) {
     renderRecentData();
     populateReportClassOptions();
     renderReport();
-    renderUtilisationModule();
+    if (window.renderAdvancedGrantModule) window.renderAdvancedGrantModule();
+    else renderUtilisationModule();
     populateExamClassOptions();
     renderExamResults();
     renderPeriodTimeInputs();
@@ -16806,6 +16811,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
     startAutoUpdateCheck();
     startCloudSync();
   </script>
+  <script src="grant-module.js"></script>
 </body>
 </html>
 
