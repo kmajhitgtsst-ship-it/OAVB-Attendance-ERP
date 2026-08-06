@@ -6959,6 +6959,7 @@
     let activeUser = { role: "guest", teacher: "", classKey: "", pages: [] };
     let loggedIn = false;
     let adminSession = false;
+    let staffPasswordsVisible = false;
     let longRangeAttendanceHidden = localStorage.getItem("oavBadiLongRangeAttendanceHidden") === "true";
     let activeTimetableTimeMode = localStorage.getItem(TIMETABLE_TIME_MODE_KEY) === "morning" ? "morning" : "normal";
     const UI_SESSION_BASE_KEY = "oavBadiUiSessionState";
@@ -7880,6 +7881,7 @@
       saveLocalData();
       loggedIn = false;
       adminSession = false;
+      staffPasswordsVisible = false;
       activeUser = { role: "guest", teacher: "", classKey: "", pages: [] };
       sessionStorage.removeItem(ACTIVE_SESSION_KEY);
       document.body.classList.add("login-only");
@@ -9744,8 +9746,8 @@
           <td>${teacher[3] || '<span class="status absent">Class not assigned</span>'}</td>
           <td><span class="status ${teacherStatusClass(teacher)}">${teacherAttendanceStatus(teacher)}</span></td>
           <td>${teacherLoginId(teacher[0])}</td>
-          <td><span class="status leave">Protected</span></td>
-          <td><button class="secondary assign-teacher-subject" data-index="${index}">Assign Subject</button> <button class="secondary assign-teacher-class" data-index="${index}">Assign Class</button> <button class="secondary assign-admin-principal" data-index="${index}">Assign Admin/Principal</button> <button class="secondary assign-erp-role" data-index="${index}">Assign ERP Role</button> <button class="secondary edit-teacher" data-index="${index}">Edit</button> ${canResetPasswords ? `<button class="secondary reset-teacher-password" data-index="${index}">Reset Password</button>` : ""} <button class="secondary delete-teacher" data-index="${index}">Delete</button></td>
+          <td>${canResetPasswords && staffPasswordsVisible ? `<code>${htmlSafe(teacherPassword(teacher[0]))}</code>` : '<span class="status leave">Protected</span>'}</td>
+          <td><button class="secondary assign-teacher-subject" data-index="${index}">Assign Subject</button> <button class="secondary assign-teacher-class" data-index="${index}">Assign Class</button> <button class="secondary assign-admin-principal" data-index="${index}">Assign Admin/Principal</button> <button class="secondary assign-erp-role" data-index="${index}">Assign ERP Role</button> <button class="secondary edit-teacher" data-index="${index}">Edit</button> ${canResetPasswords ? `<button class="secondary toggle-teacher-passwords">${staffPasswordsVisible ? "Hide Passwords" : "Show Passwords"}</button> <button class="secondary reset-teacher-password" data-index="${index}">Reset Password</button>` : ""} <button class="secondary delete-teacher" data-index="${index}">Delete</button></td>
         </tr>
       `).join("") : `<tr><td colspan="12">No teacher data uploaded yet. Import your school teacher CSV/Excel.</td></tr>`;
     }
@@ -10058,6 +10060,18 @@
       saveLocalData();
       renderTeachers();
       document.getElementById("teacherBulkStatus").textContent = `${teacher[0]} password reset to ${DEFAULT_TEACHER_PASSWORD}.`;
+    }
+
+    function toggleTeacherPasswords() {
+      if (!canManageTeacherPasswords()) {
+        document.getElementById("teacherBulkStatus").textContent = "Password view is allowed only for Principal/Admin login.";
+        return;
+      }
+      staffPasswordsVisible = !staffPasswordsVisible;
+      renderTeachers();
+      document.getElementById("teacherBulkStatus").textContent = staffPasswordsVisible
+        ? "Passwords are visible to this Admin/Principal session. Hide them before leaving the screen."
+        : "Staff passwords are protected again.";
     }
 
     function deleteTeacher(index) {
@@ -16740,6 +16754,11 @@ function currentReportData(type = document.getElementById("reportType").value) {
     document.addEventListener("click", event => {
       if (!event.target.matches(".reset-teacher-password")) return;
       resetTeacherPassword(Number(event.target.dataset.index));
+    });
+
+    document.addEventListener("click", event => {
+      if (!event.target.matches(".toggle-teacher-passwords")) return;
+      toggleTeacherPasswords();
     });
 
     document.addEventListener("click", event => {
