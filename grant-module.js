@@ -413,6 +413,12 @@
         alert(error.message || "Form-24 could not be saved.");
       }
     });
+    root.addEventListener("click", event => {
+      const button = event.target.closest("[data-action='add-scheme']");
+      if (!button) return;
+      const schemeName = document.getElementById("gm-scheme-name");
+      if (schemeName && !text(schemeName.value)) schemeName.value = `Untitled Scheme ${state.schemes.length + 1}`;
+    }, true);
     document.getElementById("ge-date")?.addEventListener("change", event => { document.getElementById("ge-fy").value = financialYear(event.target.value); });
     document.getElementById("gp-scheme")?.addEventListener("change", loadPhysical);
     const reportingYear = document.getElementById("gf-fy");
