@@ -1,0 +1,60 @@
+.grant-module {
+  display: grid;
+  gap: 18px;
+  color: var(--ink, #10243a);
+}
+.grant-module .card {
+  padding: 18px;
+  border: 1px solid var(--line, #d5e0ea);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(16, 36, 58, 0.05);
+}
+.grant-module .section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.grant-module .section-title h2,
+.grant-module .section-title h3 { margin: 0; }
+.grant-module .grant-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.grant-module .grant-tabs button { border: 1px solid var(--line, #d5e0ea); background: #fff; color: var(--ink, #10243a); border-radius: 7px; padding: 10px 14px; cursor: pointer; font-weight: 700; }
+.grant-module .grant-tabs button.active { background: var(--blue, #1769e0); border-color: var(--blue, #1769e0); color: #fff; }
+.grant-module .grant-panel { display: none; }
+.grant-module .grant-panel.active { display: grid; gap: 14px; }
+.grant-module .grant-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.grant-module .grant-grid .wide { grid-column: span 2; }
+.grant-module .grant-grid label { display: grid; gap: 6px; color: var(--muted, #52657a); font-size: 13px; font-weight: 700; }
+.grant-module input, .grant-module select, .grant-module textarea { width: 100%; min-height: 42px; padding: 9px 11px; border: 1px solid var(--line, #d5e0ea); border-radius: 6px; background: #fff; color: var(--ink, #10243a); font: inherit; box-sizing: border-box; }
+.grant-module textarea { min-height: 74px; resize: vertical; }
+.grant-module .grant-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.grant-module .grant-stat { padding: 16px; border: 1px solid var(--line, #d5e0ea); border-radius: 8px; background: #f8fbfe; }
+.grant-module .grant-stat span { display: block; color: var(--muted, #52657a); font-size: 13px; }
+.grant-module .grant-stat strong { display: block; margin-top: 5px; font-size: 20px; }
+.grant-module .grant-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.grant-module .grant-actions button { border: 0; border-radius: 6px; padding: 10px 14px; cursor: pointer; font: inherit; font-weight: 700; background: var(--nav-soft, #284b69); color: #fff; }
+.grant-module .grant-actions .primary { background: var(--blue, #1769e0); }
+.grant-module .grant-actions .danger { background: var(--red, #c93636); }
+.grant-module .grant-actions .approve { background: var(--green, #138a61); }
+.grant-module .grant-status { display: inline-flex; align-items: center; border-radius: 999px; padding: 3px 8px; font-size: 11px; font-weight: 800; background: #e8eef3; color: var(--ink); }
+.grant-module .grant-status.approved, .grant-module .grant-status.locked { background: #d8f3e8; color: #086040; }
+.grant-module .grant-status.returned, .grant-module .grant-status.cancelled { background: #fde3e3; color: #9f2222; }
+.grant-module .grant-status.submitted { background: #fff1c9; color: #805600; }
+.grant-module .grant-note { margin: 0; color: var(--muted, #52657a); font-size: 13px; }
+.grant-module .grant-warning { color: #9a6500; font-weight: 700; }
+.grant-module .grant-table-wrap { overflow-x: auto; border: 1px solid var(--line, #d5e0ea); border-radius: 8px; }
+.grant-module .grant-table { border-collapse: collapse; width: 100%; min-width: 800px; background: #fff; font-size: 13px; }
+.grant-module .grant-table th, .grant-module .grant-table td { padding: 10px; border-bottom: 1px solid var(--line, #d5e0ea); text-align: left; vertical-align: top; }
+.grant-module .grant-table th { background: #eff5f9; white-space: nowrap; }
+.grant-module .grant-preview { background: #fff; border: 1px solid #b5c2cc; padding: 24px; color: #000; font-family: Arial, sans-serif; line-height: 1.42; }
+.grant-module .grant-preview h2, .grant-module .grant-preview h3, .grant-module .grant-preview p { margin: 8px 0; }
+.grant-module .grant-preview h2, .grant-module .grant-preview h3 { text-align: center; }
+.grant-module .grant-preview table { border-collapse: collapse; width: 100%; font-size: 11px; margin: 10px 0; }
+.grant-module .grant-preview th, .grant-module .grant-preview td { border: 1px solid #000; padding: 5px; vertical-align: top; }
+.grant-module .grant-preview th { text-align: center; }
+.grant-module .grant-preview .signature { width: 230px; margin: 36px 0 0 auto; text-align: center; }
+.grant-module .grant-allocation-row { display: grid; grid-template-columns: minmax(210px, 1fr) 140px auto; gap: 8px; margin: 8px 0; align-items: end; }
+.grant-module .grant-allocation-row button { padding: 9px; }
+@media (max-width: 700px) { .grant-module .grant-grid .wide { grid-column: span 1; } .grant-module .grant-allocation-row { grid-template-columns: 1fr; } .grant-module .grant-preview { padding: 12px; overflow-x: auto; } }
