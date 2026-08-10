@@ -27,6 +27,7 @@
   <meta http-equiv="Expires" content="0">
   <title>OAV BADI Attendance ERP</title>
   <link rel="stylesheet" href="grant-module.css">
+  <link rel="stylesheet" href="uc-daily.css">
   <style>
     :root {
       --ink: #172027;
@@ -6606,6 +6607,8 @@
           <h3 style="margin-top: 18px;">Table-1: Current Year</h3>
           <div class="uc-grid">
             <div class="field wide"><label>Sanction No. &amp; Date</label><input id="ucCurrentSanction" placeholder="Sanction number and date"></div>
+            <div class="field"><label>Year of Fund Receipt</label><input id="ucCurrentReceiptYear" placeholder="Example: 2025-26"></div>
+            <div class="field"><label>Year of Utilisation</label><input id="ucCurrentUtilisationYear" placeholder="Example: 2025-26"></div>
             <div class="field"><label>Fund Received / Sanctioned Amount (Rs.)</label><input id="ucCurrentReceived" type="number" min="0" step="0.01" value="0"></div>
             <div class="field"><label>Adjusted towards GIA / Loan (Rs.)</label><input id="ucCurrentAdjusted" type="number" min="0" step="0.01" value="0"></div>
             <div class="field"><label>Amount Utilised (Rs.)</label><input id="ucCurrentUtilised" type="number" min="0" step="0.01" value="0"></div>
@@ -6616,6 +6619,8 @@
           <h3 style="margin-top: 18px;">Table-2: Previous Year</h3>
           <div class="uc-grid">
             <div class="field wide"><label>Sanction No. &amp; Date</label><input id="ucPreviousSanction" placeholder="Previous year sanction number and date"></div>
+            <div class="field"><label>Year of Fund Receipt</label><input id="ucPreviousReceiptYear" placeholder="Example: 2024-25"></div>
+            <div class="field"><label>Year of Utilisation</label><input id="ucPreviousUtilisationYear" placeholder="Example: 2025-26"></div>
             <div class="field"><label>Previous Sanctioned Amount (Rs.)</label><input id="ucPreviousSanctioned" type="number" min="0" step="0.01" value="0"></div>
             <div class="field"><label>Opening Unspent Balance (Rs.)</label><input id="ucPreviousOpening" type="number" min="0" step="0.01" value="0"></div>
             <div class="field"><label>Amount Utilised (Rs.)</label><input id="ucPreviousUtilised" type="number" min="0" step="0.01" value="0"></div>
@@ -6625,6 +6630,8 @@
           </div>
 
           <div class="uc-grid" style="margin-top: 14px;">
+            <div class="field wide"><label>Financial Target / Approved Amount</label><input id="ucFinancialTargetDetails" placeholder="Example: Rs. 1,44,500 for furniture procurement"></div>
+            <div class="field wide"><label>Physical Target Fixed</label><input id="ucPhysicalTargetDetails" placeholder="Example: Furniture for 4 classrooms and office"></div>
             <div class="field"><label>Treasury Challan No.</label><input id="ucChallanNo"></div>
             <div class="field"><label>Treasury Challan Date</label><input id="ucChallanDate" type="date"></div>
             <div class="field wide"><label>Kinds of Checks Exercised</label><textarea id="ucChecks" rows="3" placeholder="Enter checks verified before certification"></textarea></div>
@@ -6663,9 +6670,9 @@
             <div class="field wide"><label>Name of the Grantee Organisation</label><input id="ogfr24Grantee" readonly></div>
             <div class="field wide"><label>Name of the Scheme and the Sector</label><input id="ogfr24SchemeSector" readonly></div>
             <div class="field"><label>Financial Target Fixed (Rs.)</label><input id="ogfr24FinancialTarget" type="number" readonly></div>
-            <div class="field"><label>Grant-in-Aid Received (Rs.)</label><input id="ogfr24GrantReceived" type="number" readonly></div>
+            <div class="field"><label>Grant-in-Aid Received (Year-wise)</label><input id="ogfr24GrantReceived" readonly></div>
             <div class="field"><label>Physical Target Fixed</label><input id="ogfr24PhysicalTarget" placeholder="Example: 4 classrooms"></div>
-            <div class="field"><label>Amount Utilized (Rs.)</label><input id="ogfr24AmountUtilised" type="number" readonly></div>
+            <div class="field"><label>Amount Utilized (Year-wise)</label><input id="ogfr24AmountUtilised" readonly></div>
             <div class="field"><label>Amount for which U.C. Furnished Previously (Rs.)</label><input id="ogfr24PreviousUcAmount" type="number" min="0" step="0.01" value="0"></div>
             <div class="field wide"><label>Physical Target Achieved Against U.C. Furnished Previously</label><input id="ogfr24PreviousAchievement" placeholder="Enter previous achievement"></div>
             <div class="field wide"><label>Physical Target Achieved as per Present U.C.</label><input id="ogfr24PresentAchievement" placeholder="Enter present achievement"></div>
@@ -6853,6 +6860,7 @@
       "oavBadiTimetablePeriodTimes",
       "oavBadiLongRangeAttendanceHidden",
       "oavBadiUtilisationSchemes",
+      "oavBadiUcDailyState",
       "oavBadiUtilisationSchemeData",
       "oavBadiUtilisationCertificates",
       "oavBadiGrantModule"
@@ -14993,7 +15001,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
       const previousUtilised = ucNumber("ucPreviousUtilised");
       const previousDeposited = ucNumber("ucPreviousDeposited");
       const previousAdjusted = ucNumber("ucPreviousAdjusted");
-      const currentBalance = currentReceived - currentAdjusted - currentUtilised - currentDeposited;
+      const currentBalance = currentReceived - currentUtilised - currentDeposited;
       const previousBalance = previousOpening - previousUtilised - previousDeposited - previousAdjusted;
       const record = {
         id: document.getElementById("ucSaveButton").dataset.recordId || `UC-${Date.now()}`,
@@ -15008,6 +15016,8 @@ function currentReportData(type = document.getElementById("reportType").value) {
         certificateDate: document.getElementById("ucCertificateDate").value,
         balanceTreatment: document.getElementById("ucBalanceTreatment").value,
         currentSanction: document.getElementById("ucCurrentSanction").value.trim(),
+        currentReceiptYear: document.getElementById("ucCurrentReceiptYear").value.trim(),
+        currentUtilisationYear: document.getElementById("ucCurrentUtilisationYear").value.trim(),
         currentReceived,
         currentAdjusted,
         currentUtilised,
@@ -15015,6 +15025,8 @@ function currentReportData(type = document.getElementById("reportType").value) {
         currentRemarks: document.getElementById("ucCurrentRemarks").value.trim(),
         currentBalance,
         previousSanction: document.getElementById("ucPreviousSanction").value.trim(),
+        previousReceiptYear: document.getElementById("ucPreviousReceiptYear").value.trim(),
+        previousUtilisationYear: document.getElementById("ucPreviousUtilisationYear").value.trim(),
         previousSanctioned,
         previousOpening,
         previousUtilised,
@@ -15022,6 +15034,8 @@ function currentReportData(type = document.getElementById("reportType").value) {
         previousAdjusted,
         previousRemarks: document.getElementById("ucPreviousRemarks").value.trim(),
         previousBalance,
+        financialTargetDetails: document.getElementById("ucFinancialTargetDetails").value.trim(),
+        physicalTargetDetails: document.getElementById("ucPhysicalTargetDetails").value.trim(),
         challanNo: document.getElementById("ucChallanNo").value.trim(),
         challanDate: document.getElementById("ucChallanDate").value,
         checks: document.getElementById("ucChecks").value.trim(),
@@ -15036,7 +15050,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
         schemeSector: record.purpose || record.scheme,
         financialTarget: record.totalFundAvailable,
         grantReceived: record.currentReceived,
-        physicalTarget: document.getElementById("ogfr24PhysicalTarget")?.value.trim() || "",
+        physicalTarget: document.getElementById("ogfr24PhysicalTarget")?.value.trim() || record.physicalTargetDetails || "",
         amountUtilised: record.totalUtilised,
         previousUcAmount: Number(document.getElementById("ogfr24PreviousUcAmount")?.value) || 0,
         previousAchievement: document.getElementById("ogfr24PreviousAchievement")?.value.trim() || "",
@@ -15057,22 +15071,14 @@ function currentReportData(type = document.getElementById("reportType").value) {
       record.previousUtilised = Number(record.previousUtilised) || 0;
       record.previousDeposited = Number(record.previousDeposited) || 0;
       record.previousAdjusted = Number(record.previousAdjusted) || 0;
+      record.currentReceiptYear = String(record.currentReceiptYear || record.financialYear || "");
+      record.currentUtilisationYear = String(record.currentUtilisationYear || record.financialYear || "");
+      record.previousReceiptYear = String(record.previousReceiptYear || "");
+      record.previousUtilisationYear = String(record.previousUtilisationYear || record.financialYear || "");
+      record.financialTargetDetails = String(record.financialTargetDetails || "");
+      record.physicalTargetDetails = String(record.physicalTargetDetails || source.form24?.physicalTarget || "");
 
-      const unsupportedCurrentUse = Math.max(
-        0,
-        record.currentUtilised - Math.max(0, record.currentReceived - record.currentAdjusted - record.currentDeposited)
-      );
-      const availablePreviousFund = Math.max(
-        0,
-        record.previousOpening - record.previousUtilised - record.previousDeposited - record.previousAdjusted
-      );
-      const transferToPrevious = Math.min(unsupportedCurrentUse, availablePreviousFund);
-      if (transferToPrevious > 0) {
-        record.currentUtilised -= transferToPrevious;
-        record.previousUtilised += transferToPrevious;
-      }
-
-      record.currentBalance = record.currentReceived - record.currentAdjusted - record.currentUtilised - record.currentDeposited;
+      record.currentBalance = record.currentReceived - record.currentUtilised - record.currentDeposited;
       record.previousBalance = record.previousOpening - record.previousUtilised - record.previousDeposited - record.previousAdjusted;
       record.totalFundAvailable = record.currentReceived + record.previousOpening;
       record.totalUtilised = record.currentUtilised + record.previousUtilised;
@@ -15083,7 +15089,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
         schemeSector: record.purpose || record.scheme || "",
         financialTarget: record.totalFundAvailable,
         grantReceived: record.currentReceived,
-        physicalTarget: String(sourceForm24.physicalTarget || ""),
+        physicalTarget: String(sourceForm24.physicalTarget || record.physicalTargetDetails || ""),
         amountUtilised: record.totalUtilised,
         previousUcAmount: Number(sourceForm24.previousUcAmount ?? record.previousUtilised) || 0,
         previousAchievement: String(sourceForm24.previousAchievement || ""),
@@ -15150,12 +15156,17 @@ function currentReportData(type = document.getElementById("reportType").value) {
 
     function syncOgfr24Fields(record, includeEditable = false) {
       const form24 = record.form24 || {};
+      const grantYearText = `${record.currentReceiptYear || record.financialYear || "Year not entered"}: ${ucMoney(record.currentReceived)}`;
+      const utilisedParts = [
+        record.previousUtilised > 0 ? `${record.previousUtilisationYear || record.financialYear || "Previous year"}: ${ucMoney(record.previousUtilised)}` : "",
+        `${record.currentUtilisationYear || record.financialYear || "Current year"}: ${ucMoney(record.currentUtilised)}`
+      ].filter(Boolean);
       const linkedValues = {
         ogfr24Grantee: form24.granteeOrganisation || record.department || "Odisha Adarsha Vidyalaya, Badi",
         ogfr24SchemeSector: form24.schemeSector || record.purpose || record.scheme || "",
         ogfr24FinancialTarget: Number(record.totalFundAvailable) || 0,
-        ogfr24GrantReceived: Number(record.currentReceived) || 0,
-        ogfr24AmountUtilised: Number(record.totalUtilised) || 0
+        ogfr24GrantReceived: grantYearText,
+        ogfr24AmountUtilised: utilisedParts.join("; ")
       };
       Object.entries(linkedValues).forEach(([id, value]) => {
         const field = document.getElementById(id);
@@ -15163,7 +15174,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
       });
       if (!includeEditable) return;
       const editableValues = {
-        ogfr24PhysicalTarget: form24.physicalTarget || "",
+        ogfr24PhysicalTarget: form24.physicalTarget || record.physicalTargetDetails || "",
         ogfr24PreviousUcAmount: Number(form24.previousUcAmount ?? record.previousUtilised) || 0,
         ogfr24PreviousAchievement: form24.previousAchievement || "",
         ogfr24PresentAchievement: form24.presentAchievement || "",
@@ -15177,6 +15188,11 @@ function currentReportData(type = document.getElementById("reportType").value) {
 
     function ogfr24PreviewHtml(record = utilisationFormRecord()) {
       const form24 = record.form24 || {};
+      const grantYearText = `${record.currentReceiptYear || record.financialYear || "-"}: ${ucMoney(record.currentReceived)}`;
+      const utilisedYearText = [
+        record.previousUtilised > 0 ? `${record.previousUtilisationYear || record.financialYear || "Previous year"}: ${ucMoney(record.previousUtilised)}` : "",
+        `${record.currentUtilisationYear || record.financialYear || "Current year"}: ${ucMoney(record.currentUtilised)}`
+      ].filter(Boolean).join("; ");
       return `
         <div class="uc-title-box"><strong>FORM OGFR-24</strong><br>[See Rule 306 (iii) (b)]</div>
         <h2>Proforma for Reporting Physical Target / Achievement</h2>
@@ -15202,9 +15218,9 @@ function currentReportData(type = document.getElementById("reportType").value) {
               <td>${ucEscape(form24.granteeOrganisation || "-")}</td>
               <td>${ucEscape(form24.schemeSector || "-")}</td>
               <td>${ucCellAmount(form24.financialTarget)}</td>
-              <td>${ucCellAmount(form24.grantReceived)}</td>
+              <td>${ucEscape(grantYearText)}</td>
               <td>${ucEscape(form24.physicalTarget || "-")}</td>
-              <td>${ucCellAmount(form24.amountUtilised)}</td>
+              <td>${ucEscape(utilisedYearText)}</td>
               <td>${ucCellAmount(form24.previousUcAmount)}</td>
               <td>${ucEscape(form24.previousAchievement || "-")}</td>
               <td>${ucEscape(form24.presentAchievement || "-")}</td>
@@ -15273,8 +15289,8 @@ function currentReportData(type = document.getElementById("reportType").value) {
         const scheme = String(schemeRowValue(row, ["SCHEME", "SCHEME NAME"]) || "").trim();
         if (!scheme || normaliseSchemeHeader(scheme) === "SCHEME") return;
         const previousFund = schemeNumber(schemeRowValue(row, ["PREVIOUS YEAR FUND", "PREVIOUS FUND"]));
-        const currentReceived = schemeNumber(schemeRowValue(row, ["FUND RECEIVED CURRENT YEAR", "CURRENT YEAR FUND", "CURRENT FUND RECEIVED"]));
-        const utilised = schemeNumber(schemeRowValue(row, ["FUND UTILISE", "FUND UTILISED", "AMOUNT UTILISED"]));
+        const currentReceived = schemeNumber(schemeRowValue(row, ["FUND RECEIVED CURRENT YEAR", "CURRENT YEAR FUND", "CURRENT FUND RECEIVED", "SANCTIONED AMOUNT", "AMOUNT RECEIVED"]));
+        const utilised = schemeNumber(schemeRowValue(row, ["FUND UTILISE", "FUND UTILISED", "AMOUNT UTILISED", "AMOUNT UTILIZED"]));
         const suppliedBalance = schemeRowValue(row, ["BALANCE"]);
         const balance = String(suppliedBalance ?? "").trim() === ""
           ? previousFund + currentReceived - utilised
@@ -15288,7 +15304,28 @@ function currentReportData(type = document.getElementById("reportType").value) {
           previousFund,
           currentReceived,
           utilised,
-          balance
+          currentUtilised: utilised,
+          balance,
+          purpose: String(schemeRowValue(row, ["SCHEME ACTIVITY", "SCHEME ACTIVITY2", "PURPOSE", "PURPOSE SCHEME DETAILS"]) || scheme).trim(),
+          department: String(schemeRowValue(row, ["DEPARTMENT INSTITUTION", "NAME OF DEPARTMENT SCHOOL"]) || "").trim(),
+          grantee: String(schemeRowValue(row, ["GRANTEE ORG", "GRANTEE", "NAME OF GRANTEE ORGANISATION"]) || "").trim(),
+          sanctioningDepartment: String(schemeRowValue(row, ["SANCTIONING AUTHORITY", "SANCTIONING DEPARTMENT"]) || "").trim(),
+          financialYear: String(schemeRowValue(row, ["FINANCIAL YEAR"]) || "").trim(),
+          sanctionNo: String(schemeRowValue(row, ["SANCTION NO", "SANCTION NUMBER"]) || "").trim(),
+          sanctionDate: String(schemeRowValue(row, ["SANCTION DATE"]) || "").trim(),
+          currentAdjusted: schemeNumber(schemeRowValue(row, ["AMOUNT ADJUSTED", "ADJUSTED TOWARDS GIA LOAN"])),
+          currentDeposited: schemeNumber(schemeRowValue(row, ["AMOUNT DEPOSITED BACK", "DEPOSITED BACK"])),
+          previousUtilised: schemeNumber(schemeRowValue(row, ["PREVIOUS YEAR UTILISED", "PREVIOUS YEAR UTILIZED"])),
+          previousDeposited: schemeNumber(schemeRowValue(row, ["PREVIOUS YEAR DEPOSITED"])),
+          previousAdjusted: schemeNumber(schemeRowValue(row, ["PREVIOUS YEAR ADJUSTED"])),
+          receiptYear: String(schemeRowValue(row, ["YEAR OF RECEIPT", "RECEIPT YEAR"]) || "").trim(),
+          utilisationYear: String(schemeRowValue(row, ["YEAR OF UTILISATION", "YEAR OF UTILIZATION", "UTILISATION YEAR"]) || "").trim(),
+          financialTarget: String(schemeRowValue(row, ["PHYSICAL FINANCIAL TARGET", "FINANCIAL TARGET"]) || "").trim(),
+          physicalTarget: String(schemeRowValue(row, ["PHYSICAL TARGET FIXED", "PHYSICAL TARGET"]) || "").trim(),
+          previousUcAmount: schemeNumber(schemeRowValue(row, ["PREVIOUSLY UC FURNISHED", "PREVIOUS UC AMOUNT"])),
+          previousAchievement: String(schemeRowValue(row, ["PHYSICAL TARGET PREVIOUSLY ACHIEVED", "PREVIOUS TARGET ACHIEVED"]) || "").trim(),
+          presentAchievement: String(schemeRowValue(row, ["PRESENT TARGET ACHIEVED", "PRESENT ACHIEVEMENT"]) || "").trim(),
+          remarks: String(schemeRowValue(row, ["REMARKS"]) || "").trim()
         };
         imported += 1;
       });
@@ -15313,14 +15350,27 @@ function currentReportData(type = document.getElementById("reportType").value) {
       const calculatedBalance = previousFund + currentReceived - totalUtilised;
       document.getElementById("ucPreviousOpening").value = previousFund;
       document.getElementById("ucCurrentReceived").value = currentReceived;
-      document.getElementById("ucCurrentUtilised").value = currentUtilised;
-      document.getElementById("ucPreviousUtilised").value = previousUtilised;
-      document.getElementById("ucPurpose").value = scheme;
-      document.getElementById("ogfr24PhysicalTarget").value = "";
-      document.getElementById("ogfr24PreviousUcAmount").value = previousUtilised;
-      document.getElementById("ogfr24PreviousAchievement").value = "";
-      document.getElementById("ogfr24PresentAchievement").value = "";
-      document.getElementById("ogfr24Remarks").value = "";
+      document.getElementById("ucCurrentUtilised").value = Number(data.currentUtilised ?? currentUtilised) || 0;
+      document.getElementById("ucPreviousUtilised").value = Number(data.previousUtilised ?? previousUtilised) || 0;
+      document.getElementById("ucCurrentAdjusted").value = Number(data.currentAdjusted) || 0;
+      document.getElementById("ucCurrentDeposited").value = Number(data.currentDeposited) || 0;
+      document.getElementById("ucPreviousDeposited").value = Number(data.previousDeposited) || 0;
+      document.getElementById("ucPreviousAdjusted").value = Number(data.previousAdjusted) || 0;
+      document.getElementById("ucPurpose").value = data.purpose || scheme;
+      if (data.department) document.getElementById("ucDepartment").value = data.department;
+      if (data.grantee) document.getElementById("ucGrantee").value = data.grantee;
+      if (data.sanctioningDepartment) document.getElementById("ucSanctioningDepartment").value = data.sanctioningDepartment;
+      if (data.financialYear) document.getElementById("ucFinancialYear").value = data.financialYear;
+      document.getElementById("ucCurrentSanction").value = [data.sanctionNo, data.sanctionDate].filter(Boolean).join(" dated ");
+      document.getElementById("ucCurrentReceiptYear").value = data.receiptYear || data.financialYear || "";
+      document.getElementById("ucCurrentUtilisationYear").value = data.utilisationYear || data.financialYear || "";
+      document.getElementById("ucFinancialTargetDetails").value = data.financialTarget || "";
+      document.getElementById("ucPhysicalTargetDetails").value = data.physicalTarget || "";
+      document.getElementById("ogfr24PhysicalTarget").value = data.physicalTarget || "";
+      document.getElementById("ogfr24PreviousUcAmount").value = Number(data.previousUcAmount ?? previousUtilised) || 0;
+      document.getElementById("ogfr24PreviousAchievement").value = data.previousAchievement || "";
+      document.getElementById("ogfr24PresentAchievement").value = data.presentAchievement || "";
+      document.getElementById("ogfr24Remarks").value = data.remarks || "";
       document.getElementById("ucSchemeStatus").textContent =
         `${scheme}: Previous fund ${ucMoney(previousFund)}, current received ${ucMoney(currentReceived)}, total utilised ${ucMoney(totalUtilised)}, balance ${ucMoney(calculatedBalance)}.`;
       updateUtilisationPreview();
@@ -15329,21 +15379,39 @@ function currentReportData(type = document.getElementById("reportType").value) {
     function utilisationSchemeTemplateRows() {
       return UTILISATION_SCHEME_REFERENCE.map(item => ({
         "SL NO.": item.serial,
-        "SCHEME": item.scheme,
+        "SCHEME NAME": item.scheme,
+        "SCHEME / ACTIVITY": "",
+        "DEPARTMENT / INSTITUTION": "Odisha Adarsha Vidyalaya, Badi",
+        "GRANTEE ORG": "Principal, OAV Badi",
+        "SANCTIONING AUTHORITY": "S&ME Department, Government of Odisha",
+        "FINANCIAL YEAR": "",
+        "SANCTION NO.": "",
+        "SANCTION DATE": "",
+        "YEAR OF RECEIPT": "",
+        "YEAR OF UTILISATION": "",
         "PREVIOUS YEAR FUND": item.previousFund,
-        "FUND RECEIVED CURRENT YEAR": item.currentReceived,
-        "FUND UTILISE": item.utilised,
-        "BALANCE": item.balance
+        "SANCTIONED AMOUNT": item.currentReceived,
+        "AMOUNT ADJUSTED": 0,
+        "AMOUNT UTILISED": item.utilised,
+        "AMOUNT DEPOSITED BACK": 0,
+        "PREVIOUS YEAR UTILISED": 0,
+        "PREVIOUS YEAR DEPOSITED": 0,
+        "PREVIOUS YEAR ADJUSTED": 0,
+        "PHYSICAL / FINANCIAL TARGET": "",
+        "PHYSICAL TARGET FIXED": "",
+        "PREVIOUSLY UC FURNISHED": 0,
+        "PHYSICAL TARGET PREVIOUSLY ACHIEVED": "",
+        "PRESENT TARGET ACHIEVED": "",
+        "REMARKS": ""
       }));
     }
 
     function downloadUtilisationSchemeTemplate() {
       const rows = utilisationSchemeTemplateRows();
       if (window.XLSX) {
-        const worksheet = XLSX.utils.json_to_sheet(rows, {
-          header: ["SL NO.", "SCHEME", "PREVIOUS YEAR FUND", "FUND RECEIVED CURRENT YEAR", "FUND UTILISE", "BALANCE"]
-        });
-        worksheet["!cols"] = [{ wch: 9 }, { wch: 34 }, { wch: 22 }, { wch: 29 }, { wch: 18 }, { wch: 18 }];
+        const headers = Object.keys(rows[0] || {});
+        const worksheet = XLSX.utils.json_to_sheet(rows, { header: headers });
+        worksheet["!cols"] = headers.map(header => ({ wch: Math.max(14, Math.min(38, header.length + 4)) }));
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Scheme List");
         XLSX.writeFile(workbook, "OAV-Badi-Utilisation-Scheme-Template.xlsx");
@@ -15352,7 +15420,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
       downloadExcelWorkbook("OAV-Badi-Utilisation-Scheme-Template.xls", [{
         name: "Scheme List",
         rows: [
-          ["SL NO.", "SCHEME", "PREVIOUS YEAR FUND", "FUND RECEIVED CURRENT YEAR", "FUND UTILISE", "BALANCE"],
+          Object.keys(rows[0] || {}),
           ...rows.map(row => Object.values(row))
         ]
       }]);
@@ -15373,8 +15441,14 @@ function currentReportData(type = document.getElementById("reportType").value) {
       }
       if (!window.XLSX) throw new Error("Excel reader is unavailable. Reload the page and try again.");
       const workbook = XLSX.read(await file.arrayBuffer(), { type: "array" });
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      importUtilisationSchemeRows(XLSX.utils.sheet_to_json(firstSheet, { defval: "" }));
+      const sheetName = workbook.SheetNames.find(name => normaliseSchemeHeader(name) === "SCHEME DATA") || workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+      const headerIndex = matrix.findIndex(row => row.some(cell => ["SCHEME", "SCHEME NAME"].includes(normaliseSchemeHeader(cell))));
+      if (headerIndex < 0) throw new Error("Scheme Name column was not found in the selected workbook.");
+      const headers = matrix[headerIndex].map(value => String(value || "").trim());
+      const rows = matrix.slice(headerIndex + 1).map(values => Object.fromEntries(headers.map((header, index) => [header, values[index] ?? ""])));
+      importUtilisationSchemeRows(rows);
     }
 
     function renderUtilisationRecords() {
@@ -15405,12 +15479,15 @@ function currentReportData(type = document.getElementById("reportType").value) {
         ucFinancialYear: record.financialYear, ucNextFinancialYear: record.nextFinancialYear,
         ucCertificateDate: record.certificateDate, ucBalanceTreatment: record.balanceTreatment,
         ucCurrentSanction: record.currentSanction, ucCurrentReceived: record.currentReceived,
+        ucCurrentReceiptYear: record.currentReceiptYear, ucCurrentUtilisationYear: record.currentUtilisationYear,
         ucCurrentAdjusted: record.currentAdjusted, ucCurrentUtilised: record.currentUtilised,
         ucCurrentDeposited: record.currentDeposited, ucCurrentRemarks: record.currentRemarks,
         ucPreviousSanction: record.previousSanction, ucPreviousSanctioned: record.previousSanctioned,
+        ucPreviousReceiptYear: record.previousReceiptYear, ucPreviousUtilisationYear: record.previousUtilisationYear,
         ucPreviousOpening: record.previousOpening, ucPreviousUtilised: record.previousUtilised,
         ucPreviousDeposited: record.previousDeposited, ucPreviousAdjusted: record.previousAdjusted,
-        ucPreviousRemarks: record.previousRemarks, ucChallanNo: record.challanNo,
+        ucPreviousRemarks: record.previousRemarks, ucFinancialTargetDetails: record.financialTargetDetails,
+        ucPhysicalTargetDetails: record.physicalTargetDetails, ucChallanNo: record.challanNo,
         ucChallanDate: record.challanDate, ucChecks: record.checks, ucSigner: record.signer,
         ucDesignation: record.designation
       };
@@ -15436,9 +15513,13 @@ function currentReportData(type = document.getElementById("reportType").value) {
       document.getElementById("ucSanctioningDepartment").value = "S&ME Department, Government of Odisha";
       document.getElementById("ucFinancialYear").value = years.current;
       document.getElementById("ucNextFinancialYear").value = years.next;
+      document.getElementById("ucCurrentReceiptYear").value = years.current;
+      document.getElementById("ucCurrentUtilisationYear").value = years.current;
+      document.getElementById("ucPreviousReceiptYear").value = "";
+      document.getElementById("ucPreviousUtilisationYear").value = years.current;
       document.getElementById("ucCertificateDate").value = date;
       document.getElementById("ucBalanceTreatment").value = "carry";
-      ["ucCurrentSanction", "ucCurrentRemarks", "ucPreviousSanction", "ucPreviousRemarks", "ucChallanNo", "ucChallanDate", "ucChecks"].forEach(id => document.getElementById(id).value = "");
+      ["ucCurrentSanction", "ucCurrentRemarks", "ucPreviousSanction", "ucPreviousRemarks", "ucFinancialTargetDetails", "ucPhysicalTargetDetails", "ucChallanNo", "ucChallanDate", "ucChecks"].forEach(id => document.getElementById(id).value = "");
       ["ucCurrentReceived", "ucCurrentAdjusted", "ucCurrentUtilised", "ucCurrentDeposited", "ucPreviousSanctioned", "ucPreviousOpening", "ucPreviousUtilised", "ucPreviousDeposited", "ucPreviousAdjusted"].forEach(id => document.getElementById(id).value = "0");
       ["ogfr24PhysicalTarget", "ogfr24PreviousAchievement", "ogfr24PresentAchievement", "ogfr24Remarks"].forEach(id => document.getElementById(id).value = "");
       document.getElementById("ogfr24PreviousUcAmount").value = "0";
@@ -15569,6 +15650,11 @@ function currentReportData(type = document.getElementById("reportType").value) {
 
     function downloadOgfr24Excel(record = updateUtilisationPreview()) {
       const form24 = record.form24 || {};
+      const grantYearText = `${record.currentReceiptYear || record.financialYear || "-"}: ${ucMoney(record.currentReceived)}`;
+      const utilisedYearText = [
+        record.previousUtilised > 0 ? `${record.previousUtilisationYear || record.financialYear || "Previous year"}: ${ucMoney(record.previousUtilised)}` : "",
+        `${record.currentUtilisationYear || record.financialYear || "Current year"}: ${ucMoney(record.currentUtilised)}`
+      ].filter(Boolean).join("; ");
       const filenameScheme = (record.scheme || "scheme").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase();
       downloadExcelWorkbook(`OGFR-24-${filenameScheme || "certificate"}-${record.financialYear || "FY"}.xls`, [{
         name: "FORM OGFR-24",
@@ -15593,9 +15679,9 @@ function currentReportData(type = document.getElementById("reportType").value) {
             form24.granteeOrganisation,
             form24.schemeSector,
             Number(form24.financialTarget) || 0,
-            Number(form24.grantReceived) || 0,
+            grantYearText,
             form24.physicalTarget,
-            Number(form24.amountUtilised) || 0,
+            utilisedYearText,
             Number(form24.previousUcAmount) || 0,
             form24.previousAchievement,
             form24.presentAchievement,
@@ -15624,6 +15710,10 @@ function currentReportData(type = document.getElementById("reportType").value) {
             ["Sanctioning Department", record.sanctioningDepartment],
             ["Financial Year", record.financialYear],
             ["Certificate Date", ucDateText(record.certificateDate)],
+            ["Year of Fund Receipt", record.currentReceiptYear],
+            ["Year of Utilisation", record.currentUtilisationYear],
+            ["Financial Target / Approved Amount", record.financialTargetDetails],
+            ["Physical Target Fixed", record.physicalTargetDetails || record.form24?.physicalTarget],
             ["Fund Received", record.currentReceived],
             ["Total Utilised", record.totalUtilised],
             ["Total Balance", record.totalBalance],
@@ -15649,6 +15739,11 @@ function currentReportData(type = document.getElementById("reportType").value) {
 
     function downloadCombinedUtilisationExcel(record = updateUtilisationPreview()) {
       const form24 = record.form24 || {};
+      const grantYearText = `${record.currentReceiptYear || record.financialYear || "-"}: ${ucMoney(record.currentReceived)}`;
+      const utilisedYearText = [
+        record.previousUtilised > 0 ? `${record.previousUtilisationYear || record.financialYear || "Previous year"}: ${ucMoney(record.previousUtilised)}` : "",
+        `${record.currentUtilisationYear || record.financialYear || "Current year"}: ${ucMoney(record.currentUtilised)}`
+      ].filter(Boolean).join("; ");
       const filenameScheme = (record.scheme || "scheme").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase();
       downloadExcelWorkbook(`Complete-UC-${filenameScheme || "certificate"}-${record.financialYear || "FY"}.xls`, [
         {
@@ -15662,6 +15757,10 @@ function currentReportData(type = document.getElementById("reportType").value) {
             ["Sanctioning Department", record.sanctioningDepartment],
             ["Financial Year", record.financialYear],
             ["Certificate Date", ucDateText(record.certificateDate)],
+            ["Year of Fund Receipt", record.currentReceiptYear],
+            ["Year of Utilisation", record.currentUtilisationYear],
+            ["Financial Target / Approved Amount", record.financialTargetDetails],
+            ["Physical Target Fixed", record.physicalTargetDetails || form24.physicalTarget],
             ["Fund Received", record.currentReceived],
             ["Total Utilised", record.totalUtilised],
             ["Total Balance", record.totalBalance],
@@ -15690,7 +15789,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
             [],
             ["Name of the Grantee Organisation", "Name of the Scheme and the Sector", "Financial Target fixed", "Amount of Grant-in-Aid received (Year wise)", "Physical Target fixed", "Amount utilized (Year wise)", "The amount for which U.C. furnished previously", "Physical Target achieved against the U.C. already furnished", "Physical Target achieved as per present U.C.", "Remarks"],
             ["(1)", "(2)", "(3)", "(4)", "(5)", "(6)", "(7)", "(8)", "(9)", "(10)"],
-            [form24.granteeOrganisation, form24.schemeSector, Number(form24.financialTarget) || 0, Number(form24.grantReceived) || 0, form24.physicalTarget, Number(form24.amountUtilised) || 0, Number(form24.previousUcAmount) || 0, form24.previousAchievement, form24.presentAchievement, form24.remarks],
+            [form24.granteeOrganisation, form24.schemeSector, Number(form24.financialTarget) || 0, grantYearText, form24.physicalTarget, utilisedYearText, Number(form24.previousUcAmount) || 0, form24.previousAchievement, form24.presentAchievement, form24.remarks],
             [],
             ["Signature", record.signer || "Principal"],
             ["Designation", record.designation || "Principal"],
@@ -16831,6 +16930,7 @@ function currentReportData(type = document.getElementById("reportType").value) {
     startCloudSync();
   </script>
   <script src="grant-module.js"></script>
+  <script src="uc-daily-module.js"></script>
 </body>
 </html>
 
