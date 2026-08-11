@@ -5,6 +5,7 @@
   const MAX_ATTACHMENT_BYTES = 2 * 1024 * 1024;
   let state = loadState();
   let activeTab = "dashboard";
+  let editingSchemeId = "";
   let editingReceiptId = "";
   let editingExpenseId = "";
 
@@ -45,6 +46,11 @@
     return `${year}-${String(year + 1).slice(-2)}`;
   }
   function activeFinancialYear() { return /^\d{4}-\d{2}$/.test(text(state.activeFinancialYear)) ? state.activeFinancialYear : financialYear(today()); }
+  function financialYearOptions(selected = activeFinancialYear()) {
+    const years = Array.from({ length: 11 }, (_, index) => `${2016 + index}-${String(2017 + index).slice(-2)}`);
+    if (selected && !years.includes(selected)) years.push(selected);
+    return years.map(year => `<option value="${esc(year)}" ${year === selected ? "selected" : ""}>${esc(year)}</option>`).join("");
+  }
   function statusBadge(status) { return `<span class="grant-status ${esc(String(status || "draft").toLowerCase())}">${esc(status || "Draft")}</span>`; }
   function isPrincipal() { return Boolean(window.adminSession || ["principal", "admin"].includes(String(window.activeUser?.role || "").toLowerCase())); }
   function actor() { return window.currentAuditUser ? (window.currentAuditUser().teacher || window.currentAuditUser().loginId || "Account In-Charge") : "Account In-Charge"; }
@@ -134,27 +140,56 @@
     return `<div class="grant-tabs">${items.map(([id, label]) => `<button type="button" class="${activeTab === id ? "active" : ""}" data-grant-tab="${id}">${label}</button>`).join("")}</div>`;
   }
   function templateTools() {
-    return `<div class="card"><div class="section-title"><div><h2>Bulk Entry Template</h2><p class="grant-note">Download the optional-entry Excel template, fill any available fields, then upload it here.</p></div><div class="grant-actions"><button type="button" data-action="download-bulk-template">Download Template</button><button type="button" class="primary" data-action="choose-bulk-template">Upload Filled Template</button><input id="gm-bulk-template-file" type="file" accept=".xlsx,.xls" hidden></div></div><p id="gm-bulk-template-status" class="grant-note"></p></div>`;
+    return `<datalist id="grant-financial-years">${financialYearOptions(activeFinancialYear())}</datalist><div class="card"><div class="section-title"><div><h2>Bulk Entry Template</h2><p class="grant-note">Download the optional-entry Excel template, fill any available fields, then upload it here.</p></div><div class="grant-actions"><button type="button" data-action="download-bulk-template">Download Template</button><button type="button" class="primary" data-action="choose-bulk-template">Upload Filled Template</button><input id="gm-bulk-template-file" type="file" accept=".xlsx,.xls" hidden></div></div><p id="gm-bulk-template-status" class="grant-note"></p></div>`;
   }
   function render() {
     const root = document.getElementById("grantModuleRoot");
     if (!root) return;
     root.innerHTML = `${templateTools()}${tabs()}${dashboardPanel()}${masterPanel()}${receiptPanel()}${expensePanel()}${physicalPanel()}${previousPanel()}${formsPanel()}${approvalPanel()}${auditPanel()}`;
+    ["gr-fy", "ge-fy", "gu-fy", "gf-fy"].forEach(id => document.getElementById(id)?.setAttribute("list", "grant-financial-years"));
     bindEvents(root);
+    attachSchemeAccountDetails("gr-scheme");
+    attachSchemeAccountDetails("ge-scheme");
   }
   function panel(id, content) { return `<section class="grant-panel ${activeTab === id ? "active" : ""}" data-grant-panel="${id}">${content}</section>`; }
-  function schemeOptions(selected = "", includeBlank = true) { return `${includeBlank ? `<option value="">Select scheme</option>` : ""}${state.schemes.map(item => `<option value="${esc(item.id)}" ${item.id === selected ? "selected" : ""}>${esc(item.name)}</option>`).join("")}`; }
+  function schemeGrantHead(id) { return schemeById(id)?.grantHead || "-"; }
+  function schemeAccount(id) { return schemeById(id)?.accountNumber || "-"; }
+  function attachSchemeAccountDetails(selectId) {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+    const note = document.createElement("div");
+    note.className = "grant-note grant-account-link";
+    const update = () => {
+      const scheme = schemeById(select.value);
+      note.textContent = scheme ? `Grant Head: ${scheme.grantHead || "Not linked"} | Account Number: ${scheme.accountNumber || "Not linked"}` : "Select a scheme to view its linked Grant Head and Account Number.";
+    };
+    select.insertAdjacentElement("afterend", note);
+    select.addEventListener("change", update);
+    update();
+  }
+  function schemeOptions(selected = "", includeBlank = true) {
+    return `${includeBlank ? `<option value="">Select scheme</option>` : ""}${state.schemes.map(item => {
+      const details = [item.grantHead, item.accountNumber ? `A/c ${item.accountNumber}` : ""].filter(Boolean).join(" | ");
+      return `<option value="${esc(item.id)}" ${item.id === selected ? "selected" : ""}>${esc(item.name)}${details ? ` | ${esc(details)}` : ""}</option>`;
+    }).join("")}`;
+  }
   function dashboardPanel() {
     const cards = state.schemes.map(scheme => {
       const summary = schemeSummary(scheme.id);
-      return `<tr><td>${esc(scheme.name)}</td><td>${money(summary.grant)}</td><td>${money(summary.utilized)}</td><td>${money(summary.balance)}</td><td>${summary.utilizationPct.toFixed(1)}%</td><td>${statusBadge(summary.status)}</td><td>${esc(summary.physical.completionStatus || "Not Started")}</td></tr>`;
-    }).join("") || `<tr><td colspan="7">No schemes created yet.</td></tr>`;
+      return `<tr><td>${esc(scheme.name)}</td><td>${esc(scheme.grantHead || "Not linked")}</td><td>${esc(scheme.accountNumber || "Not linked")}</td><td>${money(summary.grant)}</td><td>${money(summary.utilized)}</td><td>${money(summary.balance)}</td><td>${summary.utilizationPct.toFixed(1)}%</td><td>${statusBadge(summary.status)}</td><td>${esc(summary.physical.completionStatus || "Not Started")}</td></tr>`;
+    }).join("") || `<tr><td colspan="9">No schemes created yet.</td></tr>`;
     const total = state.schemes.reduce((result, scheme) => { const value = schemeSummary(scheme.id); result.grant += value.grant; result.utilized += value.utilized; result.balance += value.balance; return result; }, { grant: 0, utilized: 0, balance: 0 });
-    return panel("dashboard", `<div class="grant-stats"><div class="grant-stat"><span>Total Approved Grant</span><strong>${money(total.grant)}</strong></div><div class="grant-stat"><span>Approved Expenditure</span><strong>${money(total.utilized)}</strong></div><div class="grant-stat"><span>Available Balance</span><strong>${money(total.balance)}</strong></div><div class="grant-stat"><span>Awaiting Principal</span><strong>${state.receipts.filter(item => item.status === "Submitted").length + state.expenses.filter(item => item.status === "Submitted").length}</strong></div></div><div class="card"><h2>Scheme-wise position</h2><div class="grant-table-wrap"><table class="grant-table"><thead><tr><th>Scheme</th><th>Grant received</th><th>Approved expenditure</th><th>Balance</th><th>Utilization</th><th>Status</th><th>Physical progress</th></tr></thead><tbody>${cards}</tbody></table></div></div>`);
+    return panel("dashboard", `<div class="grant-stats"><div class="grant-stat"><span>Total Approved Grant</span><strong>${money(total.grant)}</strong></div><div class="grant-stat"><span>Approved Expenditure</span><strong>${money(total.utilized)}</strong></div><div class="grant-stat"><span>Available Balance</span><strong>${money(total.balance)}</strong></div><div class="grant-stat"><span>Awaiting Principal</span><strong>${state.receipts.filter(item => item.status === "Submitted").length + state.expenses.filter(item => item.status === "Submitted").length}</strong></div></div><div class="card"><h2>Scheme-wise position</h2><div class="grant-table-wrap"><table class="grant-table"><thead><tr><th>Scheme</th><th>Grant Head</th><th>Account Number</th><th>Grant received</th><th>Approved expenditure</th><th>Balance</th><th>Utilization</th><th>Status</th><th>Physical progress</th></tr></thead><tbody>${cards}</tbody></table></div></div>`);
+  }
+  function legacyMasterPanel() {
+    const profile = state.profile;
+    return panel("master", `<div class="card"><h2>Institution details</h2><div class="grant-grid"><label class="wide">Institution Name<input id="gm-institution" value="${esc(profile.institutionName)}"></label><label>Institution Code<input id="gm-institution-code" value="${esc(profile.institutionCode)}"></label><label>District<input id="gm-district" value="${esc(profile.district)}"></label><label>Block<input id="gm-block" value="${esc(profile.block)}"></label><label>State<input id="gm-state" value="${esc(profile.state)}"></label><label>DDO Code<input id="gm-ddo" value="${esc(profile.ddoCode)}"></label><label>Treasury Code<input id="gm-treasury" value="${esc(profile.treasuryCode)}"></label><label>Principal Name<input id="gm-principal" value="${esc(profile.principalName)}"></label><label>Account In-Charge<input id="gm-account" value="${esc(profile.accountName)}"></label><label class="wide">Institution Address<textarea id="gm-address">${esc(profile.address)}</textarea></label><label>Place<input id="gm-place" value="${esc(profile.place)}"></label><label>UC Date<input id="gm-uc-date" type="date" value="${esc(profile.ucDate)}"></label></div><div class="grant-actions"><button type="button" class="primary" data-action="save-profile">Save Institution Details</button></div></div><div class="card"><h2>Scheme and grant master</h2><div class="grant-grid"><label class="wide">Scheme Name<input id="gm-scheme-name" placeholder="Example: AC Installation"></label><label>Scheme Sector<input id="gm-scheme-sector" placeholder="Example: Gender and Equity"></label><label class="wide">Purpose of Grant<textarea id="gm-scheme-purpose" placeholder="Purpose for which the grant was sanctioned"></textarea></label></div><div class="grant-actions"><button type="button" class="primary" data-action="add-scheme">Add Scheme</button></div><div class="grant-table-wrap"><table class="grant-table"><thead><tr><th>Scheme</th><th>Sector</th><th>Purpose</th><th>Action</th></tr></thead><tbody>${state.schemes.map(item => `<tr><td>${esc(item.name)}</td><td>${esc(item.sector)}</td><td>${esc(item.purpose)}</td><td><button type="button" data-action="delete-scheme" data-id="${item.id}">Delete</button></td></tr>`).join("") || `<tr><td colspan="4">No scheme created.</td></tr>`}</tbody></table></div></div>`);
   }
   function masterPanel() {
     const profile = state.profile;
-    return panel("master", `<div class="card"><h2>Institution details</h2><div class="grant-grid"><label class="wide">Institution Name<input id="gm-institution" value="${esc(profile.institutionName)}"></label><label>Institution Code<input id="gm-institution-code" value="${esc(profile.institutionCode)}"></label><label>District<input id="gm-district" value="${esc(profile.district)}"></label><label>Block<input id="gm-block" value="${esc(profile.block)}"></label><label>State<input id="gm-state" value="${esc(profile.state)}"></label><label>DDO Code<input id="gm-ddo" value="${esc(profile.ddoCode)}"></label><label>Treasury Code<input id="gm-treasury" value="${esc(profile.treasuryCode)}"></label><label>Principal Name<input id="gm-principal" value="${esc(profile.principalName)}"></label><label>Account In-Charge<input id="gm-account" value="${esc(profile.accountName)}"></label><label class="wide">Institution Address<textarea id="gm-address">${esc(profile.address)}</textarea></label><label>Place<input id="gm-place" value="${esc(profile.place)}"></label><label>UC Date<input id="gm-uc-date" type="date" value="${esc(profile.ucDate)}"></label></div><div class="grant-actions"><button type="button" class="primary" data-action="save-profile">Save Institution Details</button></div></div><div class="card"><h2>Scheme and grant master</h2><div class="grant-grid"><label class="wide">Scheme Name<input id="gm-scheme-name" placeholder="Example: AC Installation"></label><label>Scheme Sector<input id="gm-scheme-sector" placeholder="Example: Gender and Equity"></label><label class="wide">Purpose of Grant<textarea id="gm-scheme-purpose" placeholder="Purpose for which the grant was sanctioned"></textarea></label></div><div class="grant-actions"><button type="button" class="primary" data-action="add-scheme">Add Scheme</button></div><div class="grant-table-wrap"><table class="grant-table"><thead><tr><th>Scheme</th><th>Sector</th><th>Purpose</th><th>Action</th></tr></thead><tbody>${state.schemes.map(item => `<tr><td>${esc(item.name)}</td><td>${esc(item.sector)}</td><td>${esc(item.purpose)}</td><td><button type="button" data-action="delete-scheme" data-id="${item.id}">Delete</button></td></tr>`).join("") || `<tr><td colspan="4">No scheme created.</td></tr>`}</tbody></table></div></div>`);
+    const edit = state.schemes.find(item => item.id === editingSchemeId) || {};
+    const schemeRows = state.schemes.map(item => `<tr><td>${esc(item.name)}</td><td>${esc(item.grantHead || "Not linked")}</td><td>${esc(item.accountNumber || "Not linked")}</td><td>${esc(item.sector || "-")}</td><td>${esc(item.purpose || "-")}</td><td><div class="grant-actions"><button type="button" data-action="edit-scheme" data-id="${esc(item.id)}">Edit</button><button type="button" data-action="delete-scheme" data-id="${esc(item.id)}">Delete</button></div></td></tr>`).join("") || `<tr><td colspan="6">No scheme created.</td></tr>`;
+    return panel("master", `<div class="card"><h2>Institution details</h2><div class="grant-grid"><label class="wide">Institution Name<input id="gm-institution" value="${esc(profile.institutionName)}"></label><label>Institution Code<input id="gm-institution-code" value="${esc(profile.institutionCode)}"></label><label>District<input id="gm-district" value="${esc(profile.district)}"></label><label>Block<input id="gm-block" value="${esc(profile.block)}"></label><label>State<input id="gm-state" value="${esc(profile.state)}"></label><label>DDO Code<input id="gm-ddo" value="${esc(profile.ddoCode)}"></label><label>Treasury Code<input id="gm-treasury" value="${esc(profile.treasuryCode)}"></label><label>Principal Name<input id="gm-principal" value="${esc(profile.principalName)}"></label><label>Account In-Charge<input id="gm-account" value="${esc(profile.accountName)}"></label><label class="wide">Institution Address<textarea id="gm-address">${esc(profile.address)}</textarea></label><label>Place<input id="gm-place" value="${esc(profile.place)}"></label><label>UC Date<input id="gm-uc-date" type="date" value="${esc(profile.ucDate)}"></label><label>Active Session<select id="gm-active-fy">${financialYearOptions(activeFinancialYear())}</select></label></div><div class="grant-actions"><button type="button" class="primary" data-action="save-profile">Save Institution Details</button></div></div><div class="card"><h2>${editingSchemeId ? "Edit" : "Add"} Scheme and Grant Head</h2><p class="grant-note">Each scheme and grant head is linked with its bank account number. Existing financial records remain linked through the scheme ID.</p><div class="grant-grid"><label class="wide">Scheme Name<input id="gm-scheme-name" value="${esc(edit.name)}" placeholder="Example: AC Installation"></label><label>Grant Head<input id="gm-grant-head" value="${esc(edit.grantHead)}" placeholder="Example: Infrastructure Grant"></label><label>Account Number<input id="gm-account-number" value="${esc(edit.accountNumber)}" autocomplete="off" placeholder="Bank account number"></label><label>Scheme Sector<input id="gm-scheme-sector" value="${esc(edit.sector)}" placeholder="Example: Gender and Equity"></label><label class="wide">Purpose of Grant<textarea id="gm-scheme-purpose" placeholder="Purpose for which the grant was sanctioned">${esc(edit.purpose)}</textarea></label></div><div class="grant-actions"><button type="button" class="primary" data-action="add-scheme">${editingSchemeId ? "Update Scheme" : "Add Scheme"}</button>${editingSchemeId ? `<button type="button" data-action="cancel-scheme-edit">Cancel</button>` : ""}</div><div class="grant-table-wrap"><table class="grant-table"><thead><tr><th>Scheme</th><th>Grant Head</th><th>Account Number</th><th>Sector</th><th>Purpose</th><th>Action</th></tr></thead><tbody>${schemeRows}</tbody></table></div></div>`);
   }
   function receiptPanel() {
     const rows = state.receipts.slice().reverse().map(item => `<tr><td>${esc(item.entryNo)}</td><td>${esc(schemeLabel(item.schemeId))}</td><td>${esc(item.financialYear)}</td><td>${esc(item.sanctionNo || "-")}</td><td>${money(item.amountReceived)}</td><td>${money(item.interest + item.otherReceipt)}</td><td>${statusBadge(item.status)}</td><td>${esc(item.remarks || "-")}</td><td>${item.status === "Draft" || item.status === "Returned" ? `<button type="button" data-action="edit-receipt" data-id="${item.id}">Edit</button>` : ""}</td></tr>`).join("") || `<tr><td colspan="9">No receipt entered.</td></tr>`;
@@ -295,6 +330,9 @@
     if (duplicate && !confirm(`Sanction order ${values.sanctionNo} already exists. Save anyway?`)) return;
     const existing = state.receipts.find(item => item.id === editingReceiptId);
     const record = { ...existing, ...values, id: existing?.id || uid("REC"), entryNo: existing?.entryNo || `REC-${new Date().getFullYear()}-${String(state.receipts.length + 1).padStart(4, "0")}`, amountSanctioned, amountReceived, interest: number(document.getElementById("gr-interest").value), otherReceipt: number(document.getElementById("gr-other").value), openingBalance: number(document.getElementById("gr-opening").value), status, attachments: (await filesFrom("gr-file")).length ? await filesFrom("gr-file") : (existing?.attachments || []), updatedAt: new Date().toISOString(), enteredBy: existing?.enteredBy || actor(), submittedBy: status === "Submitted" ? actor() : existing?.submittedBy || "", submittedAt: status === "Submitted" ? new Date().toISOString() : existing?.submittedAt || "" };
+    const linkedScheme = schemeById(values.schemeId);
+    record.grantHead = linkedScheme?.grantHead || record.grantHead || "";
+    record.accountNumber = linkedScheme?.accountNumber || record.accountNumber || "";
     if (existing) Object.assign(existing, record); else state.receipts.push(record);
     log(existing ? "Grant receipt updated" : "Grant receipt created", `${record.entryNo} saved as ${status}.`, record.id);
     editingReceiptId = ""; saveState(); render();
@@ -328,6 +366,9 @@
     const existing = state.expenses.find(item => item.id === editingExpenseId);
     const newFiles = await filesFrom("ge-files");
     const record = { ...existing, ...values, id: existing?.id || uid("EXP"), entryNo: existing?.entryNo || `EXP-${new Date().getFullYear()}-${String(state.expenses.length + 1).padStart(4, "0")}`, amount, quantity: number(document.getElementById("ge-quantity").value), allocations, status, attachments: newFiles.length ? newFiles : (existing?.attachments || []), enteredBy: existing?.enteredBy || actor(), submittedBy: status === "Submitted" ? actor() : existing?.submittedBy || "", submittedAt: status === "Submitted" ? new Date().toISOString() : existing?.submittedAt || "", updatedAt: new Date().toISOString() };
+    const linkedScheme = schemeById(values.schemeId);
+    record.grantHead = linkedScheme?.grantHead || record.grantHead || "";
+    record.accountNumber = linkedScheme?.accountNumber || record.accountNumber || "";
     if (existing) Object.assign(existing, record); else state.expenses.push(record);
     log(existing ? "Expenditure updated" : "Expenditure created", `${record.entryNo} saved as ${status}.`, record.id);
     editingExpenseId = ""; saveState(); render();
@@ -382,7 +423,7 @@
     log(item.locked ? "UC record locked" : "UC record unlocked", `${schemeLabel(item.schemeId)} ${item.financialYear}.`, id); saveState(); render();
   }
   function exportRegister() {
-    const rows = [["Entry Number", "Expenditure Date", "Financial Year", "Scheme", "Grant Source", "Bill Number", "Voucher Number", "Vendor", "Description", "Amount", "Status", "Entered By", "Submitted Date", "Approved By", "Approved Date"]].concat(state.expenses.map(item => [item.entryNo, item.expenseDate, item.financialYear, schemeLabel(item.schemeId), (item.allocations || []).map(allocation => receiptById(allocation.receiptId)?.entryNo || "").join("; "), item.billNo, item.voucherNo, item.vendor, item.description, item.amount, item.status, item.enteredBy, item.submittedAt, item.approvedBy, item.approvedAt]));
+    const rows = [["Entry Number", "Expenditure Date", "Financial Year", "Scheme", "Grant Head", "Account Number", "Grant Source", "Bill Number", "Voucher Number", "Vendor", "Description", "Amount", "Status", "Entered By", "Submitted Date", "Approved By", "Approved Date"]].concat(state.expenses.map(item => [item.entryNo, item.expenseDate, item.financialYear, schemeLabel(item.schemeId), item.grantHead || schemeGrantHead(item.schemeId), item.accountNumber || schemeAccount(item.schemeId), (item.allocations || []).map(allocation => receiptById(allocation.receiptId)?.entryNo || "").join("; "), item.billNo, item.voucherNo, item.vendor, item.description, item.amount, item.status, item.enteredBy, item.submittedAt, item.approvedBy, item.approvedAt]));
     if (window.XLSX) { const workbook = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(rows), "Daily Expenditure Register"); XLSX.writeFile(workbook, "Daily_Expenditure_Register.xlsx"); return; }
     const csv = rows.map(row => row.map(value => `"${String(value ?? "").replace(/"/g, '""')}"`).join(",")).join("\n"); downloadBlob(new Blob([csv], { type: "text/csv" }), "Daily_Expenditure_Register.csv");
   }
@@ -397,11 +438,11 @@
   function printPdf() { const schemeId = selectedFormScheme(); const data = formData(schemeId, { from: document.getElementById("gf-from")?.value, to: document.getElementById("gf-to")?.value }); if (!schemeId) throw new Error("Select a scheme first."); const popup = window.open("", "_blank"); if (!popup) throw new Error("Allow pop-ups to print or save as PDF."); popup.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>OGFR Forms and UC</title><style>@page{size:A4 portrait;margin:12mm}body{font-family:Arial,sans-serif;color:#000;font-size:10pt}.page{break-after:page}.page:last-child{break-after:auto}table{border-collapse:collapse;width:100%;font-size:7.6pt}th,td{border:1px solid #000;padding:4px;vertical-align:top}h2,h3{text-align:center}p{line-height:1.35}.signature{width:230px;margin:35px 0 0 auto;text-align:center}</style></head><body><section class="page">${form23Html(data)}</section><section class="page">${form24Html(data)}</section><section class="page">${ucHtml(data)}</section><script>window.onload=()=>setTimeout(()=>window.print(),150);<\/script></body></html>`); popup.document.close(); }
   function bulkTemplateSheets() {
     return {
-      "UC Bulk Entry": [["Scheme Name and Sector", "Reporting Financial Year", "Sanction Order Number", "Receipt Financial Year", "Amount Received", "Utilization Financial Year", "Amount Utilized", "Financial Target Fixed", "Physical Target", "Physical Achievement", "Previous UC Amount", "Previous UC Physical Achievement", "Remarks"]],
-      "Scheme Master": [["Scheme Name and Sector", "Purpose of Grant", "Institution Name", "Institution Code", "Financial Year", "Remarks"]],
-      "Grant Receipts": [["Receipt Entry Number", "Scheme Name and Sector", "Receipt Financial Year", "Sanction Order Number", "Sanction Order Date", "Amount Sanctioned", "Amount Received", "Date of Receipt", "Interest Earned", "Other Receipt", "Opening Balance", "Purpose", "Remarks", "Sanction Order File Name"]],
-      "Daily Expenditure": [["Expenditure Entry Number", "Date of Expenditure", "Financial Year", "Scheme Name and Sector", "Grant Receipt Entry Number", "Expenditure Head", "Description", "Bill Number", "Bill Date", "Voucher Number", "Voucher Date", "Vendor/Payee", "Payment Mode", "Transaction/Cheque Reference", "Amount Utilized", "Quantity", "Unit", "Asset/Item Location", "Stock Register Page", "Asset Register Page", "Remarks", "Bill/Voucher File Name"]],
-      "Form24 Yearwise": [["Scheme Name", "Reporting Financial Year", "Grantee Organisation", "Scheme Name and Sector", "Financial Target Fixed", "Grant Receipt Financial Year", "Grant Received Amount", "Utilization Financial Year", "Utilized Amount", "Physical Target Fixed", "Previous UC Amount", "Previous UC Physical Achievement", "Present UC Physical Achievement", "Remarks"]]
+      "UC Bulk Entry": [["Scheme Name and Sector", "Grant Head", "Account Number", "Reporting Financial Year", "Sanction Order Number", "Receipt Financial Year", "Amount Received", "Utilization Financial Year", "Amount Utilized", "Financial Target Fixed", "Physical Target", "Physical Achievement", "Previous UC Amount", "Previous UC Physical Achievement", "Remarks"]],
+      "Scheme Master": [["Scheme Name and Sector", "Grant Head", "Account Number", "Purpose of Grant", "Institution Name", "Institution Code", "Financial Year", "Remarks"]],
+      "Grant Receipts": [["Receipt Entry Number", "Scheme Name and Sector", "Grant Head", "Account Number", "Receipt Financial Year", "Sanction Order Number", "Sanction Order Date", "Amount Sanctioned", "Amount Received", "Date of Receipt", "Interest Earned", "Other Receipt", "Opening Balance", "Purpose", "Remarks", "Sanction Order File Name"]],
+      "Daily Expenditure": [["Expenditure Entry Number", "Date of Expenditure", "Financial Year", "Scheme Name and Sector", "Grant Head", "Account Number", "Grant Receipt Entry Number", "Expenditure Head", "Description", "Bill Number", "Bill Date", "Voucher Number", "Voucher Date", "Vendor/Payee", "Payment Mode", "Transaction/Cheque Reference", "Amount Utilized", "Quantity", "Unit", "Asset/Item Location", "Stock Register Page", "Asset Register Page", "Remarks", "Bill/Voucher File Name"]],
+      "Form24 Yearwise": [["Scheme Name", "Grant Head", "Account Number", "Reporting Financial Year", "Grantee Organisation", "Scheme Name and Sector", "Financial Target Fixed", "Grant Receipt Financial Year", "Grant Received Amount", "Utilization Financial Year", "Utilized Amount", "Physical Target Fixed", "Previous UC Amount", "Previous UC Physical Achievement", "Present UC Physical Achievement", "Remarks"]]
     };
   }
   function downloadBulkTemplate() {
@@ -415,10 +456,16 @@
     XLSX.writeFile(workbook, "Grant_OGFR_UC_Bulk_Entry_Template.xlsx");
   }
   function rowObject(headers, row) { return Object.fromEntries(headers.map((header, index) => [header, row[index] ?? ""])); }
-  function findOrCreateScheme(name, sector = "", purpose = "") {
+  function findOrCreateScheme(name, sector = "", purpose = "", grantHead = "", accountNumber = "") {
     const cleanedName = text(name) || `Untitled Scheme ${state.schemes.length + 1}`;
     let scheme = state.schemes.find(item => item.name.toLowerCase() === cleanedName.toLowerCase());
-    if (!scheme) { scheme = { id: uid("SCH"), name: cleanedName, sector: text(sector), purpose: text(purpose), createdBy: actor() }; state.schemes.push(scheme); }
+    if (!scheme) { scheme = { id: uid("SCH"), name: cleanedName, sector: text(sector), purpose: text(purpose), grantHead: text(grantHead), accountNumber: text(accountNumber), createdBy: actor() }; state.schemes.push(scheme); }
+    else {
+      if (text(sector)) scheme.sector = text(sector);
+      if (text(purpose)) scheme.purpose = text(purpose);
+      if (text(grantHead)) scheme.grantHead = text(grantHead);
+      if (text(accountNumber)) scheme.accountNumber = text(accountNumber);
+    }
     return scheme;
   }
   async function importBulkTemplate(file) {
@@ -433,7 +480,7 @@
     };
     let schemesAdded = 0, receiptsAdded = 0, expensesAdded = 0, form24Saved = 0;
     sheetRows("UC Bulk Entry").forEach(row => {
-      const scheme = findOrCreateScheme(row["Scheme Name and Sector"]);
+      const scheme = findOrCreateScheme(row["Scheme Name and Sector"], "", "", row["Grant Head"], row["Account Number"]);
       const financialYear = text(row["Reporting Financial Year"]) || activeFinancialYear();
       const key = form24Key(scheme.id, financialYear);
       const form24 = state.form24[key] || { financialYear, grantYears: [], utilizationYears: [] };
@@ -446,23 +493,23 @@
     sheetRows("Scheme Master").forEach(row => {
       const combinedName = row["Scheme Name and Sector"] || row["Scheme Name"];
       const exists = state.schemes.some(item => item.name.toLowerCase() === text(combinedName).toLowerCase());
-      findOrCreateScheme(combinedName, "", row["Purpose of Grant"]);
+      findOrCreateScheme(combinedName, "", row["Purpose of Grant"], row["Grant Head"], row["Account Number"]);
       if (!exists) schemesAdded += 1;
       if (text(row["Institution Name"])) state.profile.institutionName = text(row["Institution Name"]);
       if (text(row["Institution Code"])) state.profile.institutionCode = text(row["Institution Code"]);
     });
     sheetRows("Grant Receipts").forEach(row => {
-      const scheme = findOrCreateScheme(row["Scheme Name and Sector"] || row["Scheme Name"]);
-      state.receipts.push({ id: uid("REC"), entryNo: text(row["Receipt Entry Number"]) || `REC-${new Date().getFullYear()}-${String(state.receipts.length + 1).padStart(4, "0")}`, schemeId: scheme.id, financialYear: text(row["Receipt Financial Year"]) || activeFinancialYear(), sanctionNo: text(row["Sanction Order Number"]), sanctionDate: text(row["Sanction Order Date"]), amountSanctioned: number(row["Amount Sanctioned"]), amountReceived: number(row["Amount Received"]), receiptDate: text(row["Date of Receipt"]), interest: number(row["Interest Earned"]), otherReceipt: number(row["Other Receipt"]), openingBalance: number(row["Opening Balance"]), purpose: text(row.Purpose), remarks: text(row.Remarks), attachments: [], status: "Draft", enteredBy: actor(), updatedAt: new Date().toISOString() });
+      const scheme = findOrCreateScheme(row["Scheme Name and Sector"] || row["Scheme Name"], "", "", row["Grant Head"], row["Account Number"]);
+      state.receipts.push({ id: uid("REC"), entryNo: text(row["Receipt Entry Number"]) || `REC-${new Date().getFullYear()}-${String(state.receipts.length + 1).padStart(4, "0")}`, schemeId: scheme.id, grantHead: scheme.grantHead || "", accountNumber: scheme.accountNumber || "", financialYear: text(row["Receipt Financial Year"]) || activeFinancialYear(), sanctionNo: text(row["Sanction Order Number"]), sanctionDate: text(row["Sanction Order Date"]), amountSanctioned: number(row["Amount Sanctioned"]), amountReceived: number(row["Amount Received"]), receiptDate: text(row["Date of Receipt"]), interest: number(row["Interest Earned"]), otherReceipt: number(row["Other Receipt"]), openingBalance: number(row["Opening Balance"]), purpose: text(row.Purpose), remarks: text(row.Remarks), attachments: [], status: "Draft", enteredBy: actor(), updatedAt: new Date().toISOString() });
       receiptsAdded += 1;
     });
     sheetRows("Daily Expenditure").forEach(row => {
-      const scheme = findOrCreateScheme(row["Scheme Name and Sector"] || row["Scheme Name"]);
-      state.expenses.push({ id: uid("EXP"), entryNo: text(row["Expenditure Entry Number"]) || `EXP-${new Date().getFullYear()}-${String(state.expenses.length + 1).padStart(4, "0")}`, expenseDate: text(row["Date of Expenditure"]), financialYear: text(row["Financial Year"]) || activeFinancialYear(), schemeId: scheme.id, head: text(row["Expenditure Head"]), description: text(row.Description), billNo: text(row["Bill Number"]), billDate: text(row["Bill Date"]), voucherNo: text(row["Voucher Number"]), voucherDate: text(row["Voucher Date"]), vendor: text(row["Vendor/Payee"]), paymentMode: text(row["Payment Mode"]), reference: text(row["Transaction/Cheque Reference"]), amount: number(row["Amount Utilized"]), quantity: number(row.Quantity), unit: text(row.Unit), location: text(row["Asset/Item Location"]), stockPage: text(row["Stock Register Page"]), assetPage: text(row["Asset Register Page"]), remarks: text(row.Remarks), allocations: [], attachments: [], status: "Draft", enteredBy: actor(), updatedAt: new Date().toISOString() });
+      const scheme = findOrCreateScheme(row["Scheme Name and Sector"] || row["Scheme Name"], "", "", row["Grant Head"], row["Account Number"]);
+      state.expenses.push({ id: uid("EXP"), entryNo: text(row["Expenditure Entry Number"]) || `EXP-${new Date().getFullYear()}-${String(state.expenses.length + 1).padStart(4, "0")}`, expenseDate: text(row["Date of Expenditure"]), financialYear: text(row["Financial Year"]) || activeFinancialYear(), schemeId: scheme.id, grantHead: scheme.grantHead || "", accountNumber: scheme.accountNumber || "", head: text(row["Expenditure Head"]), description: text(row.Description), billNo: text(row["Bill Number"]), billDate: text(row["Bill Date"]), voucherNo: text(row["Voucher Number"]), voucherDate: text(row["Voucher Date"]), vendor: text(row["Vendor/Payee"]), paymentMode: text(row["Payment Mode"]), reference: text(row["Transaction/Cheque Reference"]), amount: number(row["Amount Utilized"]), quantity: number(row.Quantity), unit: text(row.Unit), location: text(row["Asset/Item Location"]), stockPage: text(row["Stock Register Page"]), assetPage: text(row["Asset Register Page"]), remarks: text(row.Remarks), allocations: [], attachments: [], status: "Draft", enteredBy: actor(), updatedAt: new Date().toISOString() });
       expensesAdded += 1;
     });
     sheetRows("Form24 Yearwise").forEach(row => {
-      const scheme = findOrCreateScheme(row["Scheme Name"]);
+      const scheme = findOrCreateScheme(row["Scheme Name"], "", "", row["Grant Head"], row["Account Number"]);
       const financialYear = text(row["Reporting Financial Year"]) || activeFinancialYear();
       const key = form24Key(scheme.id, financialYear);
       const form24 = state.form24[key] || { financialYear, grantYears: [], utilizationYears: [] };
@@ -479,6 +526,52 @@
   }
   function bindEvents(root) {
     root.querySelectorAll("[data-grant-tab]").forEach(button => button.addEventListener("click", () => { activeTab = button.dataset.grantTab; render(); if (activeTab === "forms") refreshForms(); }));
+    root.addEventListener("click", event => {
+      const button = event.target.closest("[data-action]");
+      if (!button) return;
+      const action = button.dataset.action;
+      if (action === "save-profile") {
+        state.activeFinancialYear = text(document.getElementById("gm-active-fy")?.value) || activeFinancialYear();
+        return;
+      }
+      if (!["add-scheme", "edit-scheme", "cancel-scheme-edit"].includes(action)) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      try {
+        if (action === "edit-scheme") {
+          editingSchemeId = button.dataset.id || "";
+          activeTab = "master";
+          render();
+          return;
+        }
+        if (action === "cancel-scheme-edit") {
+          editingSchemeId = "";
+          render();
+          return;
+        }
+        const name = text(document.getElementById("gm-scheme-name")?.value);
+        const grantHead = text(document.getElementById("gm-grant-head")?.value);
+        const accountNumber = text(document.getElementById("gm-account-number")?.value);
+        if (!name || !grantHead || !accountNumber) throw new Error("Scheme name, Grant Head and Account Number are mandatory.");
+        if (state.schemes.some(item => item.id !== editingSchemeId && item.name.toLowerCase() === name.toLowerCase())) throw new Error("This scheme already exists.");
+        const values = { name, grantHead, accountNumber, sector: text(document.getElementById("gm-scheme-sector")?.value), purpose: text(document.getElementById("gm-scheme-purpose")?.value), updatedAt: new Date().toISOString() };
+        if (editingSchemeId) {
+          const scheme = state.schemes.find(item => item.id === editingSchemeId);
+          if (!scheme) throw new Error("Scheme could not be found.");
+          Object.assign(scheme, values);
+          log("Scheme updated", `${name} linked with Grant Head ${grantHead} and Account Number ${accountNumber}.`, scheme.id);
+        } else {
+          const scheme = { id: uid("SCH"), ...values, createdBy: actor() };
+          state.schemes.push(scheme);
+          log("Scheme created", `${name} linked with Grant Head ${grantHead} and Account Number ${accountNumber}.`, scheme.id);
+        }
+        editingSchemeId = "";
+        saveState();
+        render();
+      } catch (error) {
+        alert(error.message || "Scheme could not be saved.");
+      }
+    });
     root.addEventListener("click", async event => { const button = event.target.closest("[data-action]"); if (!button) return; try { const action = button.dataset.action; if (action === "save-profile") { state.profile = { institutionName: text(document.getElementById("gm-institution").value), institutionCode: text(document.getElementById("gm-institution-code").value), address: text(document.getElementById("gm-address").value), district: text(document.getElementById("gm-district").value), block: text(document.getElementById("gm-block").value), state: text(document.getElementById("gm-state").value), ddoCode: text(document.getElementById("gm-ddo").value), treasuryCode: text(document.getElementById("gm-treasury").value), principalName: text(document.getElementById("gm-principal").value), principalDesignation: "Principal", accountName: text(document.getElementById("gm-account").value), place: text(document.getElementById("gm-place").value), ucDate: document.getElementById("gm-uc-date").value }; log("Institution details saved", "Institution profile updated."); saveState(); render(); } else if (action === "add-scheme") { const name = text(document.getElementById("gm-scheme-name").value); if (!name) throw new Error("Scheme name is mandatory."); if (state.schemes.some(item => item.name.toLowerCase() === name.toLowerCase())) throw new Error("This scheme already exists."); state.schemes.push({ id: uid("SCH"), name, sector: text(document.getElementById("gm-scheme-sector").value), purpose: text(document.getElementById("gm-scheme-purpose").value), createdBy: actor() }); log("Scheme created", name); saveState(); render(); } else if (action === "delete-scheme") { const id = button.dataset.id; if (state.receipts.some(item => item.schemeId === id) || state.expenses.some(item => item.schemeId === id)) throw new Error("A scheme with receipt or expenditure history cannot be deleted."); state.schemes = state.schemes.filter(item => item.id !== id); delete state.physical[id]; log("Scheme deleted", "Unused scheme deleted.", id); saveState(); render(); } else if (action === "save-receipt") await saveReceipt(button.dataset.status); else if (action === "edit-receipt") { editingReceiptId = button.dataset.id; activeTab = "receipts"; render(); } else if (action === "cancel-receipt-edit") { editingReceiptId = ""; render(); } else if (action === "add-allocation") { document.getElementById("ge-allocations").insertAdjacentHTML("beforeend", allocationRows([{ receiptId: "", amount: 0 }])); } else if (action === "remove-allocation") { button.closest(".grant-allocation-row").remove(); } else if (action === "check-allocation") validateExpense(true); else if (action === "save-expense") await saveExpense(button.dataset.status); else if (action === "edit-expense") { editingExpenseId = button.dataset.id; activeTab = "expenses"; render(); } else if (action === "cancel-expense-edit") { editingExpenseId = ""; render(); } else if (action === "export-register") exportRegister(); else if (action === "save-physical") savePhysical(); else if (action === "load-physical") loadPhysical(); else if (action === "save-previous") await savePrevious(); else if (action === "refresh-forms") refreshForms(); else if (action === "submit-uc") submitUc(); else if (action === "approve") approveOrReturn(button.dataset.type, button.dataset.id, true); else if (action === "return") approveOrReturn(button.dataset.type, button.dataset.id, false); else if (action === "lock-uc") toggleLock(button.dataset.id); else if (action === "download-docx") downloadDocx(button.dataset.kind); else if (action === "print-pdf") printPdf(); } catch (error) { alert(error.message || "The requested action could not be completed."); } });
     root.addEventListener("click", event => {
       const button = event.target.closest("[data-action]");
