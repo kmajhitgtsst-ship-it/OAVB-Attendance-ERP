@@ -140,7 +140,7 @@
     return `<div class="grant-tabs">${items.map(([id, label]) => `<button type="button" class="${activeTab === id ? "active" : ""}" data-grant-tab="${id}">${label}</button>`).join("")}</div>`;
   }
   function templateTools() {
-    return `<datalist id="grant-financial-years">${financialYearOptions(activeFinancialYear())}</datalist><div class="card"><div class="section-title"><div><h2>Bulk Entry Template</h2><p class="grant-note">Download the optional-entry Excel template, fill any available fields, then upload it here.</p></div><div class="grant-actions"><button type="button" data-action="download-bulk-template">Download Template</button><button type="button" class="primary" data-action="choose-bulk-template">Upload Filled Template</button><input id="gm-bulk-template-file" type="file" accept=".xlsx,.xls" hidden></div></div><p id="gm-bulk-template-status" class="grant-note"></p></div>`;
+    return `<datalist id="grant-financial-years">${financialYearOptions(activeFinancialYear())}</datalist><div class="card"><div class="section-title"><div><h2>Bulk Entry Template</h2><p class="grant-note">Download the optional-entry Excel template, fill any available fields, then upload it here.</p></div><div class="grant-actions"><button type="button" data-action="download-account-template">Download Scheme & Account Template</button><button type="button" data-action="download-bulk-template">Download Full UC Template</button><button type="button" class="primary" data-action="choose-bulk-template">Upload Filled Template</button><input id="gm-bulk-template-file" type="file" accept=".xlsx,.xls" hidden></div></div><p id="gm-bulk-template-status" class="grant-note"></p></div>`;
   }
   function render() {
     const root = document.getElementById("grantModuleRoot");
@@ -188,7 +188,7 @@
   function masterPanel() {
     const profile = state.profile;
     const edit = state.schemes.find(item => item.id === editingSchemeId) || {};
-    const schemeRows = state.schemes.map(item => `<tr><td>${esc(item.name)}</td><td>${esc(item.grantHead || "Not linked")}</td><td>${esc(item.accountNumber || "Not linked")}</td><td>${esc(item.sector || "-")}</td><td>${esc(item.purpose || "-")}</td><td><div class="grant-actions"><button type="button" data-action="edit-scheme" data-id="${esc(item.id)}">Edit</button><button type="button" data-action="delete-scheme" data-id="${esc(item.id)}">Delete</button></div></td></tr>`).join("") || `<tr><td colspan="6">No scheme created.</td></tr>`;
+    const schemeRows = state.schemes.map(item => `<tr><td>${esc(item.name)}</td><td>${esc(item.grantHead || "Not linked")}</td><td>${esc(item.accountNumber || "Not linked")}</td><td>${esc(item.sector || "-")}</td><td>${esc(item.purpose || "-")}</td><td><div class="grant-actions"><button type="button" data-action="edit-scheme" data-id="${esc(item.id)}">Edit</button><button type="button" data-action="delete-account" data-id="${esc(item.id)}" ${item.accountNumber ? "" : "disabled"}>Remove Account Link</button><button type="button" data-action="delete-scheme" data-id="${esc(item.id)}">Delete Scheme</button></div></td></tr>`).join("") || `<tr><td colspan="6">No scheme created.</td></tr>`;
     return panel("master", `<div class="card"><h2>Institution details</h2><div class="grant-grid"><label class="wide">Institution Name<input id="gm-institution" value="${esc(profile.institutionName)}"></label><label>Institution Code<input id="gm-institution-code" value="${esc(profile.institutionCode)}"></label><label>District<input id="gm-district" value="${esc(profile.district)}"></label><label>Block<input id="gm-block" value="${esc(profile.block)}"></label><label>State<input id="gm-state" value="${esc(profile.state)}"></label><label>DDO Code<input id="gm-ddo" value="${esc(profile.ddoCode)}"></label><label>Treasury Code<input id="gm-treasury" value="${esc(profile.treasuryCode)}"></label><label>Principal Name<input id="gm-principal" value="${esc(profile.principalName)}"></label><label>Account In-Charge<input id="gm-account" value="${esc(profile.accountName)}"></label><label class="wide">Institution Address<textarea id="gm-address">${esc(profile.address)}</textarea></label><label>Place<input id="gm-place" value="${esc(profile.place)}"></label><label>UC Date<input id="gm-uc-date" type="date" value="${esc(profile.ucDate)}"></label><label>Active Session<select id="gm-active-fy">${financialYearOptions(activeFinancialYear())}</select></label></div><div class="grant-actions"><button type="button" class="primary" data-action="save-profile">Save Institution Details</button></div></div><div class="card"><h2>${editingSchemeId ? "Edit" : "Add"} Scheme and Grant Head</h2><p class="grant-note">Each scheme and grant head is linked with its bank account number. Existing financial records remain linked through the scheme ID.</p><div class="grant-grid"><label class="wide">Scheme Name<input id="gm-scheme-name" value="${esc(edit.name)}" placeholder="Example: AC Installation"></label><label>Grant Head<input id="gm-grant-head" value="${esc(edit.grantHead)}" placeholder="Example: Infrastructure Grant"></label><label>Account Number<input id="gm-account-number" value="${esc(edit.accountNumber)}" autocomplete="off" placeholder="Bank account number"></label><label>Scheme Sector<input id="gm-scheme-sector" value="${esc(edit.sector)}" placeholder="Example: Gender and Equity"></label><label class="wide">Purpose of Grant<textarea id="gm-scheme-purpose" placeholder="Purpose for which the grant was sanctioned">${esc(edit.purpose)}</textarea></label></div><div class="grant-actions"><button type="button" class="primary" data-action="add-scheme">${editingSchemeId ? "Update Scheme" : "Add Scheme"}</button>${editingSchemeId ? `<button type="button" data-action="cancel-scheme-edit">Cancel</button>` : ""}</div><div class="grant-table-wrap"><table class="grant-table"><thead><tr><th>Scheme</th><th>Grant Head</th><th>Account Number</th><th>Sector</th><th>Purpose</th><th>Action</th></tr></thead><tbody>${schemeRows}</tbody></table></div></div>`);
   }
   function receiptPanel() {
@@ -455,6 +455,32 @@
     });
     XLSX.writeFile(workbook, "Grant_OGFR_UC_Bulk_Entry_Template.xlsx");
   }
+  function downloadAccountTemplate() {
+    if (!window.XLSX) throw new Error("Excel support is not loaded. Reload the ERP and try again.");
+    const workbook = XLSX.utils.book_new();
+    const masterRows = [["Scheme Name and Sector", "Grant Head", "Account Number", "Purpose of Grant", "Institution Name", "Institution Code", "Financial Year", "Remarks"]];
+    const masterSheet = XLSX.utils.aoa_to_sheet(masterRows);
+    masterSheet["!cols"] = [{ wch: 30 }, { wch: 26 }, { wch: 24 }, { wch: 36 }, { wch: 30 }, { wch: 20 }, { wch: 18 }, { wch: 30 }];
+    XLSX.utils.book_append_sheet(workbook, masterSheet, "Scheme Master");
+    const sessions = [["Available Financial Years"], ...Array.from({ length: 11 }, (_, index) => {
+      const start = 2016 + index;
+      return [`${start}-${String(start + 1).slice(-2)}`];
+    })];
+    const sessionSheet = XLSX.utils.aoa_to_sheet(sessions);
+    sessionSheet["!cols"] = [{ wch: 26 }];
+    XLSX.utils.book_append_sheet(workbook, sessionSheet, "Financial Years");
+    const instructions = XLSX.utils.aoa_to_sheet([
+      ["UC Scheme and Account Template Instructions"],
+      ["1. Enter one scheme per row in the Scheme Master sheet."],
+      ["2. Scheme Name and Sector, Grant Head and Account Number are required."],
+      ["3. Keep Account Number as text so leading zeroes are preserved."],
+      ["4. Upload this completed workbook using Upload Filled Template."],
+      ["5. Existing receipt and expenditure history is not deleted when an account link is removed."]
+    ]);
+    instructions["!cols"] = [{ wch: 92 }];
+    XLSX.utils.book_append_sheet(workbook, instructions, "Instructions");
+    XLSX.writeFile(workbook, "UC_Scheme_Grant_Head_Account_Template.xlsx");
+  }
   function rowObject(headers, row) { return Object.fromEntries(headers.map((header, index) => [header, row[index] ?? ""])); }
   function findOrCreateScheme(name, sector = "", purpose = "", grantHead = "", accountNumber = "") {
     const cleanedName = text(name) || `Untitled Scheme ${state.schemes.length + 1}`;
@@ -534,7 +560,7 @@
         state.activeFinancialYear = text(document.getElementById("gm-active-fy")?.value) || activeFinancialYear();
         return;
       }
-      if (!["add-scheme", "edit-scheme", "cancel-scheme-edit"].includes(action)) return;
+      if (!["add-scheme", "edit-scheme", "cancel-scheme-edit", "delete-account"].includes(action)) return;
       event.preventDefault();
       event.stopImmediatePropagation();
       try {
@@ -546,6 +572,19 @@
         }
         if (action === "cancel-scheme-edit") {
           editingSchemeId = "";
+          render();
+          return;
+        }
+        if (action === "delete-account") {
+          const scheme = state.schemes.find(item => item.id === button.dataset.id);
+          if (!scheme) throw new Error("Scheme could not be found.");
+          if (!scheme.accountNumber) throw new Error("This scheme has no linked account number.");
+          if (!confirm(`Remove the account number linked with ${scheme.name}? Existing receipts, expenditure and UC history will remain unchanged.`)) return;
+          const lastFour = String(scheme.accountNumber).slice(-4);
+          scheme.accountNumber = "";
+          scheme.updatedAt = new Date().toISOString();
+          log("Scheme account unlinked", `${scheme.name}: account ending ${lastFour || "----"} removed. Historical transactions retained.`, scheme.id);
+          saveState();
           render();
           return;
         }
@@ -602,6 +641,9 @@
       if (!button) return;
       if (button.dataset.action === "download-bulk-template") {
         try { downloadBulkTemplate(); } catch (error) { alert(error.message || "Template could not be downloaded."); }
+      }
+      if (button.dataset.action === "download-account-template") {
+        try { downloadAccountTemplate(); } catch (error) { alert(error.message || "Scheme and account template could not be downloaded."); }
       }
       if (button.dataset.action === "choose-bulk-template") document.getElementById("gm-bulk-template-file")?.click();
     });
